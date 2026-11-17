@@ -16,6 +16,7 @@ import type {
   Violation,
 } from '../types/plan';
 import { Blueprint2D } from './Blueprint2D';
+import { BasisBadge, measuredText, useAiStatus } from './shared';
 
 interface StepReportProps {
   project: BuildingProject;
@@ -39,15 +40,16 @@ function matchesCategoryFilter(v: Violation, filter: CategoryFilter): boolean {
     v.category === 'passage_width' ||
     v.category === 'exit_obstruction' ||
     v.category === 'stair_safety' ||
-    v.category === 'dimension_integrity'
+    v.category === 'dimension_integrity' ||
+    v.category === 'input_required'
   );
 }
 
 const PRESET_QUESTIONS = [
-  'What is the maximum FAR & MGC for this road width?',
-  'How do automatic sprinklers change BNBC travel distance?',
-  'What triggers mandatory FSCD High-Rise NOC (> 20 m)?',
-  'Minimum bedroom area & daylight window rules under BNBC?',
+  'How far can a cabin be from an exit?',
+  'What are the stair headroom and handrail rules?',
+  'Minimum bedroom size and window area?',
+  'সিঁড়ির রাইজার ও ট্রেডের নিয়ম কী?',
 ];
 
 export function StepReport({
@@ -117,6 +119,10 @@ export function StepReport({
   };
 
   const m = audit.metrics;
+  const ai = useAiStatus();
+  const verifiedCount = audit.violations.filter((v) => v.basis === 'verified').length;
+  const screeningCount = audit.violations.filter((v) => v.basis === 'screening').length;
+  const notChecked = audit.notChecked || [];
 
   return (
     <main className="max-w-[1380px] mx-auto px-6 py-6 space-y-5">
@@ -124,13 +130,13 @@ export function StepReport({
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-slate-200/90 pb-4">
         <div className="space-y-1">
           <div className="text-xs font-mono text-slate-500">
-            Step 03 · Deterministic BNBC & Imarat Audit · {project.name}
+            Step 03 · Rule check · {project.name}
             {isMultiFloor
               ? ` · ${project.floors.length} Floors (${(project.floors.length * project.storyHeightM).toFixed(1)} m)`
               : ''}
           </div>
           <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900">
-            BNBC & Imarat Compliance Report
+            Plan check report
           </h1>
           <div className="text-xs text-slate-600 flex flex-wrap items-center gap-3 pt-0.5 tabular-nums">
             <span className="font-semibold text-red-700">{audit.failCount} Fail</span>
@@ -140,10 +146,9 @@ export function StepReport({
             <span className="font-semibold text-emerald-700">{audit.passedCount} Pass</span>
             <span aria-hidden="true">·</span>
             <span className="font-mono text-slate-700">
-              Max escape time:{' '}
-              {Number.isFinite(audit.worstEscapeSec)
-                ? `${audit.worstEscapeSec.toFixed(1)} s`
-                : 'Blocked'}
+              Slowest escape:{' '}
+              {audit.worstEscapeSec > 0 ? `${audit.worstEscapeSec.toFixed(1)} s` : 'not measured'}
+              {audit.trappedRoomCount > 0 ? ` · ${audit.trappedRoomCount} rooms with no route` : ''}
             </span>
           </div>
         </div>
@@ -173,7 +178,7 @@ export function StepReport({
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg cursor-pointer whitespace-nowrap disabled:opacity-50"
           >
             <Sparkles className="w-3.5 h-3.5 text-blue-700" />
-            {explainingAi ? 'Translating...' : 'Refresh AI Explainer'}
+            {explainingAi ? 'Writing…' : ai.aiConfigured ? 'Rewrite with Gemini' : 'Refresh wording'}
           </button>
 
           <button
@@ -181,7 +186,7 @@ export function StepReport({
             onClick={onProceedToCompare}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg cursor-pointer whitespace-nowrap shadow-xs"
           >
-            Before / After Fixes
+            See proposed fixes
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -191,33 +196,41 @@ export function StepReport({
       {m && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-y lg:divide-y-0 sm:divide-x divide-slate-200/90 bg-white border border-slate-200/90 rounded-xl shadow-xs overflow-hidden">
           <div className="px-4 py-3.5">
-            <div className="text-[11px] font-mono text-slate-500">Achieved FAR</div>
-            <div
-              className={`mt-0.5 font-mono text-base font-bold tabular-nums ${
-                m.achievedFar > m.maxAllowedFar ? 'text-red-700' : 'text-slate-900'
-              }`}
-            >
-              {m.achievedFar.toFixed(2)}{' '}
-              <span className="text-xs font-normal text-slate-500">
-                / {m.maxAllowedFar.toFixed(2)}
-              </span>
-            </div>
+            <div className="text-[11px] font-mono text-slate-500">FAR (screening)</div>
+            {m.plotAreaSqM > 0 ? (
+              <div
+                className={`mt-0.5 font-mono text-base font-bold tabular-nums ${
+                  m.achievedFar > m.maxAllowedFar ? 'text-amber-700' : 'text-slate-900'
+                }`}
+              >
+                {m.achievedFar.toFixed(2)}{' '}
+                <span className="text-xs font-normal text-slate-500">
+                  / {m.maxAllowedFar.toFixed(2)}
+                </span>
+              </div>
+            ) : (
+              <div className="mt-0.5 text-xs text-slate-500">Plot data not entered</div>
+            )}
           </div>
           <div className="px-4 py-3.5">
-            <div className="text-[11px] font-mono text-slate-500">Ground Coverage (MGC)</div>
-            <div
-              className={`mt-0.5 font-mono text-base font-bold tabular-nums ${
-                m.mgcPercent > m.maxAllowedMgcPercent ? 'text-red-700' : 'text-slate-900'
-              }`}
-            >
-              {m.mgcPercent.toFixed(1)}%{' '}
-              <span className="text-xs font-normal text-slate-500">
-                / {m.maxAllowedMgcPercent}%
-              </span>
-            </div>
+            <div className="text-[11px] font-mono text-slate-500">Ground coverage (screening)</div>
+            {m.plotAreaSqM > 0 ? (
+              <div
+                className={`mt-0.5 font-mono text-base font-bold tabular-nums ${
+                  m.mgcPercent > m.maxAllowedMgcPercent ? 'text-amber-700' : 'text-slate-900'
+                }`}
+              >
+                {m.mgcPercent.toFixed(1)}%{' '}
+                <span className="text-xs font-normal text-slate-500">
+                  / {m.maxAllowedMgcPercent}%
+                </span>
+              </div>
+            ) : (
+              <div className="mt-0.5 text-xs text-slate-500">Plot data not entered</div>
+            )}
           </div>
           <div className="px-4 py-3.5">
-            <div className="text-[11px] font-mono text-slate-500">Peak Floor Load</div>
+            <div className="text-[11px] font-mono text-slate-500">Peak floor load (estimate)</div>
             <div className="mt-0.5 font-mono text-base font-bold text-slate-900 tabular-nums">
               {m.peakFloorLoad}{' '}
               <span className="text-xs font-normal text-slate-500">
@@ -226,12 +239,12 @@ export function StepReport({
             </div>
           </div>
           <div className="px-4 py-3.5">
-            <div className="text-[11px] font-mono text-slate-500">Ground Exit Capacity</div>
+            <div className="text-[11px] font-mono text-slate-500">Ground exit capacity (estimate)</div>
             <div
               className={`mt-0.5 font-mono text-base font-bold tabular-nums ${
                 m.groundExitCapacityPersons < m.peakFloorLoad
-                  ? 'text-red-700'
-                  : 'text-emerald-700'
+                  ? 'text-amber-700'
+                  : 'text-slate-900'
               }`}
             >
               {m.groundExitCapacityPersons}{' '}
@@ -239,18 +252,18 @@ export function StepReport({
             </div>
           </div>
           <div className="px-4 py-3.5">
-            <div className="text-[11px] font-mono text-slate-500">Stair Width Capacity</div>
+            <div className="text-[11px] font-mono text-slate-500">Stair capacity (estimate)</div>
             <div className="mt-0.5 font-mono text-base font-bold text-slate-900 tabular-nums">
               {m.stairCapacityPersons}{' '}
               <span className="text-xs font-normal text-slate-500">persons</span>
             </div>
           </div>
           <div className="px-4 py-3.5">
-            <div className="text-[11px] font-mono text-slate-500">Travel Threshold</div>
+            <div className="text-[11px] font-mono text-slate-500">Travel reference</div>
             <div className="mt-0.5 font-mono text-base font-bold text-slate-900 tabular-nums">
               {m.travelLimitM.toFixed(1)} m{' '}
               <span className="text-xs font-normal text-slate-500">
-                {m.sprinklered ? '(Sprinklered)' : '(No Sprinklers)'}
+                {m.sprinklered ? 'sprinklers declared' : 'cabins: 16 m rule'}
               </span>
             </div>
           </div>
@@ -259,7 +272,7 @@ export function StepReport({
 
       {/* Per-Floor Summary Strip for Multi-Floor Buildings */}
       {isMultiFloor && audit.floorSummaries && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/90 bg-white border border-slate-200/90 rounded-xl shadow-xs overflow-hidden">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/90 bg-white border border-slate-200/90 rounded-xl shadow-xs overflow-hidden">
           {audit.floorSummaries.map((fs) => {
             const isActive = fs.floorIndex === activeFloorIdx;
             return (
@@ -301,7 +314,7 @@ export function StepReport({
           <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/80 space-y-2.5">
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-semibold text-slate-900">
-                Cited Findings ({filtered.length})
+                Findings ({filtered.length})
               </span>
               <div className="flex items-center gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs">
                 {(['all', 'FAIL', 'WARN'] as const).map((f) => (
@@ -325,10 +338,10 @@ export function StepReport({
             <div className="flex flex-wrap items-center gap-1 text-[11px] font-mono">
               {(
                 [
-                  ['all', 'All Domains'],
-                  ['egress', 'Egress'],
+                  ['all', 'All topics'],
+                  ['egress', 'Escape'],
                   ['zoning', 'Zoning'],
-                  ['habitability', 'Habitability'],
+                  ['habitability', 'Rooms'],
                   ['capacity', 'Capacity'],
                 ] as const
               ).map(([catId, label]) => (
@@ -391,7 +404,8 @@ export function StepReport({
                 No findings in current filter
               </div>
               <p className="text-xs text-slate-500">
-                All evaluated BNBC & Imarat Bidhimala rules passed for this selection.
+                Nothing was flagged for this selection. See "Not checked" below for what the
+                tool could not assess.
               </p>
             </div>
           ) : (
@@ -442,17 +456,22 @@ export function StepReport({
                       <span>
                         Measured:{' '}
                         <strong className={isWarn ? 'text-amber-700' : 'text-red-700'}>
-                          {v.measuredValue >= 99 ? 'Blocked' : `${v.measuredValue} ${v.unit}`}
+                          {measuredText(v)}
                         </strong>
                       </span>
-                      <span className="text-slate-400">|</span>
-                      <span>
-                        Code Limit: <strong>{v.comparator} {v.limitValue} {v.unit}</strong>
-                      </span>
+                      {!v.blocked && v.category !== 'input_required' && (
+                        <>
+                          <span className="text-slate-400">|</span>
+                          <span>
+                            Limit: <strong>{v.comparator} {v.limitValue} {v.unit}</strong>
+                          </span>
+                        </>
+                      )}
                     </div>
 
-                    <div className="mt-1 text-[11px] font-mono text-slate-500">
-                      {v.citation}
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] font-mono text-slate-500">
+                      <BasisBadge basis={v.basis} />
+                      <span>{v.citation}</span>
                     </div>
                   </button>
                 );
@@ -514,12 +533,12 @@ export function StepReport({
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2.5">
                 <div className="text-xs font-mono text-slate-700">
                   {selectedViolation.floorLabel ? `[${selectedViolation.floorLabel}] ` : ''}
-                  Selected Finding · <strong>{selectedViolation.citation}</strong>
+                  <strong>{selectedViolation.ruleName}</strong>
                 </div>
                 <div className="text-[11px] font-mono text-slate-500">
                   {selectedViolation.aiExplanation?.source === 'gemini'
-                    ? 'Gemini 4 Hydrogen (Numbers locked to rule engine)'
-                    : 'Deterministic Template (Numbers locked to rule engine)'}
+                    ? `Wording by Gemini${ai.model ? ` (${ai.model})` : ''}; numbers from the rule engine`
+                    : 'Fixed wording; numbers from the rule engine'}
                 </div>
               </div>
 
@@ -530,7 +549,7 @@ export function StepReport({
                   </p>
                   {selectedViolation.aiExplanation?.actionEn && (
                     <p className="text-xs font-medium text-blue-800">
-                      Recommended fix: {selectedViolation.aiExplanation.actionEn}
+                      What to do: {selectedViolation.aiExplanation.actionEn}
                     </p>
                   )}
                 </div>
@@ -543,35 +562,80 @@ export function StepReport({
                   </p>
                   {selectedViolation.aiExplanation?.actionBn && (
                     <p className="text-xs font-medium text-blue-800">
-                      সংশোধন: {selectedViolation.aiExplanation.actionBn}
+                      করণীয়: {selectedViolation.aiExplanation.actionBn}
                     </p>
                   )}
                 </div>
               )}
+
+              <div className="pt-2.5 border-t border-slate-100 flex items-start gap-2 text-xs text-slate-600">
+                <BasisBadge basis={selectedViolation.basis} />
+                <span>
+                  <span className="font-mono text-slate-800">{selectedViolation.citation}.</span>{' '}
+                  {selectedViolation.basisNote}
+                </span>
+              </div>
             </div>
           )}
 
-          {/* Grounded Hybrid RAG BNBC / Imarat Code Copilot */}
+          {/* What the tool did and did not check */}
+          <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-display text-sm font-bold text-slate-900">How far to trust this report</h2>
+              <span className="text-[11px] font-mono text-slate-500">
+                {verifiedCount} on verified thresholds · {screeningCount} on screening thresholds
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Every distance, width and area is measured by code from the drawing. Limits marked
+              “verified” were read in the BNBC 2012 text. Limits marked “screening” are prototype
+              values that a qualified reviewer must confirm. This is not an approval.
+            </p>
+            <div className="rounded-lg bg-slate-50 border border-slate-200 px-3.5 py-3">
+              <div className="text-xs font-semibold text-slate-900">
+                Not checked ({notChecked.length})
+              </div>
+              {notChecked.length === 0 ? (
+                <p className="mt-1 text-xs text-slate-600">
+                  Nothing was skipped for missing data. Structure, fire-rating, services and
+                  anything not visible in a floor plan are outside this tool.
+                </p>
+              ) : (
+                <ul className="mt-1.5 space-y-1 text-xs text-slate-700">
+                  {notChecked.slice(0, 8).map((n, i) => (
+                    <li key={i}>
+                      {n.floorLabel ? <span className="font-mono text-slate-500">[{n.floorLabel}] </span> : null}
+                      <span className="font-medium">{n.item}.</span> {n.reason}
+                    </li>
+                  ))}
+                  {notChecked.length > 8 && (
+                    <li className="text-slate-500">and {notChecked.length - 8} more in the PDF.</li>
+                  )}
+                </ul>
+              )}
+            </div>
+          </div>
+
+          {/* Question box over the reference notes */}
           <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
               <div className="flex items-center gap-2.5">
                 <BookOpen className="w-4 h-4 text-blue-700 shrink-0" />
                 <div>
                   <h2 className="font-display text-sm font-bold text-slate-900">
-                    Grounded BNBC & RAJUK Imarat Code Copilot (RAG)
+                    Ask about the rules this tool uses
                   </h2>
                   <p className="text-xs text-slate-500">
-                    Retrieves verified BNBC 2012/2020 & Imarat Bidhimala 2008 clauses and answers
-                    using only retrieved code text + your active plan metrics.
+                    Answers come only from the reference notes below and this plan's results. Each
+                    note says whether its limit is verified or a screening value. English or বাংলা.
                   </p>
                 </div>
               </div>
               {ragResponse && (
                 <span className="text-[11px] font-mono text-slate-500">
-                  {ragResponse.source === 'gemini-rag' ? 'Gemini + ' : 'Lexical + '}
-                  {ragResponse.retrievalMode === 'hybrid-embedding'
-                    ? 'Hybrid Embedding'
-                    : 'BM25 Retrieval'}
+                  {ragResponse.source === 'gemini-rag'
+                    ? 'Answer written by Gemini from the notes'
+                    : 'Closest reference note (Gemini not running)'}
                 </span>
               )}
             </div>
@@ -601,7 +665,7 @@ export function StepReport({
                 type="text"
                 value={ragQuestion}
                 onChange={(e) => setRagQuestion(e.target.value)}
-                placeholder="Ask about FAR, MGC %, setbacks, sprinklers, travel distance, or Bangla query..."
+                placeholder="e.g. minimum passage width, বেডরুমের ন্যূনতম আয়তন"
                 className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus-visible:outline-2 focus-visible:outline-blue-700"
               />
               <button
@@ -610,7 +674,7 @@ export function StepReport({
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg cursor-pointer disabled:opacity-50 whitespace-nowrap"
               >
                 <Send className="w-3.5 h-3.5" />
-                {ragLoading ? 'Retrieving...' : 'Ask Copilot'}
+                {ragLoading ? 'Looking up…' : 'Ask'}
               </button>
             </form>
 
@@ -631,7 +695,7 @@ export function StepReport({
 
                 <div className="space-y-1.5">
                   <div className="text-[11px] font-mono font-semibold text-slate-600">
-                    Retrieved Grounding Clauses ({ragResponse.citations.length})
+                    Reference notes used ({ragResponse.citations.length})
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {ragResponse.citations.map((c) => (
@@ -641,9 +705,7 @@ export function StepReport({
                       >
                         <div className="flex items-center justify-between gap-2 text-[11px] font-mono">
                           <span className="font-bold text-blue-800 truncate">{c.clause}</span>
-                          <span className="text-slate-500 tabular-nums shrink-0">
-                            rel {Math.round(c.score * 100)}%
-                          </span>
+                          <BasisBadge basis={c.basis} />
                         </div>
                         <div className="text-xs font-semibold text-slate-900">{c.title}</div>
                         <p className="text-[11px] text-slate-600 leading-snug line-clamp-3">

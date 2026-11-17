@@ -377,9 +377,13 @@ export function computeRoomEscapePath(
 ): EscapePathResult {
   const floorIdx = plan.floorIndex ?? 0;
   const floorLabel = plan.floorLabel || (floorIdx === 0 ? 'GF' : `L${floorIdx + 1}`);
-  const unlockedExits: AStarTarget[] = plan.doors
+  let unlockedExits: AStarTarget[] = plan.doors
     .filter((d) => d.isExit && !d.isLocked)
     .map((d) => ({ id: d.id, name: d.blockName, position: d.position }));
+  // A single upper-floor plan has no street exits: its escape targets are the stairs.
+  if (!plan.doors.some((d) => d.isExit) && plan.stairs.length > 0) {
+    unlockedExits = plan.stairs.map((s) => ({ id: s.id, name: s.label, position: s.centroid }));
+  }
 
   if (unlockedExits.length === 0) {
     return {
@@ -697,7 +701,7 @@ export function detectNarrowPassages(plan: ParsedFloorPlan): {
       const a = horizWalls[i];
       const b = horizWalls[j];
       const dy = Math.abs(a.start.y - b.start.y);
-      if (dy < 0.25 || dy >= 0.75) continue;
+      if (dy < 0.4 || dy >= 0.75) continue; // under 0.4 m is a double-line wall, not a passage
 
       const aMinX = Math.min(a.start.x, a.end.x);
       const aMaxX = Math.max(a.start.x, a.end.x);
@@ -735,6 +739,57 @@ export function detectNarrowPassages(plan: ParsedFloorPlan): {
         shiftWallId: targetWall.id,
         shiftDx: 0,
         shiftDy: Number((dir * neededDelta).toFixed(2)),
+      });
+    }
+  }
+
+  const vertWalls = plan.walls.filter(
+    (w) => Math.abs(w.start.x - w.end.x) < 0.05 && Math.abs(w.end.y - w.start.y) > 1.2
+  );
+
+  for (let i = 0; i < vertWalls.length; i++) {
+    for (let j = i + 1; j < vertWalls.length; j++) {
+      const a = vertWalls[i];
+      const b = vertWalls[j];
+      const dx = Math.abs(a.start.x - b.start.x);
+      if (dx < 0.4 || dx >= 0.75) continue;
+
+      const aMinY = Math.min(a.start.y, a.end.y);
+      const aMaxY = Math.max(a.start.y, a.end.y);
+      const bMinY = Math.min(b.start.y, b.end.y);
+      const bMaxY = Math.max(b.start.y, b.end.y);
+      const overlapMin = Math.max(aMinY, bMinY);
+      const overlapMax = Math.min(aMaxY, bMaxY);
+      if (overlapMax - overlapMin < 0.99) continue;
+
+      const cy = (overlapMin + overlapMax) / 2;
+      const cx = (a.start.x + b.start.x) / 2;
+
+      // Verify this gap is inside the floor bounds and represents a walkway (not exterior wall cavity)
+      const upperWall = a.start.x > b.start.x ? a : b;
+      const lowerWall = a.start.x > b.start.x ? b : a;
+      const targetWall = upperWall.isExterior ? lowerWall : upperWall;
+      const neededDelta = 1.2 - dx; // Widen to compliant 1.20m
+      const dir = targetWall === upperWall ? 1 : -1;
+
+      // Deduplicate collinear segments along the same opposing wall lines (e.g., split by a doorway)
+      const alreadyFound = results.some(
+        (r) =>
+          Math.abs(r.center.x - cx) < 0.08 && r.orientation === 'vertical_gap' &&
+          Math.abs(r.widthM - Number(dx.toFixed(2))) < 0.05
+      );
+      if (alreadyFound) continue;
+
+      results.push({
+        id: `pinch-${results.length + 1}`,
+        widthM: Number(dx.toFixed(2)),
+        center: { x: Number(cx.toFixed(2)), y: Number(cy.toFixed(2)) },
+        wallAId: a.id,
+        wallBId: b.id,
+        orientation: 'vertical_gap',
+        shiftWallId: targetWall.id,
+        shiftDx: Number((dir * neededDelta).toFixed(2)),
+        shiftDy: 0,
       });
     }
   }

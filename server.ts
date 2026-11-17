@@ -9,7 +9,16 @@ import {
 } from './src/engine/bnbcCorpus.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
+
+// Models are tried in order; the first one that answers is remembered.
+const MODEL_CANDIDATES = [
+  process.env.GEMINI_MODEL || 'gemini-4-hydrogen',
+  process.env.GEMINI_FALLBACK_MODEL || 'gemini-2.5-flash',
+].filter((m, i, arr) => m && arr.indexOf(m) === i);
+const EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2';
+let workingModel: string | null = null;
+let lastAiError: string | null = null;
 
 function getGeminiClient(): GoogleGenAI | null {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -22,6 +31,32 @@ function getGeminiClient(): GoogleGenAI | null {
       },
     },
   });
+}
+
+type GenConfig = Record<string, unknown>;
+
+/** Calls Gemini, falling back to the next model name if one is rejected. */
+async function generateJson(ai: GoogleGenAI, contents: string, config: GenConfig): Promise<string> {
+  const order = workingModel
+    ? [workingModel, ...MODEL_CANDIDATES.filter((m) => m !== workingModel)]
+    : MODEL_CANDIDATES;
+  let lastErr: unknown = null;
+  for (const model of order) {
+    for (const withThinking of [true, false]) {
+      try {
+        const cfg = { ...config };
+        if (!withThinking) delete cfg.thinkingConfig;
+        const response = await ai.models.generateContent({ model, contents, config: cfg });
+        workingModel = model;
+        lastAiError = null;
+        return (response.text ?? '').trim();
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+  }
+  lastAiError = lastErr instanceof Error ? lastErr.message.slice(0, 200) : 'Gemini call failed';
+  throw lastErr;
 }
 
 // ============================================================================
@@ -41,6 +76,9 @@ const BANGLA_SYNONYM_MAP: [RegExp, string][] = [
   [/ফার|রাস্তা/g, 'far road width'],
   [/এমজিসি|জমি|আচ্ছাদন/g, 'mgc ground coverage'],
   [/রাজউক|অনুমোদন/g, 'rajuk imarat bidhimala'],
+  [/রাইজার|ট্রেড|ধাপ/g, 'riser tread 610 648'],
+  [/কেবিন/g, 'cabin 16 0.75'],
+  [/প্রস্থ/g, 'width'],
   [/ফায়ার|অগ্নি/g, 'fscd fire egress'],
 ];
 
@@ -115,7 +153,7 @@ async function ensureCorpusEmbeddings(ai: GoogleGenAI): Promise<boolean> {
     for (const chunk of REGULATORY_CORPUS) {
       if (corpusEmbeddingCache.has(chunk.id)) continue;
       const resp = await ai.models.embedContent({
-        model: 'gemini-embedding-2',
+        model: EMBEDDING_MODEL,
         contents: `${chunk.docId} ${chunk.clause} ${chunk.title}: ${chunk.text}`,
       });
       const values = resp.embeddings?.[0]?.values;
@@ -154,7 +192,7 @@ async function hybridRetrieveClauses(
   if (ai && (await ensureCorpusEmbeddings(ai))) {
     try {
       const qResp = await ai.models.embedContent({
-        model: 'gemini-embedding-2',
+        model: EMBEDDING_MODEL,
         contents: query,
       });
       queryVec = qResp.embeddings?.[0]?.values ?? null;
@@ -223,9 +261,32 @@ interface FixNarrationInput {
 const app = express();
 app.use(express.json({ limit: '4mb' }));
 
+// Small per-address limit so a public demo link cannot drain the API key.
+const hits = new Map<string, { n: number; t: number }>();
+app.use('/api', (req, res, next) => {
+  const key = req.ip || 'unknown';
+  const now = Date.now();
+  const rec = hits.get(key);
+  if (!rec || now - rec.t > 60_000) hits.set(key, { n: 1, t: now });
+  else if (++rec.n > 40) {
+    res.status(429).json({ error: 'Too many requests. Wait a minute and try again.' });
+    return;
+  }
+  next();
+});
+
+// Tells the interface whether the language model is available, so it never claims AI that is not running.
+app.get('/api/health', (_req, res) => {
+  res.json({
+    aiConfigured: Boolean(getGeminiClient()),
+    model: workingModel || MODEL_CANDIDATES[0],
+    lastAiError,
+  });
+});
+
 // Role 2: Fuzzy CAD room label reconciliation -> fixed BNBC taxonomy
 app.post('/api/ai/reconcile-labels', async (req, res) => {
-  const labels = (req.body?.labels as LabelInput[]) || [];
+  const labels = ((req.body?.labels as LabelInput[]) || []).slice(0, 300);
   if (!Array.isArray(labels) || labels.length === 0) {
     res.status(400).json({ error: 'No room labels supplied.' });
     return;
@@ -238,10 +299,7 @@ app.post('/api/ai/reconcile-labels', async (req, res) => {
   }
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-4-hydrogen',
-      contents: `Reconcile these architectural CAD room labels (which may use English abbreviations or Bangla script) to exactly one taxonomy from: ["bedroom", "cabin", "corridor", "stair", "exit", "workfloor", "utility", "lobby"].\n\nLabels:\n${JSON.stringify(labels)}`,
-      config: {
+    const rawText = await generateJson(ai, `Reconcile these architectural CAD room labels (which may use English abbreviations or Bangla script) to exactly one taxonomy from: ["bedroom" (sleeping room), "habitable" (living, dining, kitchen, dwelling unit), "cabin" (enclosed office or partitioned room), "corridor", "stair", "exit", "workfloor" (production, sewing, canteen), "utility" (store, toilet, plant, loading), "lobby"].\n\nLabels:\n${JSON.stringify(labels)}`, {
         thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         systemInstruction:
           'You normalize CAD room labels to a strict architectural egress taxonomy. Never invent measurements or compliance verdicts. Keep each reason under 12 words.',
@@ -259,10 +317,9 @@ app.post('/api/ai/reconcile-labels', async (req, res) => {
             required: ['id', 'taxonomy', 'confidence', 'reason'],
           },
         },
-      },
-    });
+      });
 
-    const raw = (response.text ?? '[]').trim();
+    const raw = rawText || '[]';
     const mappings = JSON.parse(raw);
     res.json({ source: 'gemini', mappings });
   } catch (err) {
@@ -277,7 +334,7 @@ app.post('/api/ai/reconcile-labels', async (req, res) => {
 
 // Role 1: Bilingual (English + Bangla) violation explanation strictly grounded in rule-engine output
 app.post('/api/ai/explain-violations', async (req, res) => {
-  const violations = (req.body?.violations as ViolationInput[]) || [];
+  const violations = ((req.body?.violations as ViolationInput[]) || []).slice(0, 60);
   if (!Array.isArray(violations) || violations.length === 0) {
     res.json({ source: 'template', explanations: [] });
     return;
@@ -290,17 +347,18 @@ app.post('/api/ai/explain-violations', async (req, res) => {
   }
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-4-hydrogen',
-      contents: `Explain each deterministic BNBC / Imarat rule violation below in clear English and natural Bangla (বাংলা).
-STRICT GUARDRAIL: Never state any measurement, distance, width, FAR/MGC ratio, or clause number that is not explicitly present in the input JSON object for that violation.
+    const rawText = await generateJson(ai, `Explain each rule-engine finding below in plain English and natural Bangla (বাংলা) for a building owner.
+STRICT RULES:
+1. Never state any measurement, distance, width, ratio or clause number that is not in the input JSON for that finding.
+2. If "measuredValue" is null there is no route at all: say so, do not give a distance.
+3. If "basis" is "screening", say the limit is a screening threshold that a reviewer must confirm. Do not call it a BNBC requirement.
+4. One or two short sentences per field.
 
 Violations JSON:
-${JSON.stringify(violations)}`,
-      config: {
+${JSON.stringify(violations)}`, {
         thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         systemInstruction:
-          'You are a building code compliance explainer for RAJUK / FSCD reviewers and real estate developers in Bangladesh. You only translate and explain deterministic rule-engine findings in concise English and Bangla. Do NOT compute measurements or invent clause numbers.',
+          'You explain building plan-check findings to owners and reviewers in Bangladesh. You only reword findings that a deterministic rule engine already produced. You never compute, estimate or add measurements, limits or clause numbers.',
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.ARRAY,
@@ -316,10 +374,9 @@ ${JSON.stringify(violations)}`,
             required: ['id', 'en', 'bn', 'actionEn', 'actionBn'],
           },
         },
-      },
-    });
+      });
 
-    const raw = (response.text ?? '[]').trim();
+    const raw = rawText || '[]';
     const explanations = JSON.parse(raw);
     res.json({ source: 'gemini', explanations });
   } catch (err) {
@@ -343,14 +400,11 @@ app.post('/api/ai/narrate-fixes', async (req, res) => {
   }
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-4-hydrogen',
-      contents: `Summarize what geometric remediations were applied to the parsed floor plan JSON and how escape times changed.
+    const rawText = await generateJson(ai, `Summarize what geometric remediations were applied to the parsed floor plan JSON and how escape times changed.
 STRICT GUARDRAIL: Only reference numbers and changes explicitly provided in this JSON. State clearly that the original DXF file is unchanged and this is a JSON geometry preview.
 
 Payload:
-${JSON.stringify(payload)}`,
-      config: {
+${JSON.stringify(payload)}`, {
         thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         systemInstruction:
           'You write concise bilingual (English + Bangla) engineering captions comparing before/after fire-egress geometry transforms. Never invent numbers.',
@@ -376,10 +430,9 @@ ${JSON.stringify(payload)}`,
           },
           required: ['headlineEn', 'headlineBn', 'summaryEn', 'summaryBn', 'bulletChanges'],
         },
-      },
-    });
+      });
 
-    const raw = (response.text ?? '{}').trim();
+    const raw = rawText || '{}';
     const narration = JSON.parse(raw);
     res.json({ source: 'gemini', narration });
   } catch (err) {
@@ -408,6 +461,7 @@ app.post('/api/rag/query', async (req, res) => {
     title: chunk.title,
     excerpt: chunk.text,
     score,
+    basis: chunk.basis,
   }));
 
   const ai = getGeminiClient();
@@ -418,23 +472,22 @@ app.post('/api/rag/query', async (req, res) => {
       retrievalMode,
       citations,
       answerEn: top
-        ? `Based on ${top.part} (${top.clause}): ${top.text}`
-        : 'No matching BNBC / Imarat Bidhimala clause found.',
+        ? `${top.part}, ${top.clause}: ${top.text}`
+        : 'This prototype has no reference note on that question.',
       answerBn: top
-        ? `${top.part} (${top.clause}) অনুযায়ী: ${top.title}। বিস্তারিত নিয়মাবলি নিচের উদ্ধৃত ধারায় দেখুন।`
-        : 'সংশ্লিষ্ট কোনো বিধি পাওয়া যায়নি।',
+        ? `${top.part}, ${top.clause}: ${top.title}। বিস্তারিত নিচের উদ্ধৃত অংশে দেখুন।`
+        : 'এই প্রশ্নের জন্য কোনো তথ্যসূত্র এই প্রোটোটাইপে নেই।',
     });
     return;
   }
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-4-hydrogen',
-      contents: `Answer the user's Bangladesh building code / RAJUK / FSCD question strictly using the RETRIEVED CLAUSES and ACTIVE PROJECT TELEMETRY below.
-STRICT GUARDRAILS:
-1. Do NOT invent any clause numbers, setbacks, FAR ratios, or distances outside the provided clauses and project telemetry.
-2. Cite the exact doc/clause IDs from RETRIEVED CLAUSES in your answer.
-3. Provide a clear, concise answer in both English and natural Bangla (বাংলা).
+    const rawText = await generateJson(ai, `Answer the user's Bangladesh building code / RAJUK / FSCD question strictly using the RETRIEVED CLAUSES and ACTIVE PROJECT TELEMETRY below.
+STRICT RULES:
+1. Use only numbers and clause references that appear in the retrieved notes or the project data.
+2. Each note has a "basis". For "verified" notes you may say BNBC 2012 requires it. For "screening" notes you must say it is this tool's screening threshold and has not been verified against the gazette.
+3. If the notes do not answer the question, say that this prototype does not cover it. Do not answer from general knowledge.
+4. Answer briefly in both English and natural Bangla (বাংলা).
 
 User Question: ${question}
 
@@ -442,6 +495,7 @@ Retrieved Clauses:
 ${JSON.stringify(
   chunks.map((c) => ({
     docId: c.chunk.docId,
+    basis: c.chunk.basis,
     clause: `${c.chunk.part} ${c.chunk.clause}`,
     title: c.chunk.title,
     text: c.chunk.text,
@@ -449,11 +503,10 @@ ${JSON.stringify(
 )}
 
 Active Building Telemetry (deterministic rule-engine state):
-${JSON.stringify(projectContext)}`,
-      config: {
+${JSON.stringify(projectContext)}`, {
         thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         systemInstruction:
-          'You are PlanCheck AI Grounded Regulatory Copilot for RAJUK officers, FSCD inspectors, and real-estate developers in Bangladesh. Never hallucinate code thresholds; synthesize strictly from retrieved chunks and deterministic project telemetry.',
+          'You answer questions about a building plan check using only the retrieved reference notes and the project data supplied. You never add thresholds or clause numbers from memory.',
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,
@@ -463,10 +516,9 @@ ${JSON.stringify(projectContext)}`,
           },
           required: ['answerEn', 'answerBn'],
         },
-      },
-    });
+      });
 
-    const parsed = JSON.parse((response.text ?? '{}').trim());
+    const parsed = JSON.parse(rawText || '{}');
     res.json({
       source: 'gemini-rag',
       retrievalMode,
@@ -508,7 +560,7 @@ app.post('/api/ai/deficiency-memo', async (req, res) => {
     .map((v: ViolationInput) => `${v.ruleName} ${v.citation}`)
     .join(' ');
   const { chunks } = await hybridRetrieveClauses(
-    querySeed || 'BNBC fire egress FAR MGC setback scrutiny',
+    querySeed || 'exit travel distance stair passage',
     payload.occupancyClass,
     6
   );
@@ -534,20 +586,21 @@ app.post('/api/ai/deficiency-memo', async (req, res) => {
   }
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-4-hydrogen',
-      contents: `Draft a formal pre-submission / RAJUK & FSCD scrutiny deficiency memo in English AND official Bangla (বাংলা) strictly grounded in the deterministic audit data below.
-STRICT GUARDRAIL: Never fabricate measurements, clause numbers, plot sizes, or room names not present in the input JSON. Clearly label this as an automated engineering pre-scrutiny memo requiring human officer sign-off.
+    const rawText = await generateJson(ai, `Draft a short pre-submission review note in English AND Bangla (বাংলা) from the audit data below, for the building owner's own use.
+STRICT RULES:
+1. Use only measurements, clause references, plot sizes and room names present in the input JSON.
+2. Start both versions by stating that this is a DRAFT produced by a prototype tool, that it is not a RAJUK or Fire Service document, and that it is not an approval.
+3. Do not write it in the voice of any authority, and do not use letterhead, memo numbers or signatures.
+4. Say which findings rest on screening thresholds that a reviewer must confirm.
 
 Audit Data:
 ${JSON.stringify(payload)}
 
 Retrieved Regulatory Reference Clauses:
-${JSON.stringify(chunks.map((c) => ({ clause: `${c.chunk.part} ${c.chunk.clause}`, title: c.chunk.title })))}`,
-      config: {
+${JSON.stringify(chunks.map((c) => ({ clause: `${c.chunk.part} ${c.chunk.clause}`, title: c.chunk.title })))}`, {
         thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         systemInstruction:
-          'You draft concise, formal RAJUK / FSCD plan scrutiny deficiency memos in English and official Bangla for Bangladesh municipal and developer workflows. Every number and citation must come verbatim from the supplied audit JSON.',
+          'You write concise draft review notes about building plans in English and Bangla. Every number and reference must come verbatim from the supplied audit JSON. You never imitate an official document.',
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,
@@ -559,16 +612,15 @@ ${JSON.stringify(chunks.map((c) => ({ clause: `${c.chunk.part} ${c.chunk.clause}
           },
           required: ['subjectEn', 'subjectBn', 'memoBodyEn', 'memoBodyBn'],
         },
-      },
-    });
+      });
 
-    const parsed = JSON.parse((response.text ?? '{}').trim());
+    const parsed = JSON.parse(rawText || '{}');
     res.json({
       source: 'gemini-rag',
       decisionStatus,
       citedClauses,
-      subjectEn: parsed.subjectEn || `Plan Scrutiny Memo — ${payload.projectName || 'Building'}`,
-      subjectBn: parsed.subjectBn || `নকশা যাচাই স্মারক — ${payload.projectName || 'ভবন'}`,
+      subjectEn: parsed.subjectEn || `Draft pre-submission review note: ${payload.projectName || 'Building'}`,
+      subjectBn: parsed.subjectBn || `দাখিল-পূর্ব পর্যালোচনা নোট (খসড়া): ${payload.projectName || 'ভবন'}`,
       memoBodyEn: parsed.memoBodyEn || '',
       memoBodyBn: parsed.memoBodyBn || '',
     });
@@ -607,13 +659,10 @@ app.post('/api/ai/infer-conventions', async (req, res) => {
   }
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-4-hydrogen',
-      contents: `Map these raw AutoCAD DXF layer names from an architectural drawing into our parser's layer categories: wallLayers, doorLayers, windowLayers, stairLayers, textLayers, dimLayers. Only return layer names that actually appear in layersFound (or standard fallbacks like A-WALL if none match).
+    const rawText = await generateJson(ai, `Map these raw AutoCAD DXF layer names from an architectural drawing into our parser's layer categories: wallLayers, doorLayers, windowLayers, stairLayers, textLayers, dimLayers. Only return layer names that actually appear in layersFound (or standard fallbacks like A-WALL if none match).
 
 layersFound: ${JSON.stringify(layersFound)}
-sampleTexts: ${JSON.stringify(sampleTexts.slice(0, 20))}`,
-      config: {
+sampleTexts: ${JSON.stringify(sampleTexts.slice(0, 20))}`, {
         thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         systemInstruction:
           'You classify AutoCAD DXF layer names into architectural entity categories (walls, doors/exits, windows, stairs, text/room tags, dimensions). Return only valid JSON.',
@@ -639,10 +688,9 @@ sampleTexts: ${JSON.stringify(sampleTexts.slice(0, 20))}`,
             'rationale',
           ],
         },
-      },
-    });
+      });
 
-    const parsed = JSON.parse((response.text ?? '{}').trim());
+    const parsed = JSON.parse(rawText || '{}');
     res.json({ source: 'gemini', conventions: parsed });
   } catch (err) {
     console.error('Layer convention inference error:', err);
@@ -667,7 +715,12 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`PlanCheck AI server listening on http://0.0.0.0:${PORT}`);
+    console.log(`PlanCheck AI running at http://localhost:${PORT}`);
+    console.log(
+      getGeminiClient()
+        ? `Gemini enabled (models tried in order: ${MODEL_CANDIDATES.join(', ')})`
+        : 'GEMINI_API_KEY not set: explanations use fixed wording and labels use keyword matching.'
+    );
   });
 }
 

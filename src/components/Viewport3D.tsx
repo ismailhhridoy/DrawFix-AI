@@ -1256,7 +1256,7 @@ export function Viewport3D({
 
       {/* Top-Right Simulation Illustration Disclaimer */}
       <div className="hidden md:block absolute top-4 right-4 z-10 bg-white border border-slate-200/90 rounded-lg shadow-xs px-3 py-1.5 text-[11px] font-mono text-slate-600 pointer-events-none">
-        Egress illustration at 1.2 m/s (0.75 m/s stairs) · Not an official certification
+        Illustration only: walking speed assumed 1.2 m/s (0.75 m/s on stairs). Not a certified evacuation analysis.
       </div>
 
       {/* Collapsible Unified Bottom Control Dock */}

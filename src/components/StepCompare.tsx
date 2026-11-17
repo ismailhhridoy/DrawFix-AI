@@ -59,16 +59,17 @@ export function StepCompare({
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/90 pb-4">
         <div className="space-y-1">
           <p className="text-xs font-mono text-slate-500">
-            Step 04 · Geometry Transform Comparison · {originalProject.floors.length}{' '}
-            {originalProject.floors.length === 1 ? 'Floor' : 'Floors'} · Original .dxf
-            Unmodified
+            Step 04 · Proposed fixes · {originalProject.floors.length}{' '}
+            {originalProject.floors.length === 1 ? 'floor' : 'floors'} · your DXF is not
+            edited
           </p>
           <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900">
-            Before & After Code Remediation
+            As drawn, and with the proposed changes
           </h1>
           <p className="text-sm text-slate-600">
-            Side-by-side 2D comparison verifying that all BNBC egress violations resolve
-            across the building stack when targeted geometric changes are applied.
+            Each fixable finding gets one concrete change. The changes are applied to a copy of
+            the geometry and every check is run again, so the right-hand plan shows a measured
+            result, not a promise. Findings with no automatic fix stay listed in the report.
           </p>
         </div>
 
@@ -77,7 +78,7 @@ export function StepCompare({
           onClick={onProceedTo3D}
           className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer shadow-xs"
         >
-          Launch 3D Fire-Escape Simulation
+          Watch the escape in 3D
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
@@ -85,7 +86,7 @@ export function StepCompare({
       {/* Building-Wide Before / After KPI Comparison Strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-slate-200/90 bg-white border border-slate-200/90 rounded-xl shadow-xs overflow-hidden">
         <div className="p-4">
-          <div className="text-xs text-slate-500">Building Code Failures</div>
+          <div className="text-xs text-slate-500">Failed checks</div>
           <div className="mt-1 font-mono text-lg font-semibold tabular-nums">
             <span className="text-red-700">{originalAudit.failCount} Fail</span>{' '}
             <span className="text-slate-400">→</span>{' '}
@@ -93,7 +94,7 @@ export function StepCompare({
           </div>
         </div>
         <div className="p-4">
-          <div className="text-xs text-slate-500">Worst-Case Escape Time</div>
+          <div className="text-xs text-slate-500">Slowest escape</div>
           <div className="mt-1 font-mono text-lg font-semibold tabular-nums">
             <span className="text-red-700">{beforeWorst}</span>{' '}
             <span className="text-slate-400">→</span>{' '}
@@ -101,7 +102,7 @@ export function StepCompare({
           </div>
         </div>
         <div className="p-4">
-          <div className="text-xs text-slate-500">Trapped Rooms</div>
+          <div className="text-xs text-slate-500">Rooms with no route</div>
           <div className="mt-1 font-mono text-lg font-semibold tabular-nums">
             <span className="text-red-700">{originalAudit.trappedRoomCount}</span>{' '}
             <span className="text-slate-400">→</span>{' '}
@@ -109,9 +110,9 @@ export function StepCompare({
           </div>
         </div>
         <div className="p-4">
-          <div className="text-xs text-slate-500">Geometric Fixes Applied</div>
+          <div className="text-xs text-slate-500">Proposed changes</div>
           <div className="mt-1 font-mono text-lg font-semibold text-slate-900 tabular-nums">
-            {deltas.length} transforms
+            {deltas.length}
           </div>
         </div>
       </div>
@@ -120,7 +121,7 @@ export function StepCompare({
       {isMultiFloor && (
         <div className="flex flex-wrap items-center justify-between gap-2 bg-white border border-slate-200/90 rounded-xl shadow-xs px-4 py-3 text-xs">
           <span className="font-mono text-slate-700">
-            Inspecting Floor: <strong>[{activeLbl}] {origFloor.floorName}</strong>
+            Floor: <strong>[{activeLbl}] {origFloor.floorName}</strong>
           </span>
           <div className="flex flex-wrap items-center gap-1.5 font-mono">
             {originalProject.floors.map((fl, idx) => {
@@ -158,8 +159,8 @@ export function StepCompare({
           escapePaths={originalAudit.escapePaths}
           title={
             isMultiFloor
-              ? `Before [${activeLbl}]: As-Drawn Floor Plan`
-              : 'Before: As-Drawn Floor Plan'
+              ? `Before [${activeLbl}]`
+              : 'Before'
           }
           mode="before"
           compact
@@ -170,8 +171,8 @@ export function StepCompare({
           escapePaths={fixedAudit.escapePaths}
           title={
             isMultiFloor
-              ? `After [${activeLbl}]: Remediated JSON Geometry`
-              : 'After: Remediated JSON Geometry'
+              ? `After [${activeLbl}]`
+              : 'After'
           }
           mode="after"
           compact
@@ -184,14 +185,14 @@ export function StepCompare({
           <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
             <div className="inline-flex items-center gap-2 text-xs font-semibold text-slate-900">
               <Sparkles className="w-3.5 h-3.5 text-blue-700" />
-              Bilingual Fix Summary
+              Summary
             </div>
             <span className="text-[11px] font-mono text-slate-500">
               {narratingAi
-                ? 'Generating narration...'
+                ? 'Writing…'
                 : narration.source === 'gemini'
-                  ? 'Gemini 4 Hydrogen'
-                  : 'Deterministic Template'}
+                  ? 'Wording by Gemini; numbers from the engine'
+                  : 'Fixed wording; numbers from the engine'}
             </span>
           </div>
 
@@ -214,8 +215,14 @@ export function StepCompare({
 
         <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-3">
           <div className="text-xs font-semibold text-slate-900 border-b border-slate-200 pb-2.5">
-            Applied Geometry Transforms (Non-destructive JSON Diff)
+            Proposed changes, applied to a copy of the geometry
           </div>
+          {deltas.length === 0 && (
+            <p className="text-sm text-slate-600">
+              No finding on this plan has an automatic fix. Long travel distances, missing exits
+              and room sizes need a design decision; see the report for what to do.
+            </p>
+          )}
           <ul className="divide-y divide-slate-200/80 text-sm max-h-[340px] overflow-y-auto">
             {deltas.map((delta) => (
               <li key={delta.id} className="py-2.5 flex items-start gap-2.5">

@@ -55,7 +55,8 @@ export function Blueprint2D({
   }, [escapePaths, selectedRoomId]);
 
   const handleWheel = (e: React.WheelEvent<SVGSVGElement>) => {
-    e.preventDefault();
+    // Plain scrolling must keep scrolling the page; zoom needs Ctrl or ⌘ held.
+    if (!e.ctrlKey && !e.metaKey) return;
     const factor = e.deltaY < 0 ? 1.12 : 0.89;
     setZoom((z) => Math.max(0.7, Math.min(3.5, Number((z * factor).toFixed(2)))));
   };
@@ -110,7 +111,7 @@ export function Blueprint2D({
               mode === 'after' ? 'text-emerald-700' : 'text-slate-700'
             }`}
           >
-            {mode === 'after' ? 'Remediated Geometry' : 'As-Drawn CAD'}
+            {mode === 'after' ? 'With proposed changes' : 'As drawn'}
           </span>
         </div>
 
@@ -169,10 +170,20 @@ export function Blueprint2D({
         </div>
       </div>
 
-      <div className={`relative blueprint-grid ${compact ? 'h-[360px]' : 'h-[520px]'} w-full overflow-hidden`}>
+      <div
+        className="relative blueprint-grid w-full overflow-hidden"
+        style={{
+          aspectRatio: `${vbWidth} / ${vbHeight}`,
+          maxHeight: compact ? 440 : 560,
+          minHeight: 220,
+        }}
+      >
         <svg
-          className={`w-full h-full select-none ${dragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          role="img"
+          aria-label={`Floor plan of ${title || plan.name}`}
+          className={`absolute inset-0 w-full h-full select-none touch-none ${dragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           viewBox={`0 0 ${vbWidth} ${vbHeight}`}
+          preserveAspectRatio="xMidYMid meet"
           onWheel={handleWheel}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
@@ -368,14 +379,14 @@ export function Blueprint2D({
                   {door.isExit && (
                     <text
                       x={0}
-                      y={door.position.y > plan.bounds.heightM / 2 ? -0.45 : 0.65}
+                      y={door.position.y > plan.bounds.minY + plan.bounds.heightM / 2 ? -0.45 : 0.65}
                       textAnchor="middle"
                       fontSize="0.34"
                       fontWeight="700"
                       fill={color}
                       fontFamily="IBM Plex Mono, monospace"
                     >
-                      {door.isLocked ? 'LOCKED EXIT' : `EXIT (${door.widthM.toFixed(2)}m)`}
+                      {door.isLocked ? 'LOCKED EXIT' : `EXIT ${door.widthM.toFixed(2)} m`}
                     </text>
                   )}
                 </g>
@@ -512,21 +523,25 @@ export function Blueprint2D({
           </g>
         </svg>
 
-        {/* Bottom-left scale legend */}
-        <div className="absolute bottom-3 left-3 bg-white/95 border border-slate-200 rounded-lg shadow-xs px-3 py-1.5 text-[11px] font-mono text-slate-700 flex items-center gap-3 pointer-events-none">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-0.5 bg-slate-900 inline-block" /> Wall
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-0.5 bg-emerald-600 inline-block" /> Open Exit
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-0.5 bg-red-600 inline-block" /> Locked / Fail
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-0.5 bg-amber-600 inline-block" /> Warn / Dim
-          </span>
-        </div>
+      </div>
+
+      <div className="px-4 py-2 border-t border-slate-200 bg-white text-[11px] text-slate-600 flex flex-wrap items-center gap-x-4 gap-y-1">
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-0.5 bg-slate-900 inline-block" /> Wall
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-0.5 bg-emerald-600 inline-block" /> Open exit
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-0.5 bg-red-600 inline-block" /> Locked exit / fail
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-0.5 bg-amber-600 inline-block" /> Warning
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 border-t-2 border-dashed border-red-500 inline-block" /> Escape route
+        </span>
+        <span className="ml-auto font-mono text-slate-400">Ctrl + scroll to zoom · drag to pan</span>
       </div>
     </div>
   );

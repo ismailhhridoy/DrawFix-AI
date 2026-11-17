@@ -1,4 +1,5 @@
 import type { AppStep } from '../types/plan';
+import { useAiStatus } from './shared';
 
 interface HeaderProps {
   activeStep: AppStep;
@@ -12,8 +13,8 @@ const WORKSPACE_STEPS: { id: AppStep; label: string }[] = [
   { id: 'upload', label: 'Upload' },
   { id: 'review', label: 'Review' },
   { id: 'report', label: 'Report' },
-  { id: 'compare', label: 'Compare' },
-  { id: 'simulate', label: '3D Escape' },
+  { id: 'compare', label: 'Fixes' },
+  { id: 'simulate', label: '3D escape' },
   { id: 'export', label: 'Export' },
 ];
 
@@ -25,6 +26,7 @@ export function Header({
   primaryActionLabel,
 }: HeaderProps) {
   const isLanding = activeStep === 'landing';
+  const ai = useAiStatus();
 
   const scrollToSection = (sectionId: string) => {
     const el = document.getElementById(sectionId);
@@ -34,7 +36,7 @@ export function Header({
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-slate-200/90 px-6 h-16 flex items-center justify-between gap-8">
+    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-slate-200/90 px-4 sm:px-6 h-16 flex items-center justify-between gap-4 sm:gap-8">
       {/* Zone 1: Single text element wordmark */}
       <button
         type="button"
@@ -58,7 +60,7 @@ export function Header({
             }}
             className="hover:text-slate-900 transition-colors whitespace-nowrap shrink-0"
           >
-            Capabilities
+            How it works
           </a>
           <a
             href="#benchmarks"
@@ -68,7 +70,7 @@ export function Header({
             }}
             className="hover:text-slate-900 transition-colors whitespace-nowrap shrink-0"
           >
-            Case Benchmarks
+            Demo plans
           </a>
           <a
             href="#scope"
@@ -78,14 +80,14 @@ export function Header({
             }}
             className="hover:text-slate-900 transition-colors whitespace-nowrap shrink-0"
           >
-            Code Scope
+            Rules and limits
           </a>
           <button
             type="button"
             onClick={() => onSelectStep('upload')}
             className="hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
-            CAD Upload
+            Upload
           </button>
         </nav>
       ) : (
@@ -121,7 +123,27 @@ export function Header({
       )}
 
       {/* Zone 3: Single Primary Action */}
-      <div className="flex items-center shrink-0">
+      <div className="flex items-center gap-3 shrink-0">
+        {ai.checked && (
+          <span
+            title={
+              ai.aiConfigured
+                ? `Gemini${ai.model ? ` (${ai.model})` : ''} writes the explanations and types room labels. It never measures or decides.`
+                : 'No Gemini key is set on the server. Explanations use fixed wording and room labels use keyword matching. All checks still run.'
+            }
+            className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium whitespace-nowrap ${
+              ai.aiConfigured
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                : 'border-slate-200 bg-slate-50 text-slate-600'
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${ai.aiConfigured ? 'bg-emerald-500' : 'bg-slate-400'}`}
+              aria-hidden="true"
+            />
+            {ai.aiConfigured ? 'Gemini on' : 'Gemini off'}
+          </span>
+        )}
         <button
           type="button"
           onClick={onPrimaryAction}

@@ -142,30 +142,29 @@ export function StepUpload({
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch border-b border-slate-200/90 pb-8">
         <div className="lg:col-span-7 space-y-3 flex flex-col justify-center">
           <p className="text-xs font-mono text-slate-500">
-            Step 01 · CAD .DXF Ingestion · BNBC 2012/2020 & Dhaka Imarat Bidhimala 2008
+            Step 01 · Upload
           </p>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 text-balance">
-            Load single or multi-story CAD floor plans for compliance review
+            Upload a floor plan to check its escape routes
           </h1>
           <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl">
-            Drop one DXF floor plan or batch-upload stacked levels (GF, L2, L3). PlanCheck
-            AI parses walls, doors, windows, stair shafts, rooms, and CAD dimensions
-            deterministically without altering your source drawings.
+            Drop one DXF floor plan, or one file per floor. The file is read in your browser and
+            is never edited or stored on a server. If Gemini is on, room labels and findings are
+            sent to it for wording. Next you will see exactly what was read and can correct it.
           </p>
         </div>
 
         <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-2.5 flex flex-col justify-center">
           <div className="text-xs font-semibold text-slate-900">
-            Scope & Truth Boundary
+            What works best
           </div>
-          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            Every distance, FAR, MGC %, and occupant-load check executes in deterministic
-            TypeScript. Gemini RAG only infers layer/label mappings, cites clauses, and
-            drafts bilingual memos.
-          </p>
-          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            সকল দূরত্ব, FAR, MGC ও অকুপ্যান্ট লোড নির্ভুল জ্যামিতিক কোডে গণনা হয়। এটি একটি
-            প্রি-সাবমিশন স্ক্রিনিং টুল; আনুষ্ঠানিক রাজউক বা ফায়ার সার্ভিস অনুমোদন নয়।
+          <ul className="text-xs sm:text-sm text-slate-600 leading-relaxed list-disc pl-4 space-y-1">
+            <li>ASCII DXF saved from AutoCAD (not DWG or PDF).</li>
+            <li>Walls as single lines with a gap at each door.</li>
+            <li>Room names as text inside the rooms, English or বাংলা.</li>
+          </ul>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            এটি একটি প্রাথমিক স্ক্রিনিং টুল; রাজউক বা ফায়ার সার্ভিসের অনুমোদন নয়।
           </p>
         </div>
       </section>
@@ -177,7 +176,7 @@ export function StepUpload({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-lg font-semibold text-slate-900">
-                Upload CAD Floor Plan(s)
+                Your drawing
               </h2>
               <button
                 type="button"
@@ -185,7 +184,7 @@ export function StepUpload({
                 className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
-                Layers & Height
+                Options
               </button>
             </div>
 
@@ -213,11 +212,10 @@ export function StepUpload({
                 <Upload className="w-5 h-5 text-blue-700" />
               </div>
               <p className="text-sm font-semibold text-slate-900">
-                Drop 1 .dxf file, or multiple floor .dxf files (GF, L2, L3)
+                Drop .dxf files here, or click to choose
               </p>
               <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
-                Auto-stacks floors by filename (GF, L2, L3) · Extracts walls, doors,
-                windows, stairs, rooms & dimensions
+                Several files are stacked as floors by name: GF, L2, L3, or 1, 2, 3
               </p>
               <input
                 ref={fileInputRef}
@@ -250,7 +248,7 @@ export function StepUpload({
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-800 bg-white border border-blue-300 hover:bg-blue-50 rounded-lg cursor-pointer shrink-0 transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  Append Floor .dxf
+                  Add a floor
                 </button>
                 <input
                   ref={appendFloorInputRef}
@@ -267,7 +265,7 @@ export function StepUpload({
 
             {parseError && (
               <div className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs text-red-800">
-                <strong>Parse error:</strong> {parseError}
+                <strong>Could not read the file.</strong> {parseError}
               </div>
             )}
 
@@ -275,7 +273,7 @@ export function StepUpload({
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3 text-xs">
                 <div className="flex items-center justify-between gap-2">
                   <div className="font-semibold text-slate-800">
-                    CAD Layer Convention & Story Height
+                    Layer names and storey height
                   </div>
                   {activeProject && (
                     <button
@@ -285,7 +283,7 @@ export function StepUpload({
                       className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-blue-800 bg-white border border-blue-300 hover:bg-blue-50 rounded-md cursor-pointer disabled:opacity-50"
                     >
                       <Sparkles className="w-3 h-3" />
-                      {inferringLayers ? 'Mapping...' : 'Auto-Map Layers (AI)'}
+                      {inferringLayers ? 'Re-reading…' : 'Re-detect layers'}
                     </button>
                   )}
                 </div>
@@ -361,8 +359,8 @@ export function StepUpload({
           </div>
 
           <div className="pt-3 border-t border-slate-200 text-xs text-slate-500 leading-relaxed">
-            Out of scope: automatic editing of source DWG/DXF files, structural seismic
-            FEM analysis, or official government permit issuance.
+            If the wall layer has an unusual name the parser picks the layer with the most line
+            work and tells you. You can set the name yourself under Options.
           </div>
         </div>
 
@@ -371,10 +369,10 @@ export function StepUpload({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-lg font-semibold text-slate-900">
-                Sample Architectural DXF Buildings
+                Or try a demo drawing
               </h2>
               <span className="text-xs font-mono text-slate-500">
-                Parsed live through dxf-parser
+                Synthetic plans with deliberate faults
               </span>
             </div>
 
@@ -411,7 +409,7 @@ export function StepUpload({
                         onClick={() => onLoadSampleBuilding(sample)}
                         className="px-4 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors whitespace-nowrap cursor-pointer"
                       >
-                        {isMulti ? `Load ${sample.floors.length}-Floor Stack` : 'Load & Inspect DXF'}
+                        {isMulti ? `Load ${sample.floors.length} floors` : 'Load'}
                       </button>
                       <button
                         type="button"
@@ -430,21 +428,21 @@ export function StepUpload({
 
           <div className="pt-3 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
             <div>
-              <div className="font-semibold text-slate-900">1. Multi-Domain Checks</div>
+              <div className="font-semibold text-slate-900">Download and edit one</div>
               <div className="text-slate-600 mt-0.5 leading-relaxed">
-                BNBC egress, occupant capacity, habitability & Imarat FAR/MGC/setbacks
+                Move a wall or delete a door in AutoCAD, upload it again, and the findings change
               </div>
             </div>
             <div>
-              <div className="font-semibold text-slate-900">2. Hybrid RAG Copilot</div>
+              <div className="font-semibold text-slate-900">Not real buildings</div>
               <div className="text-slate-600 mt-0.5 leading-relaxed">
-                Grounded BNBC/RAJUK Q&A + one-click bilingual official deficiency memos
+                Place names are illustrative. The faults are modelled on common fire-safety failures
               </div>
             </div>
             <div>
-              <div className="font-semibold text-slate-900">3. 3D Vertical Egress</div>
+              <div className="font-semibold text-slate-900">Parsed like any upload</div>
               <div className="text-slate-600 mt-0.5 leading-relaxed">
-                A* floor-to-stair-to-street simulation compares escape seconds before & after
+                They go through the same DXF parser and rule engine as your own file
               </div>
             </div>
           </div>

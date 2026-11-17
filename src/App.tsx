@@ -212,7 +212,7 @@ export default function App() {
             subtitle: sample.subtitle,
             occupancyClass: sample.occupancyClass,
             storyHeightM: sample.storyHeightM,
-            siteContext: { ...sample.siteContext },
+            siteContext: { ...sample.siteContext, declared: true },
             floors: parsedFloors,
           },
           nextStep
@@ -274,18 +274,16 @@ export default function App() {
             ? baseFloor.subtitle
             : `${baseFloor.bounds.widthM.toFixed(1)} m × ${baseFloor.bounds.heightM.toFixed(1)} m × ${(parsedFloors.length * storyH).toFixed(1)} m (${parsedFloors.length} Floors · ${totalRooms} Zones)`;
 
-        const groundFootprint = Math.max(
-          80,
-          baseFloor.rooms.reduce((s, r) => s + r.areaSqM, 0) ||
-            baseFloor.bounds.widthM * baseFloor.bounds.heightM
-        );
+        // Plot data is not in a floor plan. It stays empty until the reviewer enters it,
+        // and zoning is not screened on guessed numbers.
         const defaultSiteContext: SiteContext = {
-          plotAreaSqM: Math.round(groundFootprint / 0.54),
-          abuttingRoadWidthM: 12.2,
-          frontSetbackM: 2.5,
-          rearSetbackM: 2.0,
-          sideSetbackM: 1.5,
+          plotAreaSqM: 0,
+          abuttingRoadWidthM: 0,
+          frontSetbackM: 0,
+          rearSetbackM: 0,
+          sideSetbackM: 0,
           sprinklered: false,
+          declared: false,
           zoneLabel:
             params.occupancyClass === 'industrial_rmg'
               ? 'Industrial / RMG Plot'
@@ -447,19 +445,46 @@ export default function App() {
     setProject((prev) => {
       if (!prev) return prev;
       const base: SiteContext = prev.siteContext || {
-        plotAreaSqM: 500,
-        abuttingRoadWidthM: 12.2,
-        frontSetbackM: 2.5,
-        rearSetbackM: 2.0,
-        sideSetbackM: 1.5,
+        plotAreaSqM: 0,
+        abuttingRoadWidthM: 0,
+        frontSetbackM: 0,
+        rearSetbackM: 0,
+        sideSetbackM: 0,
         sprinklered: false,
-        zoneLabel: 'Urban Plot',
+        zoneLabel: 'Plot',
+        declared: false,
       };
+      const next = { ...base, ...patch };
+      // Zoning is screened once the reviewer has given a plot area and a road width.
+      next.declared = next.plotAreaSqM > 0 && next.abuttingRoadWidthM > 0;
       return {
         ...prev,
-        siteContext: { ...base, ...patch },
+        siteContext: next,
       };
     });
+    setAiNarration(null);
+  };
+
+  const handleUpdateDoor = (doorId: string, patch: { isExit?: boolean; isLocked?: boolean }) => {
+    setProject((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        floors: prev.floors.map((fl) => ({
+          ...fl,
+          doors: fl.doors.map((d) =>
+            d.id === doorId
+              ? {
+                  ...d,
+                  ...patch,
+                  exitSource: patch.isExit !== undefined ? ('manual' as const) : d.exitSource,
+                }
+              : d
+          ),
+        })),
+      };
+    });
+    setExplanations({});
     setAiNarration(null);
   };
 
@@ -543,7 +568,9 @@ export default function App() {
   const shareUrl = useMemo(() => {
     const base = window.location.origin + window.location.pathname;
     const matchedSample = SAMPLE_BUILDINGS.find((s) => s.id === project?.id);
-    const planParam = matchedSample ? matchedSample.id : 'gazipur-3story';
+    // Uploaded drawings stay in this browser, so only the built-in demo plans can be linked.
+    if (!matchedSample) return null;
+    const planParam = matchedSample.id;
     const roomQuery = simRoomId ? `&room=${encodeURIComponent(simRoomId)}` : '';
     const floorQuery = `&floor=${simFloorFocus}`;
     return `${base}?plan=${planParam}&step=simulate&mode=${simMode}${floorQuery}${roomQuery}`;
@@ -551,12 +578,12 @@ export default function App() {
 
   const primaryLabel =
     activeStep === 'landing'
-      ? 'Open Studio'
+      ? 'Open demo'
       : !project
-        ? 'Load Sample DXF'
+        ? 'Load demo plan'
         : activeStep === 'export'
-          ? 'Open 3D View'
-          : 'Export PDF';
+          ? 'Open 3D view'
+          : 'Export';
 
   const safeFloorIdx = project
     ? Math.max(0, Math.min(selectedFloorIndex, project.floors.length - 1))
@@ -593,7 +620,7 @@ export default function App() {
               ['upload', '01 Upload'],
               ['review', '02 Review'],
               ['report', '03 Report'],
-              ['compare', '04 Compare'],
+              ['compare', '04 Fixes'],
               ['simulate', '05 3D'],
               ['export', '06 Export'],
             ] as const
@@ -645,6 +672,7 @@ export default function App() {
           aiSource={aiLabelSource}
           onUpdateRoomTaxonomy={handleUpdateRoomTaxonomy}
           onUpdateSiteContext={handleUpdateSiteContext}
+          onUpdateDoor={handleUpdateDoor}
           onAutoMapLayers={handleAutoMapLayers}
           onRunAiReconcile={() => void runAiLabels(project)}
           onConfirmAndAudit={handleConfirmAndAudit}

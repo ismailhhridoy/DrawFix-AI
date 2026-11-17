@@ -14,140 +14,206 @@ import type {
 } from '../types/plan';
 import { REGULATORY_CORPUS } from './bnbcCorpus';
 
+const BN_DIGITS = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+/** Bangla numerals for numbers that come from the rule engine. */
+export function bn(value: number | string, decimals?: number): string {
+  const str = typeof value === 'number' && decimals !== undefined ? value.toFixed(decimals) : String(value);
+  return str.replace(/\d/g, (d) => BN_DIGITS[Number(d)]);
+}
+
+const BASIS_BN: Record<string, string> = {
+  verified: 'বিএনবিসি-র মূল পাঠ থেকে যাচাই করা সীমা',
+  screening: 'প্রাথমিক স্ক্রিনিং সীমা; গেজেটের সঙ্গে মিলিয়ে নিতে হবে',
+  drawing: 'নকশার অভ্যন্তরীণ সামঞ্জস্য পরীক্ষা',
+};
+
+/**
+ * Fixed-wording explanation built only from the rule engine's numbers.
+ * Used whenever Gemini is not configured or does not answer.
+ */
 export function buildTemplateExplanation(v: Violation): ViolationExplanation {
-  if (v.ruleId === 'bnbc_p4_exit_unobstructed') {
-    return {
-      en: `Exit "${v.roomName}" is locked (0 m effective egress), blocking emergency escape under ${v.citation}.`,
-      bn: `জরুরি বহির্গমন পথ "${v.roomName}" তালাবদ্ধ থাকায় (${v.measuredValue} m কার্যকর প্রস্থ) অগ্নিকাণ্ডের সময় মানুষ আটকা পড়ার ঝুঁকি তৈরি হয়েছে (${v.citation})।`,
-      actionEn: v.fixSpec?.summary || 'Unlock exit door and keep egress path clear at all times.',
-      actionBn: 'জরুরি বহির্গমন দরজার তালা খুলে দিন এবং সর্বদা বাধামুক্ত রাখুন (ন্যূনতম ১.১০ মিটার)।',
-      source: 'template',
-    };
-  }
-  if (v.ruleId === 'bnbc_1.13.8.2_travel_distance') {
-    return {
-      en: `Measured travel path from "${v.roomName}" is ${v.measuredValue.toFixed(2)} m, exceeding the ${v.limitValue.toFixed(2)} m maximum under ${v.citation}.`,
-      bn: `"${v.roomName}" থেকে নিকটতম নিরাপদ বহির্গমন পথের দূরত্ব ${v.measuredValue.toFixed(2)} মিটার, যা বিধি অনুযায়ী সর্বোচ্চ ${v.limitValue.toFixed(2)} মিটার সীমার চেয়ে বেশি (${v.citation})।`,
-      actionEn: `Unlock or add a closer remote exit/stair core so travel distance drops within ${v.limitValue.toFixed(2)} m.`,
-      actionBn: `নিকটবর্তী বিকল্প বহির্গমন পথ সচল করুন যাতে হাঁটার দূরত্ব ${v.limitValue.toFixed(2)} মিটারের নিচে থাকে।`,
-      source: 'template',
-    };
-  }
-  if (v.ruleId === 'bnbc_1.13.8.2_passage_width') {
-    return {
-      en: `Corridor clear width measures ${v.measuredValue.toFixed(2)} m, below the ${v.limitValue.toFixed(2)} m minimum (${v.citation}).`,
-      bn: `করিডোরের পরিষ্কার প্রস্থ ${v.measuredValue.toFixed(2)} মিটার, যা ন্যূনতম ${v.limitValue.toFixed(2)} মিটার মানদণ্ডের কম (${v.citation})।`,
-      actionEn: v.fixSpec?.summary || 'Widen the passage to at least 0.75 m (1.20 m recommended).',
-      actionBn: 'পার্টিশন দেয়াল সরিয়ে করিডোরের প্রস্থ অন্তত ০.৭৫ মিটার (সুপারিশকৃত ১.২০ মিটার) প্রশস্ত করুন।',
-      source: 'template',
-    };
-  }
-  if (v.ruleId === 'bnbc_1.13.5_stair_headroom') {
-    return {
-      en: `Stair headroom at "${v.roomName}" is ${v.measuredValue.toFixed(2)} m, under the ${v.limitValue.toFixed(2)} m requirement (${v.citation}).`,
-      bn: `"${v.roomName}" সিঁড়ির ওপর পরিষ্কার উচ্চতা ${v.measuredValue.toFixed(2)} মিটার, যা ন্যূনতম ${v.limitValue.toFixed(2)} মিটারের কম (${v.citation})।`,
-      actionEn: v.fixSpec?.summary || 'Increase staircase clear headroom to at least 2.15 m.',
-      actionBn: 'সিঁড়ির ওপরের স্ল্যাব/সফিট ক্লিয়ারেন্স কমপক্ষে ২.১৫ মিটারে উন্নীত করুন।',
-      source: 'template',
-    };
-  }
-  if (v.ruleId === 'bnbc_1.13.5_stair_handrail') {
-    return {
-      en: `Handrail height at "${v.roomName}" measures ${v.measuredValue.toFixed(2)} m, below the ${v.limitValue.toFixed(2)} m minimum (${v.citation}).`,
-      bn: `"${v.roomName}" সিঁড়ির হ্যান্ড্রেইলের উচ্চতা ${v.measuredValue.toFixed(2)} মিটার, যা ন্যূনতম ০.৯০ মিটারের চেয়ে কম (${v.citation})।`,
-      actionEn: v.fixSpec?.summary || 'Raise handrail height to at least 0.90 m.',
-      actionBn: 'সিঁড়ির হ্যান্ড্রেইলের উচ্চতা কমপক্ষে ০.৯০ মিটারে (০.৯৫ মিটার সুপারিশকৃত) বৃদ্ধি করুন।',
-      source: 'template',
-    };
-  }
-  if (v.ruleId === 'cad_dimension_override_mismatch') {
-    return {
-      en: `DXF dimension label claims ${v.limitValue.toFixed(2)} m, but actual CAD geometry measures ${v.measuredValue.toFixed(2)} m.`,
-      bn: `অটোক্যাড ড্রয়িংয়ের টেক্সট লেবেলে ${v.limitValue.toFixed(2)} মিটার লেখা থাকলেও প্রকৃত জ্যামিতিক পরিমাপ ${v.measuredValue.toFixed(2)} মিটার।`,
-      actionEn: v.fixSpec?.summary || 'Remove stale dimension text override so drawing reflects true geometry.',
-      actionBn: 'ড্রয়িংয়ের পুরোনো/ভুল ডাইমেনশন টেক্সট সংশোধন করে প্রকৃত পরিমাপের সাথে মিলিয়ে নিন।',
-      source: 'template',
-    };
-  }
-  if (v.ruleId === 'imarat_rule16_mgc') {
-    return {
-      en: `Ground coverage (MGC) reaches ${v.measuredValue.toFixed(1)}%, above the ${v.limitValue}% maximum under ${v.citation}.`,
-      bn: `ভবনের নিচতলার আচ্ছাদন (MGC) ${v.measuredValue.toFixed(1)}%, যা বিধি অনুযায়ী সর্বোচ্চ ${v.limitValue}% সীমার চেয়ে বেশি (${v.citation})।`,
-      actionEn: 'Reduce ground footprint or increase declared plot area so MGC falls within limit.',
-      actionBn: 'নিচতলার বিল্ট ফুটপ্রিন্ট কমিয়ে নির্ধারিত MGC সীমার মধ্যে আনুন।',
-      source: 'template',
-    };
-  }
-  if (v.ruleId === 'imarat_rule16_far') {
-    return {
-      en: `Achieved Floor Area Ratio (FAR) is ${v.measuredValue.toFixed(2)}, exceeding the ${v.limitValue.toFixed(2)} road-width allowance (${v.citation}).`,
-      bn: `অর্জিত FAR ${v.measuredValue.toFixed(2)}, যা রাস্তার প্রস্থ অনুযায়ী অনুমোদিত ${v.limitValue.toFixed(2)} FAR-এর চেয়ে বেশি (${v.citation})।`,
-      actionEn: 'Reduce floor area/stories or verify wider abutting road width for higher FAR.',
-      actionBn: 'মোট ফ্লোর এরিয়া/তলা কমান অথবা রাস্তার প্রস্থ ও প্লট অনুযায়ী FAR সমন্বয় করুন।',
-      source: 'template',
-    };
-  }
-  if (v.ruleId === 'imarat_rule17_setback') {
-    return {
-      en: `${v.roomName} setback is ${v.measuredValue.toFixed(2)} m, below the ${v.limitValue.toFixed(2)} m minimum (${v.citation}).`,
-      bn: `${v.roomName} সেটব্যাক ${v.measuredValue.toFixed(2)} মিটার, যা ন্যূনতম ${v.limitValue.toFixed(2)} মিটার সীমার চেয়ে কম (${v.citation})।`,
-      actionEn: `Pull building envelope back to provide at least ${v.limitValue.toFixed(2)} m open setback.`,
-      actionBn: `ভবনের প্রান্ত কমপক্ষে ${v.limitValue.toFixed(2)} মিটার ভেতরে সরিয়ে বাধ্যতামূলক খোলা জায়গা রাখুন।`,
-      source: 'template',
-    };
-  }
-  if (v.ruleId === 'bnbc_3.12_habitable_area') {
-    return {
-      en: `Habitable bedroom "${v.roomName}" measures ${v.measuredValue.toFixed(1)} m², below the ${v.limitValue.toFixed(1)} m² BNBC minimum.`,
-      bn: `"${v.roomName}" বেডরুমের আয়তন ${v.measuredValue.toFixed(1)} বর্গমিটার, যা বি.এন.বি.সি ন্যূনতম ${v.limitValue.toFixed(1)} বর্গমিটারের কম।`,
-      actionEn: 'Enlarge bedroom polygon to at least 9.5 m² or reclassify room usage.',
-      actionBn: 'বেডরুমের আয়তন কমপক্ষে ৯.৫ বর্গমিটারে উন্নীত করুন।',
-      source: 'template',
-    };
-  }
-  if (v.ruleId === 'bnbc_3.16_daylight_ventilation') {
-    return {
-      en: `Habitable room "${v.roomName}" lacks a perimeter window opening for natural daylight & ventilation (${v.citation}).`,
-      bn: `"${v.roomName}" কক্ষের দেয়াল বরাবর প্রাকৃতিক আলো ও বাতাস চলাচলের জন্য কোনো জানালা শনাক্ত হয়নি (${v.citation})।`,
-      actionEn: 'Provide an exterior operable window opening (>= 10% of floor area).',
-      actionBn: 'কক্ষের বহিঃদেয়ালে মেঝের ক্ষেত্রফলের কমপক্ষে ১০% পরিমাণ জানালা যুক্ত করুন।',
-      source: 'template',
-    };
-  }
-  if (v.ruleId === 'bnbc_4.3.9_exit_capacity') {
-    return {
-      en: `Unlocked ground exits handle ${v.measuredValue} persons at 5 mm/person, below the ${v.limitValue} person peak floor load (${v.citation}).`,
-      bn: `নিচতলার খোলা বহির্গমন দরজাগুলো সর্বোচ্চ ${v.measuredValue} জনের ধারণক্ষমতা দেয়, যা ফ্লোরের ${v.limitValue} জন লোডের তুলনায় কম (${v.citation})।`,
-      actionEn: 'Unlock blocked exit doors or widen exit leaf openings to meet peak occupant capacity.',
-      actionBn: 'তালাবদ্ধ দরজা খুলে দিন অথবা বহির্গমন দরজার মোট প্রস্থ বৃদ্ধি করুন।',
-      source: 'template',
-    };
-  }
-  if (v.ruleId === 'bnbc_4.3.9_stair_capacity') {
-    return {
-      en: `Staircase clear width accommodates ${v.measuredValue} persons (7.5 mm/person), below the ${v.limitValue} upper-floor occupant load.`,
-      bn: `সিঁড়ির সম্মিলিত প্রস্থ ${v.measuredValue} জনের উপযোগী, যা উপরের তলার ${v.limitValue} জন অকুপ্যান্ট লোডের তুলনায় অপ্রতুল।`,
-      actionEn: 'Widen stair flights or add an additional fire-rated stair core.',
-      actionBn: 'সিঁড়ির প্রস্থ বৃদ্ধি করুন অথবা অতিরিক্ত ফায়ার-রেটেড সিঁড়ি যুক্ত করুন।',
-      source: 'template',
-    };
-  }
-  if (v.ruleId === 'bnbc_4.4.1_highrise') {
-    return {
-      en: `Building height (${v.measuredValue.toFixed(1)} m) exceeds 20.0 m, triggering FSCD high-rise NOC, fire lift, and pressurized stairs.`,
-      bn: `ভবনের মোট উচ্চতা ${v.measuredValue.toFixed(1)} মিটার হওয়ায় (> ২০ মিটার) ফায়ার সার্ভিস এনওসি, ফায়ার লিফট ও প্রেসারাইজড সিঁড়ি বাধ্যতামূলক।`,
-      actionEn: 'Include FSCD NOC package, dedicated fireman lift, and wet-riser standpipes.',
-      actionBn: 'ফায়ার সার্ভিস (FSCD) অনুমোদন, ফায়ার লিফট ও প্রেসারাইজড সিঁড়ি নকশায় অন্তর্ভুক্ত করুন।',
-      source: 'template',
-    };
-  }
-  return {
-    en: v.description,
-    bn: `${v.ruleName}: পরিমাপ ${v.measuredValue} ${v.unit} (বিধি সীমা: ${v.limitValue} ${v.unit}) — ${v.citation}।`,
-    actionEn: v.fixSpec?.summary || 'Review geometry against cited BNBC clause.',
-    actionBn: 'উল্লিখিত বি.এন.বি.সি ধারা অনুযায়ী নকশা সংশোধন করুন।',
+  const m = v.measuredValue;
+  const lim = v.limitValue;
+  const where = v.floorLabel ? `${v.floorLabel}: ` : '';
+  const basisBn = BASIS_BN[v.basis || 'screening'];
+  const t = (en: string, bnText: string, actionEn: string, actionBn: string): ViolationExplanation => ({
+    en,
+    bn: `${bnText} (${basisBn}।)`,
+    actionEn,
+    actionBn,
     source: 'template',
-  };
+  });
+
+  switch (v.ruleId) {
+    case 'bnbc_p4_exit_unobstructed':
+      return t(
+        `${where}exit "${v.roomName}" is drawn as locked or blocked, so nobody can leave through it in a fire.`,
+        `"${v.roomName}" বহির্গমন দরজাটি নকশায় তালাবদ্ধ বা অবরুদ্ধ দেখানো হয়েছে, তাই আগুন লাগলে এই পথে কেউ বের হতে পারবে না`,
+        v.fixSpec?.summary || 'Keep this exit unlocked and clear whenever the building is occupied.',
+        'ভবন ব্যবহারের সময় এই দরজা সবসময় তালামুক্ত ও বাধামুক্ত রাখুন।'
+      );
+    case 'bnbc_p4_exit_door_width':
+      return t(
+        `${where}exit door "${v.roomName}" is ${m.toFixed(2)} m wide; the screening minimum is ${lim.toFixed(2)} m.`,
+        `"${v.roomName}" বহির্গমন দরজার প্রস্থ ${bn(m, 2)} মিটার; প্রাথমিক ন্যূনতম সীমা ${bn(lim, 2)} মিটার`,
+        v.fixSpec?.summary || `Widen the door to at least ${lim.toFixed(2)} m.`,
+        `দরজার প্রস্থ কমপক্ষে ${bn(lim, 2)} মিটার করুন।`
+      );
+    case 'bnbc_p4_dual_exit_count':
+      return t(
+        `${where}only ${m} usable ${v.unit} found; ${lim} is the screening expectation, so one fire could cut off everyone.`,
+        `এই তলায় ব্যবহারযোগ্য বহির্গমন পথ মাত্র ${bn(m)}টি; প্রত্যাশিত ন্যূনতম ${bn(lim)}টি, ফলে একটি আগুনেই সবার পথ বন্ধ হতে পারে`,
+        'Provide a second exit or stair, well separated from the first.',
+        'প্রথমটি থেকে দূরে আরেকটি বহির্গমন পথ বা সিঁড়ি রাখুন।'
+      );
+    case 'bnbc_p4_stair_continuity':
+      return t(
+        `${where}stair "${v.roomName}" has no stair below it, so it does not reach the ground floor.`,
+        `"${v.roomName}" সিঁড়ির ঠিক নিচের তলায় কোনো সিঁড়ি নেই, তাই এটি নিচতলা পর্যন্ত পৌঁছায় না`,
+        'Align the stair so it runs continuously down to the ground floor.',
+        'সিঁড়িটি নিচতলা পর্যন্ত একটানা রাখুন।'
+      );
+    case 'bnbc_p4_stair_discharge':
+      return t(
+        `${where}from the foot of "${v.roomName}" no unlocked ground-floor exit can be reached.`,
+        `"${v.roomName}"-এর নিচ থেকে নিচতলার কোনো খোলা বহির্গমন দরজায় পৌঁছানো যায় না`,
+        'Open a route from the foot of the stair to a ground-floor exit.',
+        'সিঁড়ির নিচ থেকে নিচতলার বহির্গমন দরজা পর্যন্ত পথ খোলা রাখুন।'
+      );
+    case 'egress_no_route':
+      return t(
+        `${where}no walking route was found from "${v.roomName}" to any open exit. People in this room would be trapped.`,
+        `"${v.roomName}" থেকে কোনো খোলা বহির্গমন পথে হেঁটে যাওয়ার রাস্তা পাওয়া যায়নি; এই কক্ষের মানুষ আটকা পড়বে`,
+        'Unlock the blocked exit or open a route out of this room.',
+        'বন্ধ বহির্গমন দরজা খুলে দিন অথবা এই কক্ষ থেকে বের হওয়ার পথ তৈরি করুন।'
+      );
+    case 'bnbc_1.13.8.2_travel_distance':
+      return t(
+        `${where}the walking route from cabin "${v.roomName}" to the nearest exit is ${m.toFixed(2)} m; the limit is ${lim.toFixed(0)} m.`,
+        `"${v.roomName}" কেবিন থেকে নিকটতম বহির্গমন পথের হাঁটা দূরত্ব ${bn(m, 2)} মিটার; সীমা ${bn(lim, 0)} মিটার`,
+        `Open a nearer exit or move the cabin so the route is ${lim.toFixed(0)} m or less.`,
+        `কাছাকাছি বহির্গমন পথ চালু করুন অথবা কেবিন সরান, যাতে দূরত্ব ${bn(lim, 0)} মিটারের মধ্যে থাকে।`
+      );
+    case 'screen_travel_distance':
+      return t(
+        `${where}the walking route from "${v.roomName}" to the nearest exit is ${m.toFixed(2)} m, over the ${lim.toFixed(1)} m screening reference. A reviewer should check the limit for this occupancy.`,
+        `"${v.roomName}" থেকে নিকটতম বহির্গমন পথের হাঁটা দূরত্ব ${bn(m, 2)} মিটার, যা ${bn(lim, 1)} মিটার স্ক্রিনিং সীমার বেশি; এই ব্যবহারের জন্য প্রযোজ্য সীমা পর্যালোচককে মিলিয়ে দেখতে হবে`,
+        'Check the travel-distance limit for this occupancy; consider a nearer exit.',
+        'এই ব্যবহারের জন্য প্রযোজ্য দূরত্বসীমা যাচাই করুন; প্রয়োজনে কাছাকাছি বহির্গমন পথ রাখুন।'
+      );
+    case 'bnbc_1.13.8.2_passage_width':
+      return t(
+        `${where}a passage is only ${m.toFixed(2)} m wide; the minimum is ${lim.toFixed(2)} m.`,
+        `একটি চলাচলের পথ মাত্র ${bn(m, 2)} মিটার চওড়া; ন্যূনতম ${bn(lim, 2)} মিটার দরকার`,
+        v.fixSpec?.summary || `Widen the passage to at least ${lim.toFixed(2)} m.`,
+        `পার্টিশন দেয়াল সরিয়ে পথটি কমপক্ষে ${bn(lim, 2)} মিটার চওড়া করুন।`
+      );
+    case 'bnbc_1.13.5_stair_headroom':
+      return t(
+        `${where}"${v.roomName}" has ${m.toFixed(2)} m headroom; the minimum is ${lim.toFixed(2)} m.`,
+        `"${v.roomName}" সিঁড়ির ওপরে ফাঁকা উচ্চতা ${bn(m, 2)} মিটার; ন্যূনতম ${bn(lim, 2)} মিটার দরকার`,
+        v.fixSpec?.summary || `Raise the headroom to at least ${lim.toFixed(2)} m.`,
+        `সিঁড়ির ওপরের ফাঁকা উচ্চতা কমপক্ষে ${bn(lim, 2)} মিটার করুন।`
+      );
+    case 'bnbc_1.13.5_stair_handrail':
+      return t(
+        `${where}"${v.roomName}" has a ${m.toFixed(2)} m handrail; the minimum is ${lim.toFixed(2)} m.`,
+        `"${v.roomName}" সিঁড়ির হাতলের উচ্চতা ${bn(m, 2)} মিটার; ন্যূনতম ${bn(lim, 2)} মিটার দরকার`,
+        v.fixSpec?.summary || `Raise the handrail to at least ${lim.toFixed(2)} m.`,
+        `হাতলের উচ্চতা কমপক্ষে ${bn(lim, 2)} মিটার করুন।`
+      );
+    case 'bnbc_1.13.5_stair_proportion':
+      return t(
+        `${where}on "${v.roomName}", two risers plus one tread come to ${m} mm; the allowed range is 610–648 mm.`,
+        `"${v.roomName}" সিঁড়িতে দুই রাইজার ও এক ট্রেডের যোগফল ${bn(m)} মিলিমিটার; অনুমোদিত সীমা ৬১০–৬৪৮ মিলিমিটার`,
+        'Adjust the riser or tread so that 2R + T falls between 610 and 648 mm.',
+        'রাইজার বা ট্রেড এমনভাবে ঠিক করুন যাতে যোগফল ৬১০–৬৪৮ মিলিমিটারের মধ্যে থাকে।'
+      );
+    case 'cad_dimension_override_mismatch':
+      return t(
+        `${where}a dimension is typed as ${lim.toFixed(2)} m but the drawing measures ${m.toFixed(2)} m between its points.`,
+        `নকশায় মাপ লেখা আছে ${bn(lim, 2)} মিটার, কিন্তু দুই বিন্দুর প্রকৃত দূরত্ব ${bn(m, 2)} মিটার`,
+        v.fixSpec?.summary || 'Correct the dimension text to the real distance.',
+        'মাপের লেখাটি প্রকৃত দূরত্ব অনুযায়ী সংশোধন করুন।'
+      );
+    case 'bnbc_3.12_habitable_area':
+      return t(
+        `${where}sleeping room "${v.roomName}" is ${m.toFixed(1)} m²; the minimum is ${lim.toFixed(1)} m².`,
+        `"${v.roomName}" শয়নকক্ষের আয়তন ${bn(m, 1)} বর্গমিটার; ন্যূনতম ${bn(lim, 1)} বর্গমিটার দরকার`,
+        `Enlarge the room to at least ${lim.toFixed(1)} m².`,
+        `কক্ষের আয়তন কমপক্ষে ${bn(lim, 1)} বর্গমিটার করুন।`
+      );
+    case 'bnbc_bedroom_width':
+      return t(
+        `${where}sleeping room "${v.roomName}" is ${m.toFixed(2)} m wide; the minimum width is ${lim.toFixed(1)} m.`,
+        `"${v.roomName}" শয়নকক্ষের প্রস্থ ${bn(m, 2)} মিটার; ন্যূনতম ${bn(lim, 1)} মিটার দরকার`,
+        `Widen the room to at least ${lim.toFixed(1)} m.`,
+        `কক্ষের প্রস্থ কমপক্ষে ${bn(lim, 1)} মিটার করুন।`
+      );
+    case 'bnbc_3.16_daylight_ventilation':
+      return t(
+        `${where}no window was found on "${v.roomName}". Habitable rooms need openings equal to 15% of the floor area.`,
+        `"${v.roomName}" কক্ষের দেয়ালে কোনো জানালা পাওয়া যায়নি; বাসযোগ্য কক্ষে মেঝের ক্ষেত্রফলের ১৫% পরিমাণ খোলা অংশ দরকার`,
+        'Add a window, or confirm that the room has one that the drawing does not show as a block.',
+        'জানালা যোগ করুন, অথবা নকশায় জানালা থাকলে তা নিশ্চিত করুন।'
+      );
+    case 'bnbc_4.3.9_exit_capacity':
+    case 'bnbc_4.3.9_stair_capacity':
+      return t(
+        `${where}${v.roomName.toLowerCase()} can pass about ${m} persons, but about ${lim} are estimated on the busiest floor. Both figures use assumed factors.`,
+        `${v.ruleId === 'bnbc_4.3.9_exit_capacity' ? 'নিচতলার বহির্গমন দরজা' : 'সিঁড়ি'} দিয়ে আনুমানিক ${bn(m)} জন বের হতে পারে, অথচ ব্যস্ততম তলায় আনুমানিক ${bn(lim)} জন থাকে; দুটি সংখ্যাই অনুমিত হারের ভিত্তিতে`,
+        'Check the occupant load, then widen or add exits and stairs if needed.',
+        'লোকসংখ্যা যাচাই করুন, প্রয়োজনে দরজা বা সিঁড়ি চওড়া করুন বা বাড়ান।'
+      );
+    case 'imarat_rule16_mgc':
+      return t(
+        `The ground floor covers ${m.toFixed(1)}% of the plot; the screening limit is ${lim}%.`,
+        `নিচতলা প্লটের ${bn(m, 1)}% জুড়ে আছে; স্ক্রিনিং সীমা ${bn(lim)}%`,
+        'Check the ground-coverage schedule for this plot, then reduce the footprint if needed.',
+        'এই প্লটের জন্য প্রযোজ্য ভূমি-আচ্ছাদন সীমা যাচাই করুন; প্রয়োজনে নিচতলার আয়তন কমান।'
+      );
+    case 'imarat_rule16_far':
+      return t(
+        `FAR is ${m.toFixed(2)}; the screening limit for this road width is ${lim.toFixed(2)}.`,
+        `এফএআর ${bn(m, 2)}; এই রাস্তার প্রস্থের জন্য স্ক্রিনিং সীমা ${bn(lim, 2)}`,
+        'Check the FAR schedule for this plot and road, then reduce floor area if needed.',
+        'এই প্লট ও রাস্তার জন্য প্রযোজ্য এফএআর যাচাই করুন; প্রয়োজনে মোট মেঝের আয়তন কমান।'
+      );
+    case 'imarat_rule17_setback':
+      return t(
+        `The ${v.roomName.toLowerCase()} is ${m.toFixed(2)} m; the screening minimum is ${lim.toFixed(2)} m.`,
+        `ঘোষিত সেটব্যাক ${bn(m, 2)} মিটার; স্ক্রিনিং ন্যূনতম ${bn(lim, 2)} মিটার`,
+        `Check the setback schedule, then provide at least ${lim.toFixed(2)} m if it applies.`,
+        `সেটব্যাক বিধি যাচাই করুন; প্রযোজ্য হলে কমপক্ষে ${bn(lim, 2)} মিটার রাখুন।`
+      );
+    case 'bnbc_4.4.1_highrise':
+      return t(
+        `The building is about ${m.toFixed(1)} m high. Above ${lim.toFixed(0)} m it counts as a high-rise and extra fire provisions apply.`,
+        `ভবনের উচ্চতা আনুমানিক ${bn(m, 1)} মিটার; ${bn(lim, 0)} মিটারের বেশি হলে এটি বহুতল ভবন এবং অতিরিক্ত অগ্নি-নিরাপত্তা বিধান প্রযোজ্য`,
+        'Review the high-rise fire provisions of BNBC Part 4 for this building.',
+        'এই ভবনের জন্য বিএনবিসি চতুর্থ খণ্ডের বহুতল ভবন-সংক্রান্ত বিধান পর্যালোচনা করুন।'
+      );
+    case 'input_exits_unidentified':
+      return {
+        en: `${where}no exit door or stair could be identified, so travel distances are not reported. Mark the exits in Review.`,
+        bn: 'এই তলায় কোনো বহির্গমন দরজা বা সিঁড়ি শনাক্ত করা যায়নি, তাই হাঁটা দূরত্ব দেখানো হয়নি। রিভিউ ধাপে বহির্গমন দরজা চিহ্নিত করুন।',
+        actionEn: 'Open Review and tick "Exit" on the doors that lead outside.',
+        actionBn: 'রিভিউ ধাপে যে দরজাগুলো বাইরে যায় সেগুলোতে "Exit" চিহ্ন দিন।',
+        source: 'template',
+      };
+    default:
+      return t(
+        v.description,
+        `${v.ruleName}: পরিমাপ ${bn(m)} ${v.unit}, সীমা ${bn(lim)} ${v.unit}`,
+        v.fixSpec?.summary || 'Review this item against the cited source.',
+        'উল্লিখিত সূত্রের সঙ্গে মিলিয়ে নকশা পর্যালোচনা করুন।'
+      );
+  }
+}
+
+/** One-line measured value for reports, without inventing a number for blocked rooms. */
+export function formatMeasured(v: Violation): string {
+  return v.blocked ? 'No route' : `${v.measuredValue} ${v.unit}`;
 }
 
 export function buildTemplateNarration(
@@ -157,14 +223,20 @@ export function buildTemplateNarration(
   afterAudit: ComplianceAudit
 ): FixNarration {
   return {
-    headlineEn: `${beforeAudit.failCount} critical/high failures resolved in JSON geometry simulation`,
-    headlineBn: `সংশোধিত জ্যামিতি সিমুলেশনে ${beforeAudit.failCount}টি অগ্নি-নিরাপত্তা ত্রুটি সমাধান হয়েছে`,
-    summaryEn: `On "${planName}", applying ${deltas.length} targeted geometric adjustments reduced maximum escape time from ${
-      Number.isFinite(beforeAudit.worstEscapeSec) ? `${beforeAudit.worstEscapeSec.toFixed(1)} s` : 'Blocked'
-    } to ${afterAudit.worstEscapeSec.toFixed(1)} s (source DXF remains untouched).`,
-    summaryBn: `"${planName}" ফ্লোর প্ল্যানে ${deltas.length}টি নির্দিষ্ট জ্যামিতিক পরিবর্তনের ফলে সর্বোচ্চ বহির্গমন সময় ${
-      Number.isFinite(beforeAudit.worstEscapeSec) ? `${beforeAudit.worstEscapeSec.toFixed(1)} সেকেন্ড` : 'অবরুদ্ধ অবস্থা'
-    } থেকে কমে ${afterAudit.worstEscapeSec.toFixed(1)} সেকেন্ডে নেমে এসেছে (মূল DXF ফাইল অপরিবর্তিত)।`,
+    headlineEn:
+      deltas.length === 0
+        ? 'No automatic change is proposed for this plan'
+        : `${beforeAudit.failCount} failures before, ${afterAudit.failCount} after ${deltas.length} proposed changes`,
+    headlineBn:
+      deltas.length === 0
+        ? 'এই নকশার জন্য কোনো স্বয়ংক্রিয় পরিবর্তন প্রস্তাব করা হয়নি'
+        : `${bn(deltas.length)}টি প্রস্তাবিত পরিবর্তনে ত্রুটি ${bn(beforeAudit.failCount)}টি থেকে ${bn(afterAudit.failCount)}টিতে নেমেছে`,
+    summaryEn: `On "${planName}", the slowest escape goes from ${
+      beforeAudit.worstEscapeSec > 0 ? `${beforeAudit.worstEscapeSec.toFixed(1)} s` : 'not measurable'
+    } to ${afterAudit.worstEscapeSec.toFixed(1)} s, and trapped rooms from ${beforeAudit.trappedRoomCount} to ${afterAudit.trappedRoomCount}. The changes are applied to a copy of the geometry; the DXF file is not edited.`,
+    summaryBn: `"${planName}" নকশায় সবচেয়ে ধীর বহির্গমন সময় ${
+      beforeAudit.worstEscapeSec > 0 ? `${bn(beforeAudit.worstEscapeSec, 1)} সেকেন্ড` : 'পরিমাপযোগ্য নয়'
+    } থেকে ${bn(afterAudit.worstEscapeSec, 1)} সেকেন্ডে এসেছে, আর আটকা পড়া কক্ষ ${bn(beforeAudit.trappedRoomCount)}টি থেকে ${bn(afterAudit.trappedRoomCount)}টিতে। পরিবর্তনগুলো জ্যামিতির একটি অনুলিপিতে করা হয়েছে; মূল DXF ফাইল অপরিবর্তিত।`,
     bulletChanges: deltas.map((d) => ({
       en: d.summary,
       bn: d.summary,
@@ -190,7 +262,13 @@ export async function requestAiLabelReconciliation(
     if (!res.ok) return { source: 'heuristic', updates: [] };
     const data = await res.json();
     if (data.source === 'gemini' && Array.isArray(data.mappings) && data.mappings.length > 0) {
-      return { source: 'gemini', updates: data.mappings };
+      const allowed = ['bedroom', 'habitable', 'cabin', 'corridor', 'stair', 'exit', 'workfloor', 'utility', 'lobby'];
+      const ids = new Set(rooms.map((r) => r.id));
+      // Only accept answers that name a known room and a known category.
+      const updates = data.mappings.filter(
+        (m: { id?: string; taxonomy?: string }) => m && ids.has(String(m.id)) && allowed.includes(String(m.taxonomy))
+      );
+      if (updates.length > 0) return { source: 'gemini', updates };
     }
     return { source: 'heuristic', updates: [] };
   } catch {
@@ -217,8 +295,9 @@ export async function requestAiViolationExplanations(
           ruleId: v.ruleId,
           ruleName: v.ruleName,
           citation: v.citation,
+          basis: v.basis,
           roomName: v.roomName,
-          measuredValue: v.measuredValue,
+          measuredValue: v.blocked ? null : v.measuredValue,
           limitValue: v.limitValue,
           unit: v.unit,
           comparator: v.comparator,
@@ -288,6 +367,13 @@ export async function requestAiFixNarration(
 function localLexicalRagSearch(question: string): RagClauseCitation[] {
   const tokens = question
     .toLowerCase()
+    .replace(/সিঁড়ি|সিড়ি/g, ' stair ')
+    .replace(/রাইজার|ট্রেড/g, ' riser tread ')
+    .replace(/শয়ন|বেডরুম|শোবার/g, ' bedroom sleeping ')
+    .replace(/জানালা|আলো|বাতাস/g, ' window ventilation ')
+    .replace(/দূরত্ব|কেবিন/g, ' cabin travel distance ')
+    .replace(/করিডোর|পথ|প্রস্থ/g, ' passage width ')
+    .replace(/দরজা|বহির্গমন/g, ' exit door ')
     .replace(/[^a-z0-9.\s]/g, ' ')
     .split(/\s+/)
     .filter((t) => t.length >= 2);
@@ -308,6 +394,7 @@ function localLexicalRagSearch(question: string): RagClauseCitation[] {
     title: chunk.title,
     excerpt: chunk.text,
     score: Number((score / maxScore).toFixed(2)),
+    basis: chunk.basis,
   }));
 }
 
@@ -320,11 +407,11 @@ export async function requestRagQuery(
   const top = localCitations[0];
   const fallback: RagQueryResponse = {
     answerEn: top
-      ? `According to ${top.clause}: ${top.excerpt}`
-      : 'No matching BNBC or Imarat Bidhimala clause was retrieved.',
+      ? `${top.clause}: ${top.excerpt}`
+      : 'This prototype has no reference note on that question.',
     answerBn: top
-      ? `${top.clause} (${top.title}) অনুযায়ী প্রযোজ্য বিধি নিচের উদ্ধৃত অংশে দেখুন।`
-      : 'সংশ্লিষ্ট কোনো ধারা পাওয়া যায়নি।',
+      ? `${top.clause}: ${top.title}। বিস্তারিত নিচের তথ্যসূত্রে দেখুন।`
+      : 'এই প্রশ্নের জন্য কোনো তথ্যসূত্র এই প্রোটোটাইপে নেই।',
     citations: localCitations,
     source: 'lexical-rag',
     retrievalMode: 'bm25-lexical',
@@ -389,10 +476,14 @@ export function buildTemplateDeficiencyMemo(
 
   const m = beforeAudit.metrics;
   const zoningLineEn = m
-    ? `Zoning & Capacity Summary: Plot ${m.plotAreaSqM} m², MGC ${m.mgcPercent}% (limit ${m.maxAllowedMgcPercent}%), Achieved FAR ${m.achievedFar} (limit ${m.maxAllowedFar}), Peak Floor Load ${m.peakFloorLoad} persons, Ground Exit Cap ${m.groundExitCapacityPersons} persons.`
+    ? m.plotAreaSqM > 0
+      ? `Zoning screening: plot ${m.plotAreaSqM} m², ground coverage ${m.mgcPercent}% (screening limit ${m.maxAllowedMgcPercent}%), FAR ${m.achievedFar} (screening limit ${m.maxAllowedFar}). Estimated peak floor load ${m.peakFloorLoad} persons.`
+      : `Zoning not screened: plot data was not entered. Estimated peak floor load ${m.peakFloorLoad} persons.`
     : '';
   const zoningLineBn = m
-    ? `জোনিং ও ধারণক্ষমতা: প্লট ${m.plotAreaSqM} m², MGC ${m.mgcPercent}% (সীমা ${m.maxAllowedMgcPercent}%), অর্জিত FAR ${m.achievedFar} (সীমা ${m.maxAllowedFar}), সর্বোচ্চ ফ্লোর লোড ${m.peakFloorLoad} জন।`
+    ? m.plotAreaSqM > 0
+      ? `জোনিং স্ক্রিনিং: প্লট ${m.plotAreaSqM} m², ভূমি-আচ্ছাদন ${m.mgcPercent}% (স্ক্রিনিং সীমা ${m.maxAllowedMgcPercent}%), এফএআর ${m.achievedFar} (স্ক্রিনিং সীমা ${m.maxAllowedFar})। আনুমানিক সর্বোচ্চ ফ্লোর লোড ${m.peakFloorLoad} জন।`
+      : `জোনিং যাচাই করা হয়নি: প্লটের তথ্য দেওয়া হয়নি। আনুমানিক সর্বোচ্চ ফ্লোর লোড ${m.peakFloorLoad} জন।`
     : '';
 
   const topFindingsEn = beforeAudit.violations
@@ -400,7 +491,7 @@ export function buildTemplateDeficiencyMemo(
     .map(
       (v, i) =>
         `${i + 1}. [${v.floorLabel || 'GF'}] ${v.status} — ${v.ruleName} (${v.roomName}): Measured ${
-          v.measuredValue >= 99 ? 'BLOCKED' : `${v.measuredValue} ${v.unit}`
+          v.blocked ? 'NO ROUTE' : `${v.measuredValue} ${v.unit}`
         } vs. ${v.comparator} ${v.limitValue} ${v.unit} [${v.citation}].`
     )
     .join('\n');
@@ -410,17 +501,33 @@ export function buildTemplateDeficiencyMemo(
     .map(
       (v, i) =>
         `${i + 1}. [${v.floorLabel || 'GF'}] ${v.ruleName} (${v.roomName}): পরিমাপ ${
-          v.measuredValue >= 99 ? 'অবরুদ্ধ' : `${v.measuredValue} ${v.unit}`
+          v.blocked ? 'পথ নেই' : `${v.measuredValue} ${v.unit}`
         }, বিধি সীমা ${v.comparator} ${v.limitValue} ${v.unit} [${v.citation}]।`
     )
     .join('\n');
 
+  const statusEn =
+    decisionStatus === 'OBJECTION_RAISED'
+      ? 'Issues found. Corrections needed before submission'
+      : decisionStatus === 'CONDITIONAL_REVIEW'
+        ? 'Warnings only. A reviewer should check them'
+        : 'No issues found by this screening';
+  const statusBn =
+    decisionStatus === 'OBJECTION_RAISED'
+      ? 'ত্রুটি পাওয়া গেছে; দাখিলের আগে সংশোধন প্রয়োজন'
+      : decisionStatus === 'CONDITIONAL_REVIEW'
+        ? 'শুধু সতর্কতা; পর্যালোচকের যাচাই প্রয়োজন'
+        : 'এই স্ক্রিনিংয়ে কোনো ত্রুটি পাওয়া যায়নি';
+  const skipped = (beforeAudit.notChecked || []).map((n) => `- ${n.floorLabel ? `[${n.floorLabel}] ` : ''}${n.item}: ${n.reason}`);
+  const verifiedCount = beforeAudit.violations.filter((v) => v.basis === 'verified').length;
+  const screeningCount = beforeAudit.violations.filter((v) => v.basis === 'screening').length;
+
   return {
-    subjectEn: `Pre-Submission Plan Scrutiny Deficiency Memo — ${project.name}`,
-    subjectBn: `নকশা যাচাই ও ত্রুটি-বিচ্যুতি স্মারক — ${project.name}`,
+    subjectEn: `Draft pre-submission review note: ${project.name}`,
+    subjectBn: `দাখিল-পূর্ব পর্যালোচনা নোট (খসড়া): ${project.name}`,
     decisionStatus,
-    memoBodyEn: `Status: ${decisionStatus.replace(/_/g, ' ')}\nProject: ${project.name} (${project.floors.length} Floors, ${(project.floors.length * project.storyHeightM).toFixed(1)} m height)\n${zoningLineEn}\n\nDeterministic Scrutiny Findings (${beforeAudit.failCount} FAIL, ${beforeAudit.warnCount} WARN):\n${topFindingsEn || 'No violations detected.'}\n\nPost-Remediation Simulation: ${afterAudit.failCount} FAIL, ${afterAudit.warnCount} WARN.\nNote: Automated pre-scrutiny memo grounded in deterministic PlanCheck geometry measurements; final regulatory clearance requires RAJUK/FSCD officer sign-off.`,
-    memoBodyBn: `অবস্থা: ${decisionStatus === 'OBJECTION_RAISED' ? 'আপত্তি উত্থাপিত (সংশোধন আবশ্যক)' : decisionStatus === 'CONDITIONAL_REVIEW' ? 'শর্তসাপেক্ষ পর্যালোচনা' : 'দাখিলের জন্য উপযুক্ত'}\nপ্রকল্প: ${project.name} (${project.floors.length} তলা)\n${zoningLineBn}\n\nশনাক্তকৃত ত্রুটিসমূহ (${beforeAudit.failCount} FAIL, ${beforeAudit.warnCount} WARN):\n${topFindingsBn || 'কোনো ত্রুটি পাওয়া যায়নি।'}\n\nসংশোধন-পরবর্তী সিমুলেশন: ${afterAudit.failCount} FAIL।\nবিঃদ্রঃ এটি প্রি-সাবমিশন যাচাই স্মারক; চূড়ান্ত অনুমোদন রাজউক ও ফায়ার সার্ভিসের কর্মকর্তার স্বাক্ষরসাপেক্ষ।`,
+    memoBodyEn: `DRAFT, produced by PlanCheck AI (prototype). Not a RAJUK or Fire Service document and not an approval.\n\nResult: ${statusEn}\nProject: ${project.name} (${project.floors.length} floor${project.floors.length === 1 ? '' : 's'}, ${(project.floors.length * project.storyHeightM).toFixed(1)} m)\n${zoningLineEn}\n\nFindings (${beforeAudit.failCount} fail, ${beforeAudit.warnCount} warn; ${verifiedCount} on thresholds verified in BNBC 2012 Part 3, ${screeningCount} on screening thresholds):\n${topFindingsEn || 'None.'}\n\nNot checked:\n${skipped.join('\n') || '- Nothing skipped.'}\n\nWith the proposed changes applied to a copy of the geometry: ${afterAudit.failCount} fail, ${afterAudit.warnCount} warn.\n\nEvery number above was measured by code from the drawing. A qualified reviewer must confirm the findings and the screening thresholds before any decision.`,
+    memoBodyBn: `খসড়া, PlanCheck AI (প্রোটোটাইপ) দ্বারা তৈরি। এটি রাজউক বা ফায়ার সার্ভিসের কোনো নথি বা অনুমোদন নয়।\n\nফলাফল: ${statusBn}\nপ্রকল্প: ${project.name} (${bn(project.floors.length)} তলা)\n${zoningLineBn}\n\nশনাক্তকৃত বিষয় (${bn(beforeAudit.failCount)}টি ত্রুটি, ${bn(beforeAudit.warnCount)}টি সতর্কতা):\n${topFindingsBn || 'কিছু পাওয়া যায়নি।'}\n\nপ্রস্তাবিত পরিবর্তনের পর (জ্যামিতির অনুলিপিতে): ${bn(afterAudit.failCount)}টি ত্রুটি।\n\nউপরের প্রতিটি সংখ্যা নকশা থেকে কোড দিয়ে মাপা। সিদ্ধান্তের আগে যোগ্য পর্যালোচককে ফলাফল ও স্ক্রিনিং সীমা যাচাই করতে হবে।`,
     citedClauses,
     source: 'template',
   };

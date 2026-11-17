@@ -1,5 +1,6 @@
 export type RoomTaxonomy =
   | 'bedroom'
+  | 'habitable'
   | 'cabin'
   | 'corridor'
   | 'stair'
@@ -41,6 +42,12 @@ export interface DoorEntity {
   isExit: boolean;
   isLocked: boolean;
   connectsRooms?: [string, string];
+  /** How the exit flag was decided: block name, position on the exterior wall, or the reviewer. */
+  exitSource?: 'block-name' | 'exterior-wall' | 'manual' | 'none';
+  /** Where the clear width came from: the wall gap measured in the drawing, or the block name. */
+  widthSource?: 'wall-gap' | 'block-name' | 'default';
+  /** True when the door sits in the outer wall of the floor plate. */
+  onExterior?: boolean;
 }
 
 export interface WindowEntity {
@@ -61,6 +68,8 @@ export interface StairEntity {
   handrailHeightM: number;
   riserMm: number;
   treadMm: number;
+  /** Which stair values were actually written in the drawing. Anything false is a placeholder and is never checked. */
+  stated?: { width: boolean; headroom: boolean; handrail: boolean; step: boolean };
 }
 
 export interface DimensionEntity {
@@ -87,6 +96,9 @@ export interface RoomEntity {
   occupantLoad: number;
   floorIndex?: number;
   floorLabel?: string;
+  /** 'polyline' = closed room boundary in the DXF; 'wall-enclosure' = area enclosed by walls, found by the parser. */
+  boundarySource?: 'polyline' | 'wall-enclosure' | 'text-only';
+  minWidthM?: number;
 }
 
 export interface LayerConventions {
@@ -107,6 +119,8 @@ export interface SiteContext {
   sideSetbackM: number;
   sprinklered: boolean;
   zoneLabel: string;
+  /** True once plot data was supplied by a person (or a sample scenario). Zoning is not checked on guessed values. */
+  declared?: boolean;
 }
 
 export interface ParsedFloorPlan {
@@ -138,6 +152,10 @@ export interface ParsedFloorPlan {
   unmappedTexts: { text: string; position: Point2D; layer: string }[];
   parseNotes: string[];
   rawDxf?: string;
+  /** Door-sized gaps found in the wall lines (used for door widths and room detection). */
+  openings?: { id: string; a: Point2D; b: Point2D; center: Point2D; widthM: number }[];
+  /** How exits were identified on this floor. */
+  exitDetection?: 'block-name' | 'exterior-wall' | 'none';
 }
 
 export interface BuildingProject {
@@ -194,7 +212,8 @@ export interface Violation {
     | 'fire_access'
     | 'zoning_far'
     | 'habitability_ventilation'
-    | 'egress_capacity';
+    | 'egress_capacity'
+    | 'input_required';
   floorIndex?: number;
   floorLabel?: string;
   roomId: string | null;
@@ -209,6 +228,11 @@ export interface Violation {
   description: string;
   fixSpec: RemediationDelta | null;
   aiExplanation?: ViolationExplanation;
+  /** True when no walking route exists at all, so there is no distance to report. */
+  blocked?: boolean;
+  /** 'verified' = threshold read in the BNBC source text; 'screening' = prototype threshold, confirm before relying on it; 'drawing' = internal drawing consistency. */
+  basis?: 'verified' | 'screening' | 'drawing';
+  basisNote?: string;
 }
 
 export interface EscapePathResult {
@@ -280,6 +304,8 @@ export interface ComplianceAudit {
   trappedRoomCount: number;
   floorSummaries?: FloorAuditSummary[];
   metrics?: ZoningAndCapacityMetrics;
+  /** Checks that were skipped because the drawing or the reviewer did not supply the data. */
+  notChecked?: { item: string; reason: string; floorLabel?: string }[];
 }
 
 export interface RagClauseCitation {
@@ -289,6 +315,7 @@ export interface RagClauseCitation {
   title: string;
   excerpt: string;
   score: number;
+  basis?: 'verified' | 'screening' | 'drawing';
 }
 
 export interface RagQueryResponse {
