@@ -4,6 +4,7 @@ import type {
   DeficiencyMemo,
   FixNarration,
   LayerConventions,
+  ParsedFloorPlan,
   RagClauseCitation,
   RagQueryResponse,
   RemediationDelta,
@@ -13,6 +14,7 @@ import type {
   ViolationExplanation,
 } from '../types/plan';
 import { REGULATORY_CORPUS } from './bnbcCorpus';
+import { classifyRoomWithGeometry, queryLocalCorpus } from './localIntelligence';
 
 const BN_DIGITS = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
 /** Bangla numerals for numbers that come from the rule engine. */
@@ -246,11 +248,21 @@ export function buildTemplateNarration(
 }
 
 export async function requestAiLabelReconciliation(
-  rooms: RoomEntity[]
+  rooms: RoomEntity[],
+  floors?: ParsedFloorPlan[]
 ): Promise<{
   source: 'gemini' | 'heuristic';
   updates: { id: string; taxonomy: RoomTaxonomy; confidence: number; reason: string }[];
 }> {
+  // First compute geometry + morphological inference locally in the browser
+  const localUpdates = rooms
+    .filter((r) => r.mappingSource !== 'manual')
+    .map((r) => {
+      const floor = floors?.find((fl) => fl.floorIndex === r.floorIndex) || floors?.[0] || null;
+      const inferred = classifyRoomWithGeometry(r, floor);
+      return { id: r.id, ...inferred };
+    });
+
   try {
     const res = await fetch('/api/ai/reconcile-labels', {
       method: 'POST',
@@ -259,7 +271,7 @@ export async function requestAiLabelReconciliation(
         labels: rooms.map((r) => ({ id: r.id, originalLabel: r.originalLabel })),
       }),
     });
-    if (!res.ok) return { source: 'heuristic', updates: [] };
+    if (!res.ok) return { source: 'heuristic', updates: localUpdates };
     const data = await res.json();
     if (data.source === 'gemini' && Array.isArray(data.mappings) && data.mappings.length > 0) {
       const allowed = ['bedroom', 'habitable', 'cabin', 'corridor', 'stair', 'exit', 'workfloor', 'utility', 'lobby'];
@@ -270,9 +282,9 @@ export async function requestAiLabelReconciliation(
       );
       if (updates.length > 0) return { source: 'gemini', updates };
     }
-    return { source: 'heuristic', updates: [] };
+    return { source: 'heuristic', updates: localUpdates };
   } catch {
-    return { source: 'heuristic', updates: [] };
+    return { source: 'heuristic', updates: localUpdates };
   }
 }
 
@@ -404,18 +416,7 @@ export async function requestRagQuery(
   audit: ComplianceAudit
 ): Promise<RagQueryResponse> {
   const localCitations = localLexicalRagSearch(question);
-  const top = localCitations[0];
-  const fallback: RagQueryResponse = {
-    answerEn: top
-      ? `${top.clause}: ${top.excerpt}`
-      : 'This prototype has no reference note on that question.',
-    answerBn: top
-      ? `${top.clause}: ${top.title}। বিস্তারিত নিচের তথ্যসূত্রে দেখুন।`
-      : 'এই প্রশ্নের জন্য কোনো তথ্যসূত্র এই প্রোটোটাইপে নেই।',
-    citations: localCitations,
-    source: 'lexical-rag',
-    retrievalMode: 'bm25-lexical',
-  };
+  const fallback = queryLocalCorpus(question, project, audit);
 
   try {
     const res = await fetch('/api/rag/query', {
@@ -524,10 +525,10 @@ export function buildTemplateDeficiencyMemo(
 
   return {
     subjectEn: `Draft pre-submission review note: ${project.name}`,
-    subjectBn: `দাখিল-পূর্ব পর্যালোচনা নোট (খসড়া): ${project.name}`,
+    subjectBn: `Draft pre-submission review note: ${project.name}`,
     decisionStatus,
-    memoBodyEn: `DRAFT, produced by PlanCheck AI (prototype). Not a RAJUK or Fire Service document and not an approval.\n\nResult: ${statusEn}\nProject: ${project.name} (${project.floors.length} floor${project.floors.length === 1 ? '' : 's'}, ${(project.floors.length * project.storyHeightM).toFixed(1)} m)\n${zoningLineEn}\n\nFindings (${beforeAudit.failCount} fail, ${beforeAudit.warnCount} warn; ${verifiedCount} on thresholds verified in BNBC 2012 Part 3, ${screeningCount} on screening thresholds):\n${topFindingsEn || 'None.'}\n\nNot checked:\n${skipped.join('\n') || '- Nothing skipped.'}\n\nWith the proposed changes applied to a copy of the geometry: ${afterAudit.failCount} fail, ${afterAudit.warnCount} warn.\n\nEvery number above was measured by code from the drawing. A qualified reviewer must confirm the findings and the screening thresholds before any decision.`,
-    memoBodyBn: `খসড়া, PlanCheck AI (প্রোটোটাইপ) দ্বারা তৈরি। এটি রাজউক বা ফায়ার সার্ভিসের কোনো নথি বা অনুমোদন নয়।\n\nফলাফল: ${statusBn}\nপ্রকল্প: ${project.name} (${bn(project.floors.length)} তলা)\n${zoningLineBn}\n\nশনাক্তকৃত বিষয় (${bn(beforeAudit.failCount)}টি ত্রুটি, ${bn(beforeAudit.warnCount)}টি সতর্কতা):\n${topFindingsBn || 'কিছু পাওয়া যায়নি।'}\n\nপ্রস্তাবিত পরিবর্তনের পর (জ্যামিতির অনুলিপিতে): ${bn(afterAudit.failCount)}টি ত্রুটি।\n\nউপরের প্রতিটি সংখ্যা নকশা থেকে কোড দিয়ে মাপা। সিদ্ধান্তের আগে যোগ্য পর্যালোচককে ফলাফল ও স্ক্রিনিং সীমা যাচাই করতে হবে।`,
+    memoBodyEn: `DRAFT, produced by DrawFix Ai. Not a RAJUK or Fire Service document and not an approval.\n\nResult: ${statusEn}\nProject: ${project.name} (${project.floors.length} floor${project.floors.length === 1 ? '' : 's'}, ${(project.floors.length * project.storyHeightM).toFixed(1)} m)\n${zoningLineEn}\n\nFindings (${beforeAudit.failCount} fail, ${beforeAudit.warnCount} warn; ${verifiedCount} on thresholds verified in BNBC 2012 Part 3, ${screeningCount} on screening thresholds):\n${topFindingsEn || 'None.'}\n\nNot checked:\n${skipped.join('\n') || '- Nothing skipped.'}\n\nWith the proposed changes applied to a copy of the geometry: ${afterAudit.failCount} fail, ${afterAudit.warnCount} warn.\n\nEvery number above was measured by code from the drawing. A qualified reviewer must confirm the findings and the screening thresholds before any decision.`,
+    memoBodyBn: '',
     citedClauses,
     source: 'template',
   };

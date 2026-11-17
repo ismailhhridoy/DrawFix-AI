@@ -217,7 +217,7 @@ export function generateMirpurRmgDxf(): string {
     dxfText('A-TEXT', 8200, 13000, 'LOBBY-W', 360),
     dxfText('A-TEXT', 15000, 3200, 'PACKING-BAY', 360),
     dxfText('A-TEXT', 22200, 3200, 'STORE-CHEM', 360),
-    dxfText('A-TEXT', 14750, 12500, 'সার্ভিস কক্ষ', 360),
+    dxfText('A-TEXT', 14750, 12500, 'SERVICE-ROOM', 360),
     dxfText('A-TEXT', 21000, 11800, 'CBN-14', 380),
     dxfText('A-TEXT', 15500, 7750, 'CORR-MAIN', 320),
 
@@ -300,7 +300,7 @@ export function generateDhanmondiResidentialDxf(): string {
     dxfText('TEXT', 15.0, 3.0, 'UNIT-B-EAST', 0.35),
     dxfText('TEXT', 2.25, 11.4, 'STAIR-CORE', 0.3),
     dxfText('TEXT', 9.5, 10.8, 'BR-1', 0.38),
-    dxfText('TEXT', 17.2, 10.4, 'শয়নকক্ষ ২', 0.35),
+    dxfText('TEXT', 17.2, 10.4, 'BR-2-EAST', 0.35),
     dxfText('TEXT', 7.5, 6.8, 'CORR-CENTRAL', 0.3),
 
     // Dimension across east pinch corridor (0.68m actual vs 1.10m stale override)
@@ -469,7 +469,7 @@ export function generateGazipurComplexDxf(): string {
     dxfText('A-TEXT', 11250, 17500, 'QC-INSPECT', 380),
     dxfText('A-TEXT', 16250, 15800, 'STAIR-CORE-A', 320),
     dxfText('A-TEXT', 20250, 15500, 'LIFT-LOBBY', 340),
-    dxfText('A-TEXT', 24000, 15500, 'চিকিৎসা কক্ষ', 340),
+    dxfText('A-TEXT', 24000, 15500, 'MEDICAL-ROOM', 340),
     dxfText('A-TEXT', 16250, 5200, 'ELEC-SWITCHGEAR', 340),
     dxfText('A-TEXT', 20250, 5200, 'MAIN-ATRIUM', 360),
     dxfText('A-TEXT', 24000, 5200, 'PRAYER-HALL', 340),
@@ -497,7 +497,7 @@ export const SAMPLE_PLANS: SamplePlanMeta[] = [
     fileName: 'gazipur_multiwing_complex_f2.dxf',
     occupancyClass: 'industrial_rmg',
     summary:
-      '17-zone multi-wing garment complex with open courtyard setback, 2 stair cores, Bangla clinic label (চিকিৎসা কক্ষ), locked east exit, narrow north exit, 0.65 m pinch corridor, and stale dimension override.',
+      '17-zone multi-wing garment complex with open courtyard setback, 2 stair cores, medical room, locked east exit, narrow north exit, 0.65 m pinch corridor, and stale dimension override.',
     dxfContent: generateGazipurComplexDxf(),
   },
   {
@@ -507,7 +507,7 @@ export const SAMPLE_PLANS: SamplePlanMeta[] = [
     fileName: 'mirpur_rmg_floor4_audit.dxf',
     occupancyClass: 'industrial_rmg',
     summary:
-      'Sewing line, packing bay, chemical store, supervisor cabin (CBN-14), Bangla utility room label, locked roof exit, 0.62 m corridor pinch point, and stair clearance deficit.',
+      'Sewing line, packing bay, chemical store, supervisor cabin (CBN-14), utility service room, locked roof exit, 0.62 m corridor pinch point, and stair clearance deficit.',
     dxfContent: generateMirpurRmgDxf(),
   },
   {
@@ -517,7 +517,7 @@ export const SAMPLE_PLANS: SamplePlanMeta[] = [
     fileName: 'dhanmondi_res_level3.dxf',
     occupancyClass: 'residential',
     summary:
-      'Multi-unit apartment floor with bilingual bedroom labels (BR-1, শয়নকক্ষ ২), narrow 0.78 m north fire exit, 0.68 m east wing pinch corridor, and > 16 m travel path.',
+      'Multi-unit apartment floor with bedroom zones (BR-1, BR-2-EAST), narrow 0.78 m north fire exit, 0.68 m east wing pinch corridor, and > 16 m travel path.',
     dxfContent: generateDhanmondiResidentialDxf(),
   },
 ];
@@ -782,7 +782,7 @@ export function generateGazipurLevel2UpperDxf(): string {
     dxfText('A-TEXT', 11500, 17500, 'QC-INSPECT', 340),
     dxfText('A-TEXT', 16250, 15800, 'STAIR-CORE-A', 300),
     dxfText('A-TEXT', 20250, 15500, 'LIFT-LOBBY', 320),
-    dxfText('A-TEXT', 24000, 15500, 'চিকিৎসা কক্ষ', 320),
+    dxfText('A-TEXT', 24000, 15500, 'MEDICAL-ROOM', 320),
     dxfText('A-TEXT', 16250, 5200, 'ELEC-SWITCHGEAR', 320),
     dxfText('A-TEXT', 20250, 5200, 'MAIN-ATRIUM', 360),
     dxfText('A-TEXT', 24000, 5200, 'PRAYER-HALL', 320),
@@ -914,7 +914,7 @@ export function generateGazipurLevel3Dxf(): string {
     dxfText('A-TEXT', 3750, 5200, 'CUTTING-HALL-3', 380),
     dxfText('A-TEXT', 10750, 5200, 'PATTERN-CAD', 360),
     dxfText('A-TEXT', 2000, 17000, 'STAIR-CORE-W', 260),
-    dxfText('A-TEXT', 9000, 17500, 'ক্যান্টিন', 380),
+    dxfText('A-TEXT', 9000, 17500, 'CANTEEN', 380),
     dxfText('A-TEXT', 16250, 15800, 'STAIR-CORE-A', 300),
     dxfText('A-TEXT', 22200, 15500, 'LIFT-LOBBY-3', 320),
     dxfText('A-TEXT', 17000, 5200, 'QA-LAB-3', 360),
@@ -968,7 +968,7 @@ export const SAMPLE_BUILDINGS: SampleBuildingMeta[] = [
       zoneLabel: 'Gazipur Industrial Zone (RMG)',
     },
     summary:
-      'Full 3-story factory complex with aligned dual stair shafts, locked ground-floor stair discharge, locked L3 stair vestibule door, corridor pinch points on L2 & L3, and Bangla labels (চিকিৎসা কক্ষ, ক্যান্টিন).',
+      'Full 3-story factory complex with aligned dual stair shafts, locked ground-floor stair discharge, locked L3 stair vestibule door, corridor pinch points on L2 & L3, medical clinic, and canteen.',
     floors: [
       {
         floorIndex: 0,

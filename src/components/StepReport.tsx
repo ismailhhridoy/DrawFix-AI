@@ -4,11 +4,19 @@ import {
   AlertTriangle,
   ArrowRight,
   BookOpen,
+  Building2,
   CheckCircle2,
+  FileDown,
+  RefreshCw,
   Send,
-  Sparkles,
+  ShieldAlert,
 } from 'lucide-react';
 import { requestRagQuery } from '../engine/aiFallback';
+import {
+  buildScrutinyObjectionSheetText,
+  buildScrutinyTriage,
+  type ReviewerRole,
+} from '../engine/localIntelligence';
 import type {
   BuildingProject,
   ComplianceAudit,
@@ -16,13 +24,15 @@ import type {
   Violation,
 } from '../types/plan';
 import { Blueprint2D } from './Blueprint2D';
-import { BasisBadge, measuredText, useAiStatus } from './shared';
+import { BasisBadge, measuredText } from './shared';
 
 interface StepReportProps {
   project: BuildingProject;
   selectedFloorIndex: number;
   onSelectFloor: (floorIdx: number) => void;
   audit: ComplianceAudit;
+  reviewerRole: ReviewerRole;
+  onChangeReviewerRole: (role: ReviewerRole) => void;
   explainingAi: boolean;
   onRefreshExplanations: () => void;
   onProceedToCompare: () => void;
@@ -49,7 +59,7 @@ const PRESET_QUESTIONS = [
   'How far can a cabin be from an exit?',
   'What are the stair headroom and handrail rules?',
   'Minimum bedroom size and window area?',
-  'সিঁড়ির রাইজার ও ট্রেডের নিয়ম কী?',
+  'What are the stair riser and tread rules?',
 ];
 
 export function StepReport({
@@ -57,6 +67,8 @@ export function StepReport({
   selectedFloorIndex,
   onSelectFloor,
   audit,
+  reviewerRole,
+  onChangeReviewerRole,
   explainingAi,
   onRefreshExplanations,
   onProceedToCompare,
@@ -68,7 +80,6 @@ export function StepReport({
   const [filterSeverity, setFilterSeverity] = useState<'all' | 'FAIL' | 'WARN'>('all');
   const [filterCategory, setFilterCategory] = useState<CategoryFilter>('all');
   const [filterFloor, setFilterFloor] = useState<number | 'all'>('all');
-  const [lang, setLang] = useState<'both' | 'en' | 'bn'>('both');
 
   const [ragQuestion, setRagQuestion] = useState('');
   const [ragLoading, setRagLoading] = useState(false);
@@ -119,10 +130,24 @@ export function StepReport({
   };
 
   const m = audit.metrics;
-  const ai = useAiStatus();
+  const triage = buildScrutinyTriage(project, audit);
   const verifiedCount = audit.violations.filter((v) => v.basis === 'verified').length;
   const screeningCount = audit.violations.filter((v) => v.basis === 'screening').length;
   const notChecked = audit.notChecked || [];
+
+  const handleDownloadWorksheet = () => {
+    const text = buildScrutinyObjectionSheetText(project, audit, reviewerRole);
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download =
+      reviewerRole === 'government'
+        ? `${project.id}_scrutiny_objection_sheet.txt`
+        : `${project.id}_architect_validation_brief.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <main className="max-w-[1380px] mx-auto px-6 py-6 space-y-5">
@@ -136,7 +161,9 @@ export function StepReport({
               : ''}
           </div>
           <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900">
-            Plan check report
+            {reviewerRole === 'government'
+              ? 'Authority plan scrutiny & triage'
+              : 'Architect pre-submission validation'}
           </h1>
           <div className="text-xs text-slate-600 flex flex-wrap items-center gap-3 pt-0.5 tabular-nums">
             <span className="font-semibold text-red-700">{audit.failCount} Fail</span>
@@ -154,21 +181,29 @@ export function StepReport({
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-          <div className="flex items-center rounded-lg bg-slate-200/70 p-0.5 text-xs">
-            {(['both', 'en', 'bn'] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setLang(mode)}
-                className={`px-2.5 py-1.5 rounded-md cursor-pointer transition-colors whitespace-nowrap ${
-                  lang === mode
-                    ? 'bg-white text-slate-900 font-semibold shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {mode === 'both' ? 'EN + বাংলা' : mode === 'en' ? 'English' : 'বাংলা'}
-              </button>
-            ))}
+          <div className="inline-flex items-center gap-1 p-1 bg-slate-200/70 rounded-lg text-xs">
+            <button
+              type="button"
+              onClick={() => onChangeReviewerRole('architect')}
+              className={`px-2.5 py-1.5 font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                reviewerRole === 'architect'
+                  ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Architect validation
+            </button>
+            <button
+              type="button"
+              onClick={() => onChangeReviewerRole('government')}
+              className={`px-2.5 py-1.5 font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                reviewerRole === 'government'
+                  ? 'bg-slate-900 text-white shadow-2xs font-semibold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Government scrutiny
+            </button>
           </div>
 
           <button
@@ -177,8 +212,8 @@ export function StepReport({
             onClick={onRefreshExplanations}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg cursor-pointer whitespace-nowrap disabled:opacity-50"
           >
-            <Sparkles className="w-3.5 h-3.5 text-blue-700" />
-            {explainingAi ? 'Writing…' : ai.aiConfigured ? 'Rewrite with Gemini' : 'Refresh wording'}
+            <RefreshCw className={`w-3.5 h-3.5 text-blue-700 ${explainingAi ? 'animate-spin' : ''}`} />
+            {explainingAi ? 'Updating…' : 'Refresh guidance'}
           </button>
 
           <button
@@ -188,6 +223,74 @@ export function StepReport({
           >
             See proposed fixes
             <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Fast Scrutiny / Architect Validation Triage Strip */}
+      <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs p-4 sm:p-5 space-y-3">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-start gap-3">
+            {reviewerRole === 'government' ? (
+              <ShieldAlert className="w-5 h-5 text-blue-700 shrink-0 mt-0.5" />
+            ) : (
+              <Building2 className="w-5 h-5 text-blue-700 shrink-0 mt-0.5" />
+            )}
+            <div className="space-y-0.5">
+              <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+                <span
+                  className={`font-bold ${
+                    triage.disposition === 'RETURN_FOR_CORRECTIONS'
+                      ? 'text-red-700'
+                      : triage.disposition === 'CONDITIONAL_REVIEW'
+                        ? 'text-amber-700'
+                        : 'text-emerald-700'
+                  }`}
+                >
+                  {triage.dispositionLabel}
+                </span>
+                <span className="text-slate-400">·</span>
+                <span className="text-slate-600 tabular-nums">
+                  {triage.checksEvaluated} checks across {triage.totalRoomsAudited} rooms (~
+                  {triage.estimatedManualMinutesSaved} min manual check automated locally)
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600 pt-1">
+                <span>
+                  Height: <strong className="font-mono text-slate-900">{triage.totalHeightM} m</strong>{' '}
+                  {triage.isHighRise ? '(High-rise >20 m NOC triggered)' : '(Standard)'}
+                </span>
+                <span className="text-slate-300">|</span>
+                <span>
+                  CAD dimension overrides:{' '}
+                  <strong
+                    className={`font-mono ${
+                      triage.dimensionTamperAlerts > 0 ? 'text-red-700' : 'text-emerald-700'
+                    }`}
+                  >
+                    {triage.dimensionTamperAlerts > 0
+                      ? `${triage.dimensionTamperAlerts} mismatch flagged`
+                      : '0 mismatches'}
+                  </strong>
+                </span>
+                <span className="text-slate-300">|</span>
+                <span>
+                  Zoning flags:{' '}
+                  <strong className="font-mono text-slate-900">{triage.zoningFlagCount}</strong>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleDownloadWorksheet}
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-300 hover:bg-slate-100 rounded-lg cursor-pointer whitespace-nowrap shrink-0"
+          >
+            <FileDown className="w-3.5 h-3.5 text-blue-700" />
+            {reviewerRole === 'government'
+              ? 'Export Scrutiny Objection Sheet (.TXT)'
+              : 'Export Pre-Check Certificate (.TXT)'}
           </button>
         </div>
       </div>
@@ -536,37 +639,20 @@ export function StepReport({
                   <strong>{selectedViolation.ruleName}</strong>
                 </div>
                 <div className="text-[11px] font-mono text-slate-500">
-                  {selectedViolation.aiExplanation?.source === 'gemini'
-                    ? `Wording by Gemini${ai.model ? ` (${ai.model})` : ''}; numbers from the rule engine`
-                    : 'Fixed wording; numbers from the rule engine'}
+                  Rule citation &amp; remediation note
                 </div>
               </div>
 
-              {(lang === 'both' || lang === 'en') && (
-                <div className="space-y-1">
-                  <p className="text-sm text-slate-900 leading-relaxed">
-                    {selectedViolation.aiExplanation?.en || selectedViolation.description}
+              <div className="space-y-1">
+                <p className="text-sm text-slate-900 leading-relaxed">
+                  {selectedViolation.aiExplanation?.en || selectedViolation.description}
+                </p>
+                {selectedViolation.aiExplanation?.actionEn && (
+                  <p className="text-xs font-medium text-blue-800">
+                    What to do: {selectedViolation.aiExplanation.actionEn}
                   </p>
-                  {selectedViolation.aiExplanation?.actionEn && (
-                    <p className="text-xs font-medium text-blue-800">
-                      What to do: {selectedViolation.aiExplanation.actionEn}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {(lang === 'both' || lang === 'bn') && (
-                <div className="pt-2 border-t border-slate-100 space-y-1">
-                  <p className="text-sm text-slate-800 leading-relaxed">
-                    {selectedViolation.aiExplanation?.bn || selectedViolation.description}
-                  </p>
-                  {selectedViolation.aiExplanation?.actionBn && (
-                    <p className="text-xs font-medium text-blue-800">
-                      করণীয়: {selectedViolation.aiExplanation.actionBn}
-                    </p>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
 
               <div className="pt-2.5 border-t border-slate-100 flex items-start gap-2 text-xs text-slate-600">
                 <BasisBadge basis={selectedViolation.basis} />
@@ -588,8 +674,9 @@ export function StepReport({
             </div>
             <p className="text-xs text-slate-600 leading-relaxed">
               Every distance, width and area is measured by code from the drawing. Limits marked
-              “verified” were read in the BNBC 2012 text. Limits marked “screening” are prototype
-              values that a qualified reviewer must confirm. This is not an approval.
+              “verified” were read in the BNBC 2012 text. Limits marked “screening” are advisory
+              thresholds that a qualified reviewer must confirm. This is an advisory screening, not
+              an official approval.
             </p>
             <div className="rounded-lg bg-slate-50 border border-slate-200 px-3.5 py-3">
               <div className="text-xs font-semibold text-slate-900">
@@ -623,19 +710,17 @@ export function StepReport({
                 <BookOpen className="w-4 h-4 text-blue-700 shrink-0" />
                 <div>
                   <h2 className="font-display text-sm font-bold text-slate-900">
-                    Ask about the rules this tool uses
+                    Code Clause Lookup
                   </h2>
                   <p className="text-xs text-slate-500">
-                    Answers come only from the reference notes below and this plan's results. Each
-                    note says whether its limit is verified or a screening value. English or বাংলা.
+                    Look up BNBC 2012 &amp; municipal rules directly from indexed clauses and this
+                    plan&apos;s measured findings.
                   </p>
                 </div>
               </div>
               {ragResponse && (
                 <span className="text-[11px] font-mono text-slate-500">
-                  {ragResponse.source === 'gemini-rag'
-                    ? 'Answer written by Gemini from the notes'
-                    : 'Closest reference note (Gemini not running)'}
+                  Matched from indexed regulatory clauses
                 </span>
               )}
             </div>
@@ -665,7 +750,7 @@ export function StepReport({
                 type="text"
                 value={ragQuestion}
                 onChange={(e) => setRagQuestion(e.target.value)}
-                placeholder="e.g. minimum passage width, বেডরুমের ন্যূনতম আয়তন"
+                placeholder="e.g. minimum passage width or bedroom minimum area"
                 className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus-visible:outline-2 focus-visible:outline-blue-700"
               />
               <button
@@ -681,16 +766,9 @@ export function StepReport({
             {ragResponse && (
               <div className="space-y-3 pt-1">
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-2.5">
-                  {(lang === 'both' || lang === 'en') && (
-                    <p className="text-xs sm:text-sm text-slate-900 leading-relaxed">
-                      {ragResponse.answerEn}
-                    </p>
-                  )}
-                  {(lang === 'both' || lang === 'bn') && (
-                    <p className="text-xs sm:text-sm text-slate-800 leading-relaxed pt-2 border-t border-slate-200">
-                      {ragResponse.answerBn}
-                    </p>
-                  )}
+                  <p className="text-xs sm:text-sm text-slate-900 leading-relaxed">
+                    {ragResponse.answerEn}
+                  </p>
                 </div>
 
                 <div className="space-y-1.5">

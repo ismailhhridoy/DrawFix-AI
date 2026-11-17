@@ -6,9 +6,12 @@ import {
   FileDown,
   ExternalLink,
   FileText,
-  Sparkles,
 } from 'lucide-react';
 import { requestDeficiencyMemo } from '../engine/aiFallback';
+import {
+  buildScrutinyObjectionSheetText,
+  type ReviewerRole,
+} from '../engine/localIntelligence';
 import type {
   BuildingProject,
   ComplianceAudit,
@@ -21,6 +24,8 @@ interface StepExportProps {
   beforeAudit: ComplianceAudit;
   afterAudit: ComplianceAudit;
   deltas: RemediationDelta[];
+  reviewerRole: ReviewerRole;
+  onChangeReviewerRole: (role: ReviewerRole) => void;
   shareUrl: string | null;
   onOpen3DView: () => void;
 }
@@ -30,13 +35,14 @@ export function StepExport({
   beforeAudit,
   afterAudit,
   deltas,
+  reviewerRole,
+  onChangeReviewerRole,
   shareUrl,
   onOpen3DView,
 }: StepExportProps) {
   const [copied, setCopied] = useState(false);
   const [memo, setMemo] = useState<DeficiencyMemo | null>(null);
   const [generatingMemo, setGeneratingMemo] = useState(false);
-  const [memoLang, setMemoLang] = useState<'both' | 'en' | 'bn'>('both');
   const [copiedMemo, setCopiedMemo] = useState(false);
 
   const primaryFloor = project.floors[0];
@@ -66,13 +72,8 @@ export function StepExport({
     if (!memo) return '';
     return [
       memo.subjectEn,
-      memo.subjectBn,
       '',
-      '--- ENGLISH ---',
       memo.memoBodyEn,
-      '',
-      '--- বাংলা ---',
-      memo.memoBodyBn,
       '',
       'References:',
       ...memo.citedClauses.map((c) => `- ${c}`),
@@ -106,10 +107,9 @@ export function StepExport({
     const L = 15;
     const W = 180;
     let y = 18;
-    // The built-in PDF font has no Bangla glyphs, so Bangla labels are replaced, not garbled.
     const safe = (text: string) =>
       text
-        .replace(/[ঀ-৿][ঀ-৿\s]*/g, '[Bangla label] ')
+        .replace(/[^\x20-\x7E\n]/g, '-')
         .replace(/[–—]/g, '-')
         .replace(/[“”]/g, '"')
         .replace(/²/g, '2')
@@ -140,7 +140,7 @@ export function StepExport({
     };
 
     doc.setTextColor(15, 23, 42);
-    para('PlanCheck AI: plan check report', 16, 0, true, 2);
+    para('DrawFix Ai: compliance audit report', 16, 0, true, 2);
     doc.setTextColor(80, 90, 105);
     para(
       `${project.name} | ${project.floors.length} floor${project.floors.length === 1 ? '' : 's'}, ${totalHeightM} m | plan ${primaryFloor.bounds.widthM} m x ${primaryFloor.bounds.heightM} m | ${totalRooms} rooms | ${new Date().toISOString().slice(0, 10)}`
@@ -152,7 +152,7 @@ export function StepExport({
 
     para('What this report is', 10, 0, true);
     para(
-      'A prototype pre-submission screening. It is not an approval and not a RAJUK or Fire Service document. Every measurement was computed by code from the DXF geometry. Limits marked VERIFIED were read in the BNBC 2012 text (Part 3, Chapter 1). Limits marked SCREENING are prototype values that a qualified reviewer must confirm against the gazette. The DXF file was not modified.'
+      'Advisory pre-submission compliance screening. This report is not a statutory approval and not an official RAJUK or Fire Service document. Every measurement was computed deterministically from the DXF geometry. Limits marked VERIFIED were read in the BNBC 2012 text (Part 3, Chapter 1). Limits marked SCREENING are advisory values that a qualified reviewer must confirm against the gazette. The source DXF file was not modified.'
     );
 
     heading(
@@ -215,23 +215,65 @@ export function StepExport({
     }
 
     const safeName = (primaryFloor?.sourceFileName || project.id).replace(/\.dxf$/i, '');
-    doc.save(`${safeName}_plancheck_report.pdf`);
+    doc.save(`${safeName}_drawfix_report.pdf`);
+  };
+
+  const handleDownloadWorksheet = () => {
+    const text = buildScrutinyObjectionSheetText(project, beforeAudit, reviewerRole);
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const safeName = (primaryFloor?.sourceFileName || project.id).replace(/\.dxf$/i, '');
+    a.href = url;
+    a.download =
+      reviewerRole === 'government'
+        ? `${safeName}_scrutiny_objection_sheet.txt`
+        : `${safeName}_architect_validation_brief.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
     <main className="max-w-[1080px] mx-auto px-6 py-10 space-y-8">
-      <div className="border-b border-slate-200/90 pb-5 space-y-1.5">
-        <p className="text-xs font-mono text-slate-500">
-          Step 06 · Export · {project.name} ({project.floors.length}{' '}
-          {project.floors.length === 1 ? 'Floor' : 'Floors'})
-        </p>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900">
-          Take the results with you
-        </h1>
-        <p className="text-sm text-slate-600">
-          Download the report as a PDF, draft a review note in English and Bangla, or share
-          the 3D escape view of a demo plan.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200/90 pb-5">
+        <div className="space-y-1.5">
+          <p className="text-xs font-mono text-slate-500">
+            Step 07 · Export · {project.name} ({project.floors.length}{' '}
+            {project.floors.length === 1 ? 'Floor' : 'Floors'})
+          </p>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900">
+            Take the results with you
+          </h1>
+          <p className="text-sm text-slate-600">
+            Download the compliance audit PDF, authority scrutiny worksheet, architect validation
+            brief, or shareable 3D view.
+          </p>
+        </div>
+
+        <div className="inline-flex items-center gap-1 p-1 bg-slate-200/70 rounded-lg text-xs shrink-0 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => onChangeReviewerRole('architect')}
+            className={`px-2.5 py-1.5 font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              reviewerRole === 'architect'
+                ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Architect
+          </button>
+          <button
+            type="button"
+            onClick={() => onChangeReviewerRole('government')}
+            className={`px-2.5 py-1.5 font-medium rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              reviewerRole === 'government'
+                ? 'bg-slate-900 text-white shadow-2xs font-semibold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Government Desk
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -243,8 +285,7 @@ export function StepExport({
             </h2>
             <p className="text-sm text-slate-600 leading-relaxed">
               Every finding with its measurement, limit, source and trust level, the list of
-              what was not checked, and the proposed changes. Bangla room labels are shown as
-              “[Bangla label]” in the PDF.
+              what was not checked, and the proposed geometric fixes.
             </p>
             <div className="pt-2 text-xs font-mono text-slate-700 space-y-1 tabular-nums">
               <div>
@@ -258,14 +299,24 @@ export function StepExport({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={handleDownloadPdf}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors cursor-pointer shadow-xs"
-          >
-            <FileDown className="w-4 h-4" />
-            Download report PDF
-          </button>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors cursor-pointer shadow-xs whitespace-nowrap"
+            >
+              <FileDown className="w-4 h-4" />
+              Download report PDF
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadWorksheet}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold text-slate-900 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <FileText className="w-3.5 h-3.5 text-blue-700" />
+              {reviewerRole === 'government' ? 'Scrutiny Sheet (.TXT)' : 'Validation Brief (.TXT)'}
+            </button>
+          </div>
         </div>
 
         {/* Shareable 3D Simulation URL */}
@@ -276,7 +327,7 @@ export function StepExport({
             </h2>
             <p className="text-sm text-slate-600 leading-relaxed">
               {shareUrl
-                ? 'Opens this demo plan in 3D on the floor, room and before/after state you last viewed.'
+                ? 'Opens this reference plan in 3D on the floor, room and before/after state you last viewed.'
                 : 'Uploaded drawings stay in this browser and are not stored on a server, so there is no link to share. Use the PDF instead.'}
             </p>
             {shareUrl && (
@@ -315,12 +366,12 @@ export function StepExport({
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-blue-700 shrink-0" />
               <h2 className="font-display text-lg font-semibold text-slate-900">
-                Draft review note (English + বাংলা)
+                Draft review note
               </h2>
             </div>
             <p className="text-xs text-slate-600">
-              A plain summary of the findings for the owner or design team. It is a draft from a
-              prototype, not a RAJUK or Fire Service document, and says so at the top.
+              A plain summary of the findings for the owner or design team. Generated as an
+              advisory draft for pre-submission review, not an official RAJUK or Fire Service document.
             </p>
           </div>
 
@@ -330,7 +381,7 @@ export function StepExport({
             onClick={() => void handleGenerateMemo()}
             className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors cursor-pointer disabled:opacity-50 shrink-0 shadow-xs"
           >
-            <Sparkles className="w-3.5 h-3.5" />
+            <FileText className="w-3.5 h-3.5" />
             {generatingMemo ? 'Drafting…' : memo ? 'Draft again' : 'Draft review note'}
           </button>
         </div>
@@ -356,27 +407,11 @@ export function StepExport({
                 </span>
                 <span className="text-slate-400">·</span>
                 <span className="text-slate-500">
-                  {memo.source === 'gemini-rag' ? 'Written by Gemini from the findings' : 'Fixed wording (Gemini not running)'}
+                  Advisory draft ready
                 </span>
               </div>
 
               <div className="flex items-center gap-2">
-                <div className="flex items-center rounded-lg bg-slate-200/70 p-0.5 text-xs">
-                  {(['both', 'en', 'bn'] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => setMemoLang(mode)}
-                      className={`px-2.5 py-1 rounded-md cursor-pointer transition-colors ${
-                        memoLang === mode
-                          ? 'bg-white text-slate-900 font-semibold shadow-2xs'
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      {mode === 'both' ? 'EN + বাংলা' : mode === 'en' ? 'EN' : 'বাংলা'}
-                    </button>
-                  ))}
-                </div>
                 <button
                   type="button"
                   onClick={() => void handleCopyMemo()}
@@ -396,23 +431,12 @@ export function StepExport({
               </div>
             </div>
 
-            {(memoLang === 'both' || memoLang === 'en') && (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-2">
-                <div className="text-xs font-bold text-slate-900">{memo.subjectEn}</div>
-                <pre className="whitespace-pre-wrap font-sans text-xs text-slate-800 leading-relaxed">
-                  {memo.memoBodyEn}
-                </pre>
-              </div>
-            )}
-
-            {(memoLang === 'both' || memoLang === 'bn') && (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-2">
-                <div className="text-xs font-bold text-slate-900">{memo.subjectBn}</div>
-                <pre className="whitespace-pre-wrap font-sans text-xs text-slate-800 leading-relaxed">
-                  {memo.memoBodyBn}
-                </pre>
-              </div>
-            )}
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-2">
+              <div className="text-xs font-bold text-slate-900">{memo.subjectEn}</div>
+              <pre className="whitespace-pre-wrap font-sans text-xs text-slate-800 leading-relaxed">
+                {memo.memoBodyEn}
+              </pre>
+            </div>
 
             <div className="text-[11px] font-mono text-slate-600">
               <strong>References:</strong> {memo.citedClauses.join(' · ')}

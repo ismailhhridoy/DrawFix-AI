@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import {
-  Sparkles,
+  RefreshCw,
   CheckCircle2,
   AlertTriangle,
   ArrowRight,
@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { computeRoomOccupantLoad } from '../engine/ruleEngine';
 import { Blueprint2D } from './Blueprint2D';
-import { useAiStatus } from './shared';
 import type {
   BuildingProject,
   LayerConventions,
@@ -69,7 +68,6 @@ export function StepReview({
   const [layerMapNote, setLayerMapNote] = useState<string | null>(null);
   const [hoverRoomId, setHoverRoomId] = useState<string | null>(null);
   const [showAllDoors, setShowAllDoors] = useState(false);
-  const ai = useAiStatus();
 
   const activeFloor = project.floors[selectedFloorIndex] || project.floors[0];
   const site: SiteContext = project.siteContext || {
@@ -112,9 +110,7 @@ export function StepReview({
     setLayerMapNote(null);
     const res = await onAutoMapLayers();
     if (res) {
-      setLayerMapNote(
-        `${res.source === 'gemini' ? 'Gemini' : 'Name matching'}: ${res.rationale}`
-      );
+      setLayerMapNote(`Layer detection: ${res.rationale}`);
     }
     setAutoMappingLayers(false);
   };
@@ -144,12 +140,8 @@ export function StepReview({
             onClick={onRunAiReconcile}
             className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors whitespace-nowrap cursor-pointer disabled:opacity-50"
           >
-            <Sparkles className="w-3.5 h-3.5 text-blue-700" />
-            {aiReconciling
-              ? 'Classifying…'
-              : ai.aiConfigured
-                ? 'Classify labels with Gemini'
-                : 'Re-run label matching'}
+            <RefreshCw className="w-3.5 h-3.5 text-blue-700" />
+            {aiReconciling ? 'Classifying…' : 'Auto-classify rooms'}
           </button>
           <button
             type="button"
@@ -369,11 +361,7 @@ export function StepReview({
             )}
           </div>
           <div className="text-xs text-slate-500">
-            Typed by{' '}
-            {aiSource === 'gemini'
-              ? `Gemini${ai.model ? ` (${ai.model})` : ''}`
-              : 'keyword matching'}
-            ; you can change any row
+            {aiSource === 'gemini' ? 'Auto-classified' : 'Geometry & name matched'} · editable
           </div>
         </div>
 
@@ -547,8 +535,8 @@ export function StepReview({
               onClick={() => void handleTriggerLayerMap()}
               className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-blue-800 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-lg cursor-pointer disabled:opacity-50"
             >
-              <Sparkles className="w-3 h-3" />
-              {autoMappingLayers ? 'Re-reading…' : 'Re-detect layers'}
+              <RefreshCw className="w-3 h-3" />
+              {autoMappingLayers ? 'Detecting…' : 'Re-detect layers'}
             </button>
           </div>
           <div className="text-xs font-mono text-slate-600 leading-relaxed">

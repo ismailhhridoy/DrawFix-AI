@@ -6,6 +6,7 @@ import { StepReview } from './components/StepReview';
 import { StepReport } from './components/StepReport';
 import { StepCompare } from './components/StepCompare';
 import { Viewport3D } from './components/Viewport3D';
+import { StepPermits } from './components/StepPermits';
 import { StepExport } from './components/StepExport';
 import { DEFAULT_CONVENTIONS, parseDxfString } from './engine/dxfParser';
 import { SAMPLE_BUILDINGS, type SampleBuildingMeta } from './engine/sampleDxf';
@@ -21,6 +22,7 @@ import {
   requestAiViolationExplanations,
   requestInferredConventions,
 } from './engine/aiFallback';
+import type { ReviewerRole } from './engine/localIntelligence';
 import type {
   AppStep,
   BuildingProject,
@@ -61,6 +63,7 @@ function inferFloorSortRank(fileName: string, fallbackIndex: number): {
 
 export default function App() {
   const [activeStep, setActiveStep] = useState<AppStep>('landing');
+  const [reviewerRole, setReviewerRole] = useState<ReviewerRole>('architect');
   const [project, setProject] = useState<BuildingProject | null>(null);
   const [selectedFloorIndex, setSelectedFloorIndex] = useState<number>(0);
   const [parseError, setParseError] = useState<string | null>(null);
@@ -115,7 +118,7 @@ export default function App() {
   const runAiLabels = useCallback(async (targetProject: BuildingProject) => {
     setAiReconciling(true);
     const allRooms = targetProject.floors.flatMap((fl) => fl.rooms);
-    const res = await requestAiLabelReconciliation(allRooms);
+    const res = await requestAiLabelReconciliation(allRooms, targetProject.floors);
     setAiLabelSource(res.source);
     if (res.updates.length > 0) {
       setProject((prev) => {
@@ -545,14 +548,7 @@ export default function App() {
 
   const handleHeaderPrimary = () => {
     if (activeStep === 'landing') {
-      if (project) {
-        setActiveStep('report');
-        if (baseAudit && Object.keys(explanations).length === 0) {
-          void runAiExplanations(baseAudit);
-        }
-      } else {
-        handleLoadSampleBuilding(SAMPLE_BUILDINGS[0], 'report');
-      }
+      setActiveStep('upload');
       return;
     }
     if (!project) {
@@ -568,7 +564,7 @@ export default function App() {
   const shareUrl = useMemo(() => {
     const base = window.location.origin + window.location.pathname;
     const matchedSample = SAMPLE_BUILDINGS.find((s) => s.id === project?.id);
-    // Uploaded drawings stay in this browser, so only the built-in demo plans can be linked.
+    // Uploaded drawings stay in this browser, so only built-in reference plans can be linked.
     if (!matchedSample) return null;
     const planParam = matchedSample.id;
     const roomQuery = simRoomId ? `&room=${encodeURIComponent(simRoomId)}` : '';
@@ -578,9 +574,9 @@ export default function App() {
 
   const primaryLabel =
     activeStep === 'landing'
-      ? 'Open demo'
+      ? 'Start plan review'
       : !project
-        ? 'Load demo plan'
+        ? 'Load reference plan'
         : activeStep === 'export'
           ? 'Open 3D view'
           : 'Export';
@@ -622,7 +618,8 @@ export default function App() {
               ['report', '03 Report'],
               ['compare', '04 Fixes'],
               ['simulate', '05 3D'],
-              ['export', '06 Export'],
+              ['permits', '06 Permits'],
+              ['export', '07 Export'],
             ] as const
           ).map(([id, label]) => (
             <button
@@ -643,8 +640,11 @@ export default function App() {
 
       {activeStep === 'landing' && (
         <LandingPage
+          reviewerRole={reviewerRole}
+          onChangeReviewerRole={setReviewerRole}
           onOpenSample={(sample, step) => handleLoadSampleBuilding(sample, step)}
           onGoToUpload={() => setActiveStep('upload')}
+          onGoToPermits={() => setActiveStep('permits')}
         />
       )}
 
@@ -658,6 +658,7 @@ export default function App() {
             setActiveStep('review');
           }}
           parseError={parseError}
+          onContinueToReview={() => setActiveStep('review')}
         />
       )}
 
@@ -685,6 +686,8 @@ export default function App() {
           selectedFloorIndex={safeFloorIdx}
           onSelectFloor={setSelectedFloorIndex}
           audit={enrichedAudit}
+          reviewerRole={reviewerRole}
+          onChangeReviewerRole={setReviewerRole}
           explainingAi={explainingAi}
           onRefreshExplanations={() => baseAudit && void runAiExplanations(baseAudit)}
           onProceedToCompare={handleProceedToCompare}
@@ -727,12 +730,26 @@ export default function App() {
         />
       )}
 
+      {activeStep === 'permits' && (
+        <StepPermits
+          project={project}
+          beforeAudit={enrichedAudit}
+          afterAudit={remediation?.fixedAudit || null}
+          deltas={remediation?.deltas || []}
+          onGoToUpload={() => setActiveStep('upload')}
+          onGoToReport={() => setActiveStep('report')}
+          onGoToExport={() => setActiveStep('export')}
+        />
+      )}
+
       {activeStep === 'export' && project && enrichedAudit && remediation && (
         <StepExport
           project={project}
           beforeAudit={enrichedAudit}
           afterAudit={remediation.fixedAudit}
           deltas={remediation.deltas}
+          reviewerRole={reviewerRole}
+          onChangeReviewerRole={setReviewerRole}
           shareUrl={shareUrl}
           onOpen3DView={() => setActiveStep('simulate')}
         />

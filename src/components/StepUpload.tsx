@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react';
 import {
+  ArrowRight,
   Upload,
   Download,
   FileCode2,
   SlidersHorizontal,
   Layers,
   Plus,
-  Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 import { DEFAULT_CONVENTIONS } from '../engine/dxfParser';
 import { requestInferredConventions } from '../engine/aiFallback';
@@ -32,6 +33,7 @@ interface StepUploadProps {
     conventions: LayerConventions;
   }) => void;
   parseError: string | null;
+  onContinueToReview?: () => void;
 }
 
 export function StepUpload({
@@ -40,6 +42,7 @@ export function StepUpload({
   onLoadSampleBuilding,
   onAddFloorDxf,
   parseError,
+  onContinueToReview,
 }: StepUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const appendFloorInputRef = useRef<HTMLInputElement>(null);
@@ -118,7 +121,7 @@ export function StepUpload({
     );
     setWallLayersInput(res.conventions.wallLayers.join(', '));
     setDoorLayersInput(res.conventions.doorLayers.join(', '));
-    setLayerInferNote(`${res.source === 'gemini' ? 'Gemini' : 'Heuristic'}: ${res.rationale}`);
+    setLayerInferNote(`Detected: ${res.rationale}`);
     setInferringLayers(false);
   };
 
@@ -138,34 +141,22 @@ export function StepUpload({
 
   return (
     <main className="max-w-[1280px] mx-auto px-6 py-8 space-y-8">
-      {/* Studio Step Header + Scope Disclosure */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch border-b border-slate-200/90 pb-8">
-        <div className="lg:col-span-7 space-y-3 flex flex-col justify-center">
-          <p className="text-xs font-mono text-slate-500">
-            Step 01 · Upload
-          </p>
+      {/* Clean Step Header */}
+      <section className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-slate-200/90 pb-6">
+        <div className="space-y-1.5 max-w-2xl">
+          <p className="text-xs font-mono text-slate-500">Step 01 · Upload CAD</p>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 text-balance">
-            Upload a floor plan to check its escape routes
+            Upload floor plans for compliance review
           </h1>
-          <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl">
-            Drop one DXF floor plan, or one file per floor. The file is read in your browser and
-            is never edited or stored on a server. If Gemini is on, room labels and findings are
-            sent to it for wording. Next you will see exactly what was read and can correct it.
+          <p className="text-sm text-slate-600 leading-relaxed">
+            Drop a single AutoCAD DXF file or stack multiple floors (GF, L2, L3). Files are parsed
+            locally in your browser and are never edited or stored on external servers.
           </p>
         </div>
 
-        <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-2.5 flex flex-col justify-center">
-          <div className="text-xs font-semibold text-slate-900">
-            What works best
-          </div>
-          <ul className="text-xs sm:text-sm text-slate-600 leading-relaxed list-disc pl-4 space-y-1">
-            <li>ASCII DXF saved from AutoCAD (not DWG or PDF).</li>
-            <li>Walls as single lines with a gap at each door.</li>
-            <li>Room names as text inside the rooms, English or বাংলা.</li>
-          </ul>
-          <p className="text-xs text-slate-500 leading-relaxed">
-            এটি একটি প্রাথমিক স্ক্রিনিং টুল; রাজউক বা ফায়ার সার্ভিসের অনুমোদন নয়।
-          </p>
+        <div className="text-xs text-slate-500 space-y-1 lg:text-right shrink-0">
+          <div className="font-semibold text-slate-700">Accepted format</div>
+          <div>ASCII DXF (R12–R2018) · Single lines/polylines · Room text tags</div>
         </div>
       </section>
 
@@ -176,7 +167,7 @@ export function StepUpload({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-lg font-semibold text-slate-900">
-                Your drawing
+                Building &amp; DXF upload
               </h2>
               <button
                 type="button"
@@ -184,8 +175,38 @@ export function StepUpload({
                 className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
-                Options
+                {showConventions ? 'Hide layer mapping' : 'Layer mapping'}
               </button>
+            </div>
+
+            {/* Always-visible quick building profile */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+              <label className="block sm:col-span-2">
+                <span className="text-slate-600 font-medium">Occupancy</span>
+                <select
+                  value={occupancyClass}
+                  onChange={(e) => setOccupancyClass(e.target.value as OccupancyClass)}
+                  className="mt-1 w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-900"
+                >
+                  <option value="industrial_rmg">Industrial / Factory (RMG)</option>
+                  <option value="residential">Residential Multi-Unit</option>
+                  <option value="mixed">Commercial / Mixed-Use</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-slate-600 font-medium">Storey ht (m)</span>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="2.4"
+                  max="6.0"
+                  value={storyHeightM}
+                  onChange={(e) =>
+                    setStoryHeightM(Math.max(2.4, Number(e.target.value) || 3.2))
+                  }
+                  className="mt-1 w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-mono text-slate-900 tabular-nums"
+                />
+              </label>
             </div>
 
             <div
@@ -212,10 +233,10 @@ export function StepUpload({
                 <Upload className="w-5 h-5 text-blue-700" />
               </div>
               <p className="text-sm font-semibold text-slate-900">
-                Drop .dxf files here, or click to choose
+                Drop .dxf files here, or click to browse
               </p>
               <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
-                Several files are stacked as floors by name: GF, L2, L3, or 1, 2, 3
+                Multiple files auto-stack by floor name (GF, L2, L3)
               </p>
               <input
                 ref={fileInputRef}
@@ -242,14 +263,26 @@ export function StepUpload({
                     {activeProject.floors.length === 1 ? 'floor' : 'floors'} loaded
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => appendFloorInputRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-800 bg-white border border-blue-300 hover:bg-blue-50 rounded-lg cursor-pointer shrink-0 transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Add a floor
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => appendFloorInputRef.current?.click()}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-800 bg-white border border-blue-300 hover:bg-blue-50 rounded-lg cursor-pointer transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add floor
+                  </button>
+                  {onContinueToReview && (
+                    <button
+                      type="button"
+                      onClick={onContinueToReview}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg cursor-pointer transition-colors"
+                    >
+                      Review
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
                 <input
                   ref={appendFloorInputRef}
                   type="file"
@@ -273,7 +306,7 @@ export function StepUpload({
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3 text-xs">
                 <div className="flex items-center justify-between gap-2">
                   <div className="font-semibold text-slate-800">
-                    Layer names and storey height
+                    Custom DXF layer mapping
                   </div>
                   {activeProject && (
                     <button
@@ -282,8 +315,8 @@ export function StepUpload({
                       onClick={() => void handleAutoMapActiveLayers()}
                       className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-blue-800 bg-white border border-blue-300 hover:bg-blue-50 rounded-md cursor-pointer disabled:opacity-50"
                     >
-                      <Sparkles className="w-3 h-3" />
-                      {inferringLayers ? 'Re-reading…' : 'Re-detect layers'}
+                      <RefreshCw className="w-3 h-3" />
+                      {inferringLayers ? 'Detecting…' : 'Re-detect layers'}
                     </button>
                   )}
                 </div>
@@ -293,34 +326,6 @@ export function StepUpload({
                   </div>
                 )}
                 <div className="grid grid-cols-1 gap-2.5">
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <label className="block">
-                      <span className="text-slate-600">Occupancy Class</span>
-                      <select
-                        value={occupancyClass}
-                        onChange={(e) => setOccupancyClass(e.target.value as OccupancyClass)}
-                        className="mt-1 w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-900"
-                      >
-                        <option value="industrial_rmg">Industrial / Garment (RMG)</option>
-                        <option value="residential">Residential Apartment</option>
-                        <option value="mixed">Mixed Occupancy</option>
-                      </select>
-                    </label>
-                    <label className="block">
-                      <span className="text-slate-600">Floor-to-Floor Height (m)</span>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="2.4"
-                        max="6.0"
-                        value={storyHeightM}
-                        onChange={(e) =>
-                          setStoryHeightM(Math.max(2.4, Number(e.target.value) || 3.2))
-                        }
-                        className="mt-1 w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-mono text-slate-900 tabular-nums"
-                      />
-                    </label>
-                  </div>
                   <label className="block">
                     <span className="text-slate-600">Wall Layers (comma-separated)</span>
                     <input
@@ -359,20 +364,20 @@ export function StepUpload({
           </div>
 
           <div className="pt-3 border-t border-slate-200 text-xs text-slate-500 leading-relaxed">
-            If the wall layer has an unusual name the parser picks the layer with the most line
-            work and tells you. You can set the name yourself under Options.
+            If the wall layer has an unusual name, the parser picks the layer with the most line
+            work automatically. You can override layer names under Layer mapping above.
           </div>
         </div>
 
-        {/* Verified Test DXF Buildings */}
+        {/* Standard CAD Templates */}
         <div className="lg:col-span-7 flex flex-col justify-between bg-white border border-slate-200/90 rounded-xl shadow-xs p-6 space-y-5">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-lg font-semibold text-slate-900">
-                Or try a demo drawing
+                Or open a standard CAD template
               </h2>
               <span className="text-xs font-mono text-slate-500">
-                Synthetic plans with deliberate faults
+                Ready-to-audit DXF stacks
               </span>
             </div>
 
@@ -409,7 +414,7 @@ export function StepUpload({
                         onClick={() => onLoadSampleBuilding(sample)}
                         className="px-4 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors whitespace-nowrap cursor-pointer"
                       >
-                        {isMulti ? `Load ${sample.floors.length} floors` : 'Load'}
+                        {isMulti ? `Load ${sample.floors.length} floors` : 'Open in workspace'}
                       </button>
                       <button
                         type="button"
@@ -426,25 +431,9 @@ export function StepUpload({
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-            <div>
-              <div className="font-semibold text-slate-900">Download and edit one</div>
-              <div className="text-slate-600 mt-0.5 leading-relaxed">
-                Move a wall or delete a door in AutoCAD, upload it again, and the findings change
-              </div>
-            </div>
-            <div>
-              <div className="font-semibold text-slate-900">Not real buildings</div>
-              <div className="text-slate-600 mt-0.5 leading-relaxed">
-                Place names are illustrative. The faults are modelled on common fire-safety failures
-              </div>
-            </div>
-            <div>
-              <div className="font-semibold text-slate-900">Parsed like any upload</div>
-              <div className="text-slate-600 mt-0.5 leading-relaxed">
-                They go through the same DXF parser and rule engine as your own file
-              </div>
-            </div>
+          <div className="pt-3 border-t border-slate-200 text-xs text-slate-500 leading-relaxed">
+            Need to customize an existing AutoCAD sheet? Download any template above, edit walls or
+            door widths in CAD, and re-upload it to compare revised compliance findings.
           </div>
         </div>
       </section>

@@ -48,7 +48,7 @@ const BASIS_META = {
   },
   screening: {
     label: 'Screening threshold',
-    title: 'A prototype limit. The governing clause has not been checked against the gazette; a reviewer must confirm it.',
+    title: 'An advisory screening limit. Confirm the governing gazette clause before formal filing.',
     cls: 'bg-amber-50 text-amber-800 border-amber-200',
     Icon: FileSearch,
   },

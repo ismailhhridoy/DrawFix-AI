@@ -1,5 +1,5 @@
 import type { AppStep } from '../types/plan';
-import { useAiStatus } from './shared';
+import { DrawFixLogo } from './DrawFixLogo';
 
 interface HeaderProps {
   activeStep: AppStep;
@@ -9,12 +9,13 @@ interface HeaderProps {
   primaryActionLabel: string;
 }
 
-const WORKSPACE_STEPS: { id: AppStep; label: string }[] = [
-  { id: 'upload', label: 'Upload' },
+const WORKSPACE_STEPS: { id: AppStep; label: string; alwaysEnabled?: boolean }[] = [
+  { id: 'upload', label: 'Upload', alwaysEnabled: true },
   { id: 'review', label: 'Review' },
   { id: 'report', label: 'Report' },
   { id: 'compare', label: 'Fixes' },
-  { id: 'simulate', label: '3D escape' },
+  { id: 'simulate', label: '3D view' },
+  { id: 'permits', label: 'Permit desk', alwaysEnabled: true },
   { id: 'export', label: 'Export' },
 ];
 
@@ -26,7 +27,6 @@ export function Header({
   primaryActionLabel,
 }: HeaderProps) {
   const isLanding = activeStep === 'landing';
-  const ai = useAiStatus();
 
   const scrollToSection = (sectionId: string) => {
     const el = document.getElementById(sectionId);
@@ -36,67 +36,78 @@ export function Header({
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-slate-200/90 px-4 sm:px-6 h-16 flex items-center justify-between gap-4 sm:gap-8">
-      {/* Zone 1: Single text element wordmark */}
+    <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-[#12111A]/[0.08] px-4 sm:px-8 h-[80px] flex items-center justify-between gap-8">
+      {/* Zone 1: Prominent Animated Brand Mark + Single-Line Wordmark */}
       <button
         type="button"
         onClick={() => onSelectStep('landing')}
-        className="font-display text-lg font-bold tracking-tight text-slate-900 whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-700"
+        className="inline-flex items-center gap-3.5 font-display text-2xl sm:text-[1.65rem] font-extrabold tracking-tight text-[#12111A] whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2563EB]"
       >
-        PlanCheck AI
+        <DrawFixLogo size={54} />
+        <span>DrawFix Ai</span>
       </button>
 
       {/* Zone 2: Concise single-line navigation links */}
       {isLanding ? (
         <nav
           aria-label="Overview sections"
-          className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600"
+          className="hidden md:flex items-center gap-7 text-base font-medium text-[#12111A]/70"
         >
           <a
-            href="#capabilities"
+            href="#process"
             onClick={(e) => {
               e.preventDefault();
-              scrollToSection('capabilities');
+              scrollToSection('process');
             }}
-            className="hover:text-slate-900 transition-colors whitespace-nowrap shrink-0"
+            className="hover:text-[#12111A] transition-colors whitespace-nowrap shrink-0"
           >
-            How it works
+            Process
           </a>
           <a
-            href="#benchmarks"
+            href="#workflows"
             onClick={(e) => {
               e.preventDefault();
-              scrollToSection('benchmarks');
+              scrollToSection('workflows');
             }}
-            className="hover:text-slate-900 transition-colors whitespace-nowrap shrink-0"
+            className="hover:text-[#12111A] transition-colors whitespace-nowrap shrink-0"
           >
-            Demo plans
-          </a>
-          <a
-            href="#scope"
-            onClick={(e) => {
-              e.preventDefault();
-              scrollToSection('scope');
-            }}
-            className="hover:text-slate-900 transition-colors whitespace-nowrap shrink-0"
-          >
-            Rules and limits
+            Workflows
           </a>
           <button
             type="button"
-            onClick={() => onSelectStep('upload')}
-            className="hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            onClick={() => onSelectStep('permits')}
+            className="hover:text-[#12111A] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
-            Upload
+            Permit desk
           </button>
+          <a
+            href="#rules"
+            onClick={(e) => {
+              e.preventDefault();
+              scrollToSection('rules');
+            }}
+            className="hover:text-[#12111A] transition-colors whitespace-nowrap shrink-0"
+          >
+            Code rules
+          </a>
+          <a
+            href="#faq"
+            onClick={(e) => {
+              e.preventDefault();
+              scrollToSection('faq');
+            }}
+            className="hover:text-[#12111A] transition-colors whitespace-nowrap shrink-0"
+          >
+            FAQ
+          </a>
         </nav>
       ) : (
         <nav
           aria-label="Workflow steps"
-          className="hidden md:flex items-center gap-6 text-sm font-medium overflow-x-auto"
+          className="hidden md:flex items-center gap-5 text-[15px] font-medium overflow-x-auto"
         >
           {WORKSPACE_STEPS.map((step, index) => {
-            const disabled = !hasPlan && step.id !== 'upload';
+            const disabled = !hasPlan && !step.alwaysEnabled;
             const active = activeStep === step.id;
             return (
               <button
@@ -104,12 +115,12 @@ export function Header({
                 type="button"
                 disabled={disabled}
                 onClick={() => onSelectStep(step.id)}
-                className={`h-16 inline-flex items-center gap-1.5 border-b-2 transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-blue-700 ${
+                className={`h-[80px] inline-flex items-center gap-1.5 border-b-2 transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2563EB] ${
                   active
-                    ? 'border-blue-700 text-slate-900 font-semibold'
+                    ? 'border-[#2563EB] text-[#12111A] font-semibold'
                     : disabled
                       ? 'border-transparent text-slate-300 cursor-not-allowed'
-                      : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
+                      : 'border-transparent text-[#12111A]/60 hover:text-[#12111A] hover:border-slate-300'
                 }`}
               >
                 <span className="font-mono text-[11px] text-slate-400 tabular-nums">
@@ -123,31 +134,11 @@ export function Header({
       )}
 
       {/* Zone 3: Single Primary Action */}
-      <div className="flex items-center gap-3 shrink-0">
-        {ai.checked && (
-          <span
-            title={
-              ai.aiConfigured
-                ? `Gemini${ai.model ? ` (${ai.model})` : ''} writes the explanations and types room labels. It never measures or decides.`
-                : 'No Gemini key is set on the server. Explanations use fixed wording and room labels use keyword matching. All checks still run.'
-            }
-            className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium whitespace-nowrap ${
-              ai.aiConfigured
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                : 'border-slate-200 bg-slate-50 text-slate-600'
-            }`}
-          >
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${ai.aiConfigured ? 'bg-emerald-500' : 'bg-slate-400'}`}
-              aria-hidden="true"
-            />
-            {ai.aiConfigured ? 'Gemini on' : 'Gemini off'}
-          </span>
-        )}
+      <div className="flex items-center shrink-0">
         <button
           type="button"
           onClick={onPrimaryAction}
-          className="px-4 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+          className="px-5 py-2.5 text-sm font-semibold text-white bg-[#12111A] hover:bg-[#2563EB] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563EB]"
         >
           {primaryActionLabel}
         </button>

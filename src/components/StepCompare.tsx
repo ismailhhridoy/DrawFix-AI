@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
+import { ArrowRight, CheckCircle2, FileText } from 'lucide-react';
 import type {
   BuildingProject,
   ComplianceAudit,
@@ -184,15 +184,11 @@ export function StepCompare({
         <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-3">
           <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
             <div className="inline-flex items-center gap-2 text-xs font-semibold text-slate-900">
-              <Sparkles className="w-3.5 h-3.5 text-blue-700" />
-              Summary
+              <FileText className="w-3.5 h-3.5 text-blue-700" />
+              Remediation summary
             </div>
             <span className="text-[11px] font-mono text-slate-500">
-              {narratingAi
-                ? 'Writing…'
-                : narration.source === 'gemini'
-                  ? 'Wording by Gemini; numbers from the engine'
-                  : 'Fixed wording; numbers from the engine'}
+              {narratingAi ? 'Updating…' : 'Measured geometry delta'}
             </span>
           </div>
 
@@ -202,15 +198,6 @@ export function StepCompare({
           <p className="text-sm text-slate-700 leading-relaxed">
             {narration.summaryEn}
           </p>
-
-          <div className="pt-2 border-t border-slate-100 space-y-1.5">
-            <div className="text-sm font-semibold text-slate-900">
-              {narration.headlineBn}
-            </div>
-            <p className="text-sm text-slate-700 leading-relaxed">
-              {narration.summaryBn}
-            </p>
-          </div>
         </div>
 
         <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-3">

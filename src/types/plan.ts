@@ -336,6 +336,35 @@ export interface DeficiencyMemo {
   source: 'gemini-rag' | 'template';
 }
 
+export interface PermitChecklistItem {
+  id: string;
+  category: 'Zoning & Site' | 'Architectural & Code' | 'Fire & Life Safety' | 'Authority NOCs & Filing';
+  title: string;
+  requirement: string;
+  citation: string;
+  basis: 'verified' | 'screening' | 'procedural';
+  status: 'pass' | 'action_needed' | 'verify';
+  measuredNote?: string;
+}
+
+export interface CorrectionResponseItem {
+  itemNumber: string;
+  objectionSummary: string;
+  category: 'Zoning & Setback' | 'Fire & Egress' | 'Habitability & Space' | 'Stair Safety' | 'Documentation';
+  resolutionStatus: 'resolved_in_copy' | 'linked_to_cad_finding' | 'needs_designer_action' | 'procedural_document';
+  citedClause: string;
+  cadEvidence: string;
+  recommendedResponse: string;
+}
+
+export interface CorrectionPackage {
+  authorityName: string;
+  projectSummary: string;
+  source: 'gemini-rag' | 'deterministic';
+  items: CorrectionResponseItem[];
+  responseLetter: string;
+}
+
 export type AppStep =
   | 'landing'
   | 'upload'
@@ -343,4 +372,6 @@ export type AppStep =
   | 'report'
   | 'compare'
   | 'simulate'
+  | 'permits'
   | 'export';
+

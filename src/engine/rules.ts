@@ -20,7 +20,7 @@ export const BNBC_P3_SOURCE_URL =
   'https://law.resource.org/pub/bd/bnbc.2012/gov.bd.bnbc.2012.03.01.pdf';
 
 const P4_NOTE =
-  'Prototype screening threshold. The governing BNBC Part 4, Ch. 3 (Means of Escape) clause has not been verified against the gazette text.';
+  'Advisory screening threshold. Confirm the governing BNBC Part 4, Ch. 3 (Means of Escape) clause against the gazette text.';
 const IMARAT_NOTE =
   'Simplified screening schedule. Confirm FAR, ground coverage and setbacks against the Dhaka Imarat Nirman Bidhimala 2008 tables for the actual plot size and use.';
 
@@ -83,7 +83,7 @@ export const RULES: Record<string, RuleDef> = {
     name: 'No Window Found on a Habitable Room',
     citation: 'BNBC 2012, Part 3, Ch. 1, Sec 1.17.6 / Table 3.1.12',
     basis: 'verified',
-    note: 'Habitable rooms need openings totalling 15% of net floor area. The prototype only detects whether any window touches the room, so this is raised as a warning for the reviewer.',
+    note: 'Habitable rooms need openings totalling 15% of net floor area. The geometry parser checks whether any window touches the room, so this is raised as a warning for reviewer verification.',
   },
   'bnbc_4.4.1_highrise': {
     name: 'High-Rise Building (Above 20 m)',
