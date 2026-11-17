@@ -1,0 +1,8 @@
+{
+  "name": "PlanCheck AI",
+  "description": "Deterministic BNBC fire-egress compliance checker, CAD floor-plan analyzer, and 3D fire-escape simulator.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
