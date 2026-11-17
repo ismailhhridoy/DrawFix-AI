@@ -4,11 +4,13 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
+  // Use import.meta.dirname (ESM-safe) instead of __dirname
+  const root = import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
   return {
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': path.resolve(root, '.'),
       },
     },
     server: {
