@@ -62,22 +62,16 @@ npm start          # serves the dist/ build on port 3000
 
 ---
 
-## 🔑 GitHub Secrets
+## ☁️ Deploy to Render (free)
 
-For CI/CD (GitHub Actions → Google Cloud Run), add these in
-**Settings → Secrets and variables → Actions**:
+`render.yaml` is included.
 
-| Secret name | Required | Description |
-|---|---|---|
-| `GEMINI_API_KEY` | ✅ Yes | Google AI Studio API key — https://aistudio.google.com/apikey |
-| `APP_URL` | ✅ Yes | The deployed Cloud Run URL (available after first deploy) |
-| `GCP_PROJECT_ID` | For GCP deploy | Your Google Cloud project ID |
-| `GCP_REGION` | For GCP deploy | e.g. `us-central1` or `asia-southeast1` |
-| `GCP_SA_KEY` | For GCP deploy | Service account JSON key with `roles/run.admin` + `roles/storage.admin` |
+1. Push this repo to GitHub.
+2. Render dashboard → **New → Blueprint** → select the repo (or **New → Web Service** and use the build/start commands from `render.yaml`).
+3. When prompted, set `GEMINI_API_KEY` (optional — without it the AI features use template fallbacks).
+4. Deploy. Health check: `/api/health`.
 
-> **Minimum for the app to work**: `GEMINI_API_KEY`. All other GCP secrets are only needed if you deploy to Cloud Run via GitHub Actions.
-
----
+Free instances sleep after ~15 min idle (about 1 min to wake) — open the URL once before a demo.
 
 ## 📁 Project structure
 
@@ -96,24 +90,6 @@ src/
   types/plan.ts        Shared TypeScript types
 index.html             SPA entry
 vite.config.ts         Vite + Tailwind + React config
-```
-
----
-
-## 🌐 Deployment (Google AI Studio / Cloud Run)
-
-This project was originally scaffolded for **Google AI Studio** deployment.
-The `metadata.json` file declares `MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API`.
-
-For manual Cloud Run deployment:
-
-```bash
-gcloud builds submit --tag gcr.io/$GCP_PROJECT_ID/plancheck-ai
-gcloud run deploy plancheck-ai \
-  --image gcr.io/$GCP_PROJECT_ID/plancheck-ai \
-  --platform managed \
-  --region $GCP_REGION \
-  --set-env-vars GEMINI_API_KEY=$GEMINI_API_KEY,APP_URL=https://...
 ```
 
 ---
