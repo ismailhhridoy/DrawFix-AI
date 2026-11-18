@@ -1,106 +1,55 @@
-# PlanCheck AI
+# DrawFix AI
 
-**Deterministic BNBC fire-egress compliance checker, CAD DXF floor-plan analyzer, and 3D fire-escape simulator for Bangladesh.**
+Reads an AutoCAD **DXF floor plan**, measures every escape route, checks it against Bangladesh building
+rules (BNBC 2012 and a simplified Dhaka rule set), proposes fixes, re-checks them, plays the escape in
+3D, and exports a PDF. Built for the International AI Builders Congress 2026.
 
-Upload a DXF floor plan → get an instant compliance report against BNBC 2020/2012, Imarat Bidhimala 2008, and FSCD rules — with bilingual (English + বাংলা) violation explanations powered by Gemini AI, before/after remediation comparison, and a 3D escape-time simulation.
+> **Prototype and screening aid. Not an approval.** Every finding shows how far to trust it.
+> A licensed reviewer must confirm before anything is filed.
 
----
+## Why
 
-## ✨ Features
+Deadly building fires in Bangladesh repeat the same drawing-level failures: a missing second stair
+(Bailey Road, 2024, 46 dead), locked exits (Mirpur, 2025, 16 dead; Tazreen, 2012, 112+ dead). Checking
+plans against the code falls on stretched teams across several agencies. DrawFix gives a reviewer a
+measured first pass. It addresses whether people can **get out**, not how fires start.
+Sources and open questions: [`RESEARCH.md`](RESEARCH.md).
 
-| Feature | Detail |
-|---|---|
-| DXF parser | Reads AutoCAD DXF layers (walls, doors, stairs, room labels); AI-assisted layer convention inference |
-| Rule engine | Travel distance (16 m / 22.5 m sprinklered), corridor width, FAR/MGC ratios, setbacks, habitability |
-| A\* pathfinding | Per-room escape times; multi-floor routes through stairs |
-| 3D simulation | Three.js walkthrough of before/after escape paths |
-| AI explanations | Bilingual violation summaries grounded in rule-engine output (Gemini) |
-| RAG copilot | Ask questions about BNBC clauses; hybrid BM25 + embedding retrieval |
-| Deficiency memo | RAJUK/FSCD-style pre-submission memo (EN + বাংলা) |
-| PDF export | jsPDF report with all findings and remediation summary |
-| Sample buildings | Mirpur RMG factory, Dhanmondi residential block, Gazipur 3-floor complex |
+## Design rule
 
----
+**Code measures. A person confirms the inputs. AI only does the wording.**
 
-## 🚀 Local development
+- Every distance, width, area and pass/fail comes from plain TypeScript (`src/engine/ruleEngine.ts`).
+- Gemini only classifies messy room labels, rewords findings in English and Bangla, answers questions
+  from the tool's own reference notes, and drafts a review note. It never outputs a measurement or a clause.
+- With no Gemini key the whole app still works with fixed wording.
+- Each finding has a trust level: `verified` (limit read in the BNBC 2012 text), `screening`
+  (prototype value, not checked against the gazette) or `drawing` (consistency check on the drawing).
+  Today: 9 verified, 12 screening, 2 drawing rules.
 
-### 1. Install dependencies
+## Run locally
 
 ```bash
 npm install
+cp .env.example .env     # optional: add GEMINI_API_KEY (https://aistudio.google.com/apikey)
+npm run dev              # http://localhost:3000
+npm run lint             # type-check
+npm test                 # 40 rule-engine tests
 ```
 
-### 2. Configure environment
+`GET /api/health` shows whether Gemini is configured and which model is in use.
 
-```bash
-cp .env.example .env
-```
+## Deploy on Render (free)
 
-Edit `.env`:
+`render.yaml` is included. Push to GitHub, then Render, New, Blueprint, select the repo, and set
+`GEMINI_API_KEY` (optional). Health check path: `/api/health`. Free instances sleep after about
+15 minutes idle (about a minute to wake), so open the URL before a demo.
 
-```env
-GEMINI_API_KEY="your-key-here"   # https://aistudio.google.com/apikey
-APP_URL="http://localhost:3000"
-```
+## Known limits
 
-> The app works **without** a Gemini key — AI features fall back to template strings. You can test the DXF parsing, rule engine, and 3D simulation with no key at all.
+- Synthetic demo plans only; no real Bangladeshi architect DXF has been tested yet.
+- Padlocked doors and changes of use happen after approval and are outside a drawing check.
+- Part 4 exit capacity, exit count, FAR, coverage and setback rules are screening values.
+- The PDF prints "[Bangla label]" instead of Bangla text (no Bangla font embedded).
 
-### 3. Start the dev server
-
-```bash
-npm run dev
-```
-
-Open **http://localhost:3000** — the Gazipur 3-floor complex loads automatically.
-
-### 4. Build for production
-
-```bash
-npm run build      # outputs to dist/
-npm start          # serves the dist/ build on port 3000
-```
-
----
-
-## ☁️ Deploy to Render (free)
-
-`render.yaml` is included.
-
-1. Push this repo to GitHub.
-2. Render dashboard → **New → Blueprint** → select the repo (or **New → Web Service** and use the build/start commands from `render.yaml`).
-3. When prompted, set `GEMINI_API_KEY` (optional — without it the AI features use template fallbacks).
-4. Deploy. Health check: `/api/health`.
-
-Free instances sleep after ~15 min idle (about 1 min to wake) — open the URL once before a demo.
-
-## 📁 Project structure
-
-```
-server.ts              Express API (AI endpoints, Vite middleware)
-src/
-  App.tsx              Root state machine — 7 steps
-  components/          UI step components + Blueprint2D + Viewport3D
-  engine/
-    dxfParser.ts       DXF → ParsedFloorPlan
-    ruleEngine.ts      BNBC compliance (deterministic)
-    pathfinding.ts     A* escape routing (single + multi-floor)
-    bnbcCorpus.ts      Regulatory clause database (inline)
-    aiFallback.ts      Gemini API client + template fallbacks
-    sampleDxf.ts       Built-in sample buildings
-  types/plan.ts        Shared TypeScript types
-index.html             SPA entry
-vite.config.ts         Vite + Tailwind + React config
-```
-
----
-
-## 📜 Regulatory scope
-
-| Document | Coverage |
-|---|---|
-| BNBC 2012 Part 3 Ch. 1 | Egress travel distance (16 m), corridor width (0.75 m) |
-| BNBC 2020 Part 4 Ch. 3 | Sprinklered allowance (22.5 m), FAR/MGC tables |
-| Imarat Bidhimala 2008 | RAJUK setbacks, floor area ratio by road width |
-| FSCD Checklist | High-rise NOC trigger (>20 m), fire-lift requirements |
-
-> **Disclaimer**: PlanCheck AI is a screening tool. All findings require review by a licensed engineer and official RAJUK/FSCD officer before filing.
+See `CLAUDE.md` for the full handoff, status and next steps.

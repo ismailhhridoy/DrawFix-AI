@@ -37,6 +37,22 @@ findings on the plan, proposes fixes, re-checks them, plays the escape in 3D, an
   - `drawing` — consistency check on the drawing itself, not a code rule.
 - Never present a `screening` limit as law. Never add a clause number you have not read.
 
+## Why this problem (short version — full sources in `RESEARCH.md`)
+
+- Bangladesh logs about 27,000 fires a year (2024: 26,659, 140 deaths; 2025: about 27,059, 85 deaths),
+  but electrical faults, cigarettes and stoves start most of them. A plan check cannot see ignition.
+  **Pitch DrawFix as "can people get out", not "prevents fires".**
+- The deadliest recent cases failed on the drawing-level basics: Bailey Road 2024 (46 dead: one stair
+  where two are required, no fire exits, blocked stair); Mirpur Oct 2025 (16 dead: padlocked roof door);
+  Tazreen 2012 (112+ dead: locked exits).
+- Enforcement is thin and split: RAJUK, city corporations and the Fire Service share the job; the
+  authority meant to enforce BNBC 2020 (BBRA) was reported not yet set up.
+- Hard limit: padlocks and changes of use happen after approval. A drawing check only sees the drawing
+  plus what a reviewer ticks in the Review step. Say so before a judge does.
+- Do **not** cite the 66% / 60% / 40% / 37.39% non-compliance figures: originals not found.
+- Open questions that change the product: do Bangladeshi architects submit DXF/DWG to RAJUK (ECPS)?
+  Exact BNBC Part 4 Ch. 3 text? See `RESEARCH.md` section 8.
+
 ## Run it
 
 ```bash
@@ -44,6 +60,7 @@ npm install
 cp .env.example .env.local   # optional: add GEMINI_API_KEY
 npm run dev                  # http://localhost:3000
 npx tsc --noEmit             # type-check
+npm test                     # vitest: 40 rule-engine tests (tests/engine.test.ts)
 npx vite build               # production build
 ```
 
@@ -74,7 +91,14 @@ src/components/
   LandingPage.tsx            Rewritten: live plan as hero, rules-and-limits table.
   StepUpload / StepReview / StepReport / StepCompare / Viewport3D / StepExport
   Blueprint2D.tsx            SVG plan view.
-test-fixtures/               Unfamiliar-convention DXFs used to test the parser.
+test-fixtures/               Unfamiliar-convention DXFs used to test the parser (all 3 come from one
+                             script, make_fixtures.py, so they are one case, not three).
+tests/engine.test.ts         Vitest regression suite (baselines pinned from current engine output).
+render.yaml                  Render Blueprint (free web service). Dockerfile is unused/untested.
+RESEARCH.md                  Sourced problem research with confidence tags. Keep it updated.
+src/engine/permitEngine.ts   Permit checklist + correction-letter handling, used by StepPermits.tsx.
+                             NOT documented by the author and NOT audited for invented data.
+src/engine/localIntelligence.ts  Local (non-LLM) room classification, question box, triage.
 ```
 
 ## What was changed from the AI Studio version (and why)
@@ -131,7 +155,8 @@ test-fixtures/               Unfamiliar-convention DXFs used to test the parser.
 | Mirpur RMG floor 4 | 6 fail, 2 warn | 0 / 0 | 24.7 s → 16.7 s |
 | Dhanmondi residential L3 | 5 fail, 4 warn | 0 / 0 | 26.7 s → 12.1 s |
 
-22 rules: 9 verified, 12 screening, 1 drawing check. Type-check and build pass.
+23 rules in `rules.ts`: 9 verified, 12 screening, 2 drawing checks. Type-check, build and
+40 tests pass (checked 2026-11-18).
 
 ## Not done yet (next steps, in order)
 
@@ -145,7 +170,19 @@ test-fixtures/               Unfamiliar-convention DXFs used to test the parser.
 4. Dhaka Imarat Nirman Bidhimala 2008 FAR/MGC/setback tables (currently simplified ladder).
 5. Bangla font in PDF (embed a Bangla TTF in jsPDF) instead of "[Bangla label]".
 6. Mobile layout pass (desktop checked at 1440 px only).
-7. Commit and push. Nothing is committed yet. Suggested: branch `improve/honest-checks`.
+7. ~~Commit and push~~ Done: work is on `main` and pushed (auto-push is the standing rule).
+8. **Rate limiter bug (confirmed 2026-11-18):** `server.ts` keys on `req.ip` with no
+   `app.set('trust proxy', 1)`. Behind Render every visitor shares one 40/min bucket: 45 requests from
+   45 different IPs gave 40 OK + 5 x 429. The app fires AI calls on load, so a few judges at once will
+   hit it. One-line fix. Also the `hits` map is never pruned.
+9. Audit `permitEngine.ts` / `StepPermits.tsx` for unverified or invented requirements.
+10. Lazy-load Viewport3D and heavy steps (single 1,565 kB chunk, no `React.lazy`).
+11. Add hand-calculated test cases (e.g. a room 17 m from an exit must fail). Current baselines are
+    circular: the sample plans were written by the same people as the rules. Changing the 16 m
+    constant to 18 only failed the constants test, so per-building checks do not depend on it.
+12. Answer the open questions in `RESEARCH.md` section 8 (DXF vs PDF at RAJUK, BNBC Part 4 text).
+13. Confirm Gemini works after deploy: `/api/health` must show `aiConfigured: true`. Model ids
+    `gemini-4-hydrogen` / `gemini-embedding-2` are unconfirmed; failover to `gemini-2.5-flash`.
 
 ## Pitch notes
 
@@ -155,3 +192,13 @@ test-fixtures/               Unfamiliar-convention DXFs used to test the parser.
 - Have one spare DXF tested end to end in case a judge asks "what if I upload mine".
 - Say clearly: prototype, screening aid, not an approval; which limits are verified.
 - "Where is the AI?" → labels and language, never the measurement. That is the design.
+
+## Update log (add a line every time work is done; newest first)
+
+- 2026-11-18: Researched the problem; added `RESEARCH.md`; synced this file (rule count, permits step,
+  tests, Render, rate-limit bug, circular-test caveat); rewrote README to match the design rule.
+- 2026-11-18: Added Vitest suite (40 tests) and fixed esbuild peer conflict (`^0.27.0`); CI runs
+  `npm ci` + `npm test`.
+- 2026-11-18: Made Render-deployable (`render.yaml`, `npm start` via tsx, engines); removed the
+  Cloud Run deploy workflow; renamed package to `drawfix-ai`.
+- Earlier: author's AI Studio to DrawFix rewrite (see "What was changed" above).
