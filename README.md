@@ -27,7 +27,7 @@ Upload a DXF floor plan → get an instant compliance report against BNBC 2020/2
 ### 1. Install dependencies
 
 ```bash
-npm install --legacy-peer-deps
+npm install
 ```
 
 ### 2. Configure environment
