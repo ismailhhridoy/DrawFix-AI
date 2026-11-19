@@ -131,7 +131,6 @@ src/engine/banglaText.ts     DXF \U+ decoding, MTEXT cleanup, Bangla room words,
 src/i18n/                    index.tsx (LangProvider, useLang, Bi, LanguageSwitch), en.ts, bn.ts
                              (typed: missing Bangla key fails tsc), digits.ts, glossary.ts.
 src/components/PrintReport.tsx   Printable EN/BN/both report (browser print dialog).
-src/components/BanglaNotice.tsx  "Bangla is a machine draft" bar + glossary, shown when Bangla is on.
 tests/bangla.test.ts         Bangla steps 1-7; tests/fixtures-bangla.ts builds a 2-room DXF.
 ```
 
@@ -339,6 +338,11 @@ and take away a Bangla report, without any number changing between languages.
 - "Where is the AI?" → labels and language, never the measurement. That is the design.
 
 ## Update log (add a line every time work is done; newest first)
+
+- 2026-11-19: Ismail asked for a finished-product look: removed the on-screen Bangla machine-draft notice
+  (BanglaNotice.tsx) and "beta"/"prototype"/"DRAFT" labels in the UI and print header. The Bangla is STILL
+  unreviewed by a native speaker (internal fact, keep tracking it); the glossary remains in src/i18n/glossary.ts.
+  Trust badges (verified/screening/drawing) stay: they are findings data, not a disclaimer.
 
 - 2026-11-19: Real AI features. Design rule now "AI proposes, code verifies, a person approves". Gemini layout
   proposals + verifier, fix agent with approval gate (Fixes step), plan image reading (Upload step, ported from
