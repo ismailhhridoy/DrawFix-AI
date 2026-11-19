@@ -235,7 +235,11 @@ and take away a Bangla report, without any number changing between languages.
    Original plan: **Bangla in drawings.** Decode `\U+XXXX` escapes in TEXT/MTEXT (and strip MTEXT formatting codes);
    widen the Bangla room dictionary (রান্নাঘর, টয়লেট/শৌচাগার, বাথরুম, ডাইনিং, ড্রয়িং, লিফট...); add a
    Bijoy/SutonnyMJ-to-Unicode converter **only after** a real DXF shows that encoding.
-7. **Bangla questions offline.** Bangla keyword map for `queryLocalCorpus` (reuse the server synonym
+7. **DONE 2026-11-19.** `BANGLA_QUERY_SYNONYMS` + `expandBanglaQuery` + `banglaNoteScore` in
+   `banglaText.ts`, used by the server and `queryLocalCorpus`. Stateful `/g` regexes removed (server
+   map and `LOCAL_SYNONYMS`). Zero score now returns "no reference note matched" with no citations,
+   offline and on the server. Also fixed `tests/server.test.ts` leaking the spawned server (killing npx
+   left tsx running, so later runs silently tested stale code). Original plan: **Bangla questions offline.** Bangla keyword map for `queryLocalCorpus` (reuse the server synonym
    list, without `/g`), and return "no matching note" instead of an answer when the best score is 0.
 8. **Tests:** `\U+` decoding, Bijoy sample (if added), number guard rejects a changed number,
    language switch renders Bangla fields, offline Bangla question finds Sec 1.13.8.2.
@@ -293,6 +297,7 @@ and take away a Bangla report, without any number changing between languages.
 
 ## Update log (add a line every time work is done; newest first)
 
+- 2026-11-19: Bangla step 7: Bangla questions work offline and on the server; no-match answer; fixed stateful regexes and leaked test server.
 - 2026-11-19: Bangla step 6: decode \U+ escapes and MTEXT codes in DXF text; Bangla room dictionary in both classifiers.
 - 2026-11-19: Bangla step 5: printable HTML report (EN / BN / both) via the browser's print dialog.
 - 2026-11-19: Bangla step 4: shared glossary (prompts, tests, on-screen machine-draft notice). Native review still needed.

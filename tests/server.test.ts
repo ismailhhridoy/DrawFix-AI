@@ -21,12 +21,21 @@ beforeAll(async () => {
   child = spawn('npx', ['tsx', 'server.ts'], {
     env: { ...process.env, PORT: String(PORT), GEMINI_API_KEY: '', NODE_ENV: 'development' },
     stdio: 'ignore',
+    // Own process group, so afterAll can stop npx *and* the tsx/node children it starts.
+    detached: true,
   });
   await waitUp();
 }, 30_000);
 
 afterAll(() => {
-  child?.kill();
+  // Killing only npx left the real server running on the port; a later run then tested stale code.
+  if (child?.pid) {
+    try {
+      process.kill(-child.pid, 'SIGTERM');
+    } catch {
+      child.kill();
+    }
+  }
 });
 
 describe('rate limiter behind a proxy', () => {
@@ -51,4 +60,31 @@ describe('rate limiter behind a proxy', () => {
     }
     expect(codes.filter((c) => c === 429).length).toBeGreaterThan(0);
   }, 30_000);
+});
+
+describe('question box on the server without Gemini (Bangla)', () => {
+  const ask = async (question: string, ip: string) => {
+    const r = await fetch(`http://127.0.0.1:${PORT}/api/rag/query`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': ip },
+      body: JSON.stringify({ question }),
+    });
+    return r.json() as Promise<{ citations: { id: string }[]; answerEn: string; answerBn: string }>;
+  };
+
+  it('answers a Bangla question the same way every time and in Bangla', async () => {
+    const q = 'বের হওয়ার পথের সর্বোচ্চ দূরত্ব কত?';
+    const a = await ask(q, '10.3.0.1');
+    const b = await ask(q, '10.3.0.1');
+    expect(a.citations.length).toBeGreaterThan(0);
+    expect(a.citations.map((c) => c.id)).toEqual(b.citations.map((c) => c.id));
+    expect(a.citations.map((c) => c.id)).toContain('bnbc-2012-1.13.8.2-cabins');
+    expect(/[ঀ-৿]/.test(a.answerBn)).toBe(true);
+  }, 15_000);
+
+  it('says no note matched instead of returning an unrelated one', async () => {
+    const a = await ask('qwxz zzyv', '10.3.0.2');
+    expect(a.citations).toEqual([]);
+    expect(a.answerEn).toMatch(/no indexed reference note/i);
+  }, 15_000);
 });

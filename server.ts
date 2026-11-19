@@ -8,6 +8,7 @@ import {
   type RegulatoryClauseChunk,
 } from './src/engine/bnbcCorpus.ts';
 import { glossaryPromptLines } from './src/i18n/glossary.ts';
+import { banglaNoteScore, expandBanglaQuery } from './src/engine/banglaText.ts';
 
 /** Appended to every prompt that writes Bangla, so terms match the app's own Bangla. */
 const BN_STYLE = ` In Bangla, use these terms exactly (English = Bangla): ${glossaryPromptLines()}. Write numbers with Bangla or Latin digits but never change a number. Keep clause numbers such as "Sec 1.13.8.2" in their original Latin form.`;
@@ -77,33 +78,10 @@ async function generateJson(ai: GoogleGenAI, contents: string, config: GenConfig
 // ============================================================================
 // Hybrid BNBC / Imarat Bidhimala RAG Engine (BM25 Lexical + Optional Embeddings)
 // ============================================================================
-const BANGLA_SYNONYM_MAP: [RegExp, string][] = [
-  [/দরজা|ফটক/g, 'door exit'],
-  [/তালা|তালাবদ্ধ|বন্ধ/g, 'locked obstructed'],
-  [/সিঁড়ি|সিড়ি|সোপান/g, 'stair staircase'],
-  [/দূরত্ব|হাঁটার/g, 'travel distance 16m 22.5m'],
-  [/করিডোর|বারান্দা|পথ/g, 'corridor passage width'],
-  [/জানালা|আলো|বাতাস/g, 'window daylight ventilation'],
-  [/শয়ন|বেডরুম|ঘর/g, 'bedroom habitable 9.5'],
-  [/স্প্রিংকলার/g, 'sprinkler 22.5m'],
-  [/উচ্চতা|বহুতল|লিফট/g, 'high rise 20m fire lift'],
-  [/সেটব্যাক|ছাড়/g, 'setback front rear side'],
-  [/ফার|রাস্তা/g, 'far road width'],
-  [/এমজিসি|জমি|আচ্ছাদন/g, 'mgc ground coverage'],
-  [/রাজউক|অনুমোদন/g, 'rajuk imarat bidhimala'],
-  [/রাইজার|ট্রেড|ধাপ/g, 'riser tread 610 648'],
-  [/কেবিন/g, 'cabin 16 0.75'],
-  [/প্রস্থ/g, 'width'],
-  [/ফায়ার|অগ্নি/g, 'fscd fire egress'],
-];
+// Bangla question words now live in src/engine/banglaText.ts (shared with the offline question box).
 
 function tokenizeQuery(raw: string): string[] {
-  let enriched = raw.toLowerCase();
-  for (const [pattern, expansion] of BANGLA_SYNONYM_MAP) {
-    if (pattern.test(enriched)) {
-      enriched += ` ${expansion}`;
-    }
-  }
+  const enriched = expandBanglaQuery(raw).toLowerCase();
   return enriched
     .replace(/[^a-z0-9.\u0980-\u09ff\s]/g, ' ')
     .split(/\s+/)
@@ -126,6 +104,8 @@ function scoreLexicalChunk(
     if (keyText.includes(tok)) score += 2.6;
     if (hayText.includes(tok)) score += 1.4;
   }
+
+  score += banglaNoteScore(rawLower, chunk);
 
   // Exact clause or numeric token boost
   const clauseDigits = chunk.clause.match(/\d+(\.\d+)*/g) || [];
@@ -237,6 +217,8 @@ async function hybridRetrieveClauses(
   });
 
   scored.sort((a, b) => b.score - a.score);
+  // Nothing matched at all: return no notes rather than an unrelated one.
+  if (!queryVec && (scored[0]?.score ?? 0) <= 0) return { chunks: [], retrievalMode };
   return {
     chunks: scored.slice(0, topK),
     retrievalMode,
@@ -495,7 +477,9 @@ app.post('/api/rag/query', async (req, res) => {
       answerEn: top
         ? `${top.part}, ${top.clause}: ${top.text}`
         : 'DrawFix Ai has no indexed reference note on that question.',
-      answerBn: '',
+      answerBn: top
+        ? `${top.part}, ${top.clause}: ${top.textBn}`
+        : 'এই প্রশ্নের সঙ্গে মেলে এমন কোনো রেফারেন্স নোট DrawFix Ai-তে নেই।',
     });
     return;
   }

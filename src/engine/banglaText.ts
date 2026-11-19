@@ -77,3 +77,58 @@ export function matchBanglaRoom(label: string): { taxonomy: RoomTaxonomy; word: 
   }
   return best;
 }
+
+/**
+ * Bangla question words mapped to the English terms the reference notes use.
+ * Shared by the server and the offline question box. No /g flag: RegExp.test with /g is stateful.
+ */
+export const BANGLA_QUERY_SYNONYMS: [RegExp, string][] = [
+  [/দরজা|ফটক/, 'door exit'],
+  [/তালা|তালাবদ্ধ|বন্ধ/, 'locked obstructed'],
+  [/সিঁড়ি|সিড়ি|সোপান/, 'stair staircase'],
+  [/দূরত্ব|হাঁটার/, 'travel distance'],
+  [/করিডোর|বারান্দা|চলাচলের পথ/, 'corridor passage width'],
+  [/জানালা|আলো|বাতাস/, 'window daylight ventilation'],
+  [/শয়ন|শোবার|বেডরুম/, 'bedroom sleeping habitable'],
+  [/স্প্রিংকলার/, 'sprinkler'],
+  [/উচ্চতা|বহুতল|লিফট/, 'high rise height'],
+  [/সেটব্যাক|ছাড়/, 'setback'],
+  [/এফএআর|ফার|রাস্তা/, 'far road width'],
+  [/এমজিসি|জমি|আচ্ছাদন/, 'mgc ground coverage'],
+  [/রাজউক|অনুমোদন|বিধিমালা/, 'rajuk imarat bidhimala'],
+  [/রাইজার|ট্রেড|ধাপ/, 'riser tread'],
+  [/হাতল|রেলিং/, 'handrail'],
+  [/কেবিন/, 'cabin'],
+  [/প্রস্থ|চওড়া/, 'width'],
+  [/বহির্গমন|বের হওয়ার/, 'exit escape'],
+  [/মাপ|ডাইমেনশন/, 'dimension'],
+  [/ধারণক্ষমতা|লোক|মানুষ/, 'occupant load capacity'],
+];
+
+/** Adds English search terms for any Bangla words in the question. */
+export function expandBanglaQuery(question: string): string {
+  const q = question.normalize('NFC');
+  let out = question;
+  for (const [rx, add] of BANGLA_QUERY_SYNONYMS) {
+    if (rx.test(q) || rx.test(question)) out += ` ${add}`;
+  }
+  return out;
+}
+
+/** Score a reference note's Bangla keywords and title against a Bangla question. */
+export function banglaNoteScore(
+  question: string,
+  note: { keywordsBn: string[]; titleBn: string; textBn: string }
+): number {
+  if (!hasBangla(question)) return 0;
+  const q = norm(question);
+  let s = 0;
+  for (const k of note.keywordsBn) {
+    const kn = norm(k);
+    if (q.includes(kn)) s += 2 + Math.min(3, kn.length / 4);
+  }
+  const title = norm(note.titleBn);
+  const words = q.split(/[\s?।,!]+/).filter((w) => w.length >= 3 && hasBangla(w));
+  for (const w of words) if (title.includes(w)) s += 1.5;
+  return s;
+}

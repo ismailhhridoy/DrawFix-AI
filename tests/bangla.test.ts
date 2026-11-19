@@ -280,3 +280,38 @@ describe('step 6: Bangla labels in drawings', () => {
     expect(classifyRoomWithGeometry(byLabel['টয়লেট'], plan).taxonomy).toBe('utility');
   });
 });
+
+describe('step 7: Bangla questions offline', () => {
+  const q = 'বের হওয়ার পথের সর্বোচ্চ দূরত্ব কত?';
+
+  it('a Bangla question scores above zero and finds Sec 1.13.8.2', () => {
+    const r = queryLocalCorpus(q, project, audit);
+    expect(r.citations.length).toBeGreaterThan(0);
+    expect(r.citations[0].score).toBeGreaterThan(0);
+    expect(r.citations.map((c) => c.id)).toContain('bnbc-2012-1.13.8.2-cabins');
+    expect(hasBangla(r.answerBn)).toBe(true);
+  });
+
+  it('gives the same answer when asked twice (no stateful /g regex)', () => {
+    const a = queryLocalCorpus('Which exit door width applies?', project, audit);
+    const b = queryLocalCorpus('Which exit door width applies?', project, audit);
+    expect(a.citations.map((c) => c.id)).toEqual(b.citations.map((c) => c.id));
+    const c = queryLocalCorpus(q, project, audit);
+    const d = queryLocalCorpus(q, project, audit);
+    expect(c.citations.map((x) => x.id)).toEqual(d.citations.map((x) => x.id));
+  });
+
+  it('other Bangla questions find the right note', () => {
+    const top = (s: string) => queryLocalCorpus(s, project, audit).citations[0]?.id;
+    expect(top('সিঁড়ির হাতলের উচ্চতা কত হবে?')).toBe('bnbc-2012-1.13.5-stairs');
+    expect(top('শয়নকক্ষের ন্যূনতম আয়তন কত?')).toBe('bnbc-2012-1.13.2.2-bedroom');
+    expect(top('সেটব্যাক ও এফএআর কীভাবে যাচাই হয়?')).toBe('screen-zoning');
+  });
+
+  it('returns "no matching note" when nothing matches', () => {
+    const r = queryLocalCorpus('qwxz zzyv', project, audit);
+    expect(r.citations).toEqual([]);
+    expect(r.answerEn).toMatch(/No reference note matched/);
+    expect(hasBangla(r.answerBn)).toBe(true);
+  });
+});

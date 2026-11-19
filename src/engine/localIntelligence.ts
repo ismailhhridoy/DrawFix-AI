@@ -1,5 +1,5 @@
 import { toBnDigits } from '../i18n/digits';
-import { matchBanglaRoom } from './banglaText';
+import { banglaNoteScore, expandBanglaQuery, matchBanglaRoom } from './banglaText';
 import { REGULATORY_CORPUS, type RegulatoryClauseChunk } from './bnbcCorpus';
 import type {
   BuildingProject,
@@ -174,12 +174,12 @@ export function classifyRoomWithGeometry(
 }
 
 const LOCAL_SYNONYMS: [RegExp, string][] = [
-  [/far|coverage|mgc|plot|road|setback|zoning|imarat/gi, 'far mgc coverage setback road width plot rajuk'],
-  [/bedroom|sleep|9\.5|2\.9|habit/gi, 'bedroom sleeping 9.5 2.9 habitable'],
-  [/window|daylight|vent|15%|18%/gi, 'window daylight ventilation opening 15 18'],
-  [/stair|riser|tread|headroom|handrail|2\.15|610|648/gi, 'stair headroom handrail riser tread 2.15 0.90 610 648'],
-  [/corridor|passage|width|pinch|0\.75|cabin|16/gi, 'corridor passage 0.75 cabin 16 travel'],
-  [/exit|door|lock|sprinkler|22\.5|high.?rise|20/gi, 'exit door locked sprinkler 22.5 high rise 20'],
+  [/far|coverage|mgc|plot|road|setback|zoning|imarat/i, 'far mgc coverage setback road width plot rajuk'],
+  [/bedroom|sleep|9\.5|2\.9|habit/i, 'bedroom sleeping 9.5 2.9 habitable'],
+  [/window|daylight|vent|15%|18%/i, 'window daylight ventilation opening 15 18'],
+  [/stair|riser|tread|headroom|handrail|2\.15|610|648/i, 'stair headroom handrail riser tread 2.15 0.90 610 648'],
+  [/corridor|passage|width|pinch|0\.75|cabin|16/i, 'corridor passage 0.75 cabin 16 travel'],
+  [/exit|door|lock|sprinkler|22\.5|high.?rise|20/i, 'exit door locked sprinkler 22.5 high rise 20'],
 ];
 
 /**
@@ -191,7 +191,7 @@ export function queryLocalCorpus(
   project?: BuildingProject | null,
   audit?: ComplianceAudit | null
 ): RagQueryResponse {
-  let enriched = question.toLowerCase();
+  let enriched = expandBanglaQuery(question).toLowerCase();
   for (const [rx, add] of LOCAL_SYNONYMS) {
     if (rx.test(enriched)) enriched += ` ${add}`;
   }
@@ -218,6 +218,7 @@ export function queryLocalCorpus(
         if (keys.includes(tok)) s += 2.5;
         if (hay.includes(tok)) s += 1.2;
       }
+      s += banglaNoteScore(question, chunk);
       if (
         project?.occupancyClass &&
         (chunk.occupancyScope.includes('all') ||
@@ -229,7 +230,8 @@ export function queryLocalCorpus(
     }
   ).sort((a, b) => b.score - a.score);
 
-  const top = scored.slice(0, 4);
+  // When nothing matched, say so instead of returning an unrelated note.
+  const top = scored.filter((x) => x.score > 0).slice(0, 4);
   const best = top[0]?.chunk;
   const activeMatches = audit
     ? audit.violations
@@ -275,10 +277,10 @@ export function queryLocalCorpus(
     })),
     answerEn: best
       ? `${best.part}, ${best.clause} (${best.basis === 'verified' ? 'BNBC verified limit' : 'Advisory screening threshold'}): ${best.text}${activeNote}`
-      : 'No indexed BNBC or Imarat Bidhimala clause matched that query.',
+      : 'No reference note matched that question. Try words such as exit, stair, travel distance, bedroom or setback.',
     answerBn: best
       ? `${best.part}, ${best.clause} (${best.basis === 'verified' ? 'বিএনবিসি-তে যাচাই করা সীমা' : 'প্রাথমিক স্ক্রিনিং সীমা'}): ${best.textBn}${activeNoteBn}`
-      : 'বিএনবিসি বা ইমারত বিধিমালার কোনো সূচিভুক্ত ধারা এই প্রশ্নের সঙ্গে মেলেনি।',
+      : 'এই প্রশ্নের সঙ্গে কোনো রেফারেন্স নোট মেলেনি। বহির্গমন, সিঁড়ি, হাঁটার দূরত্ব, শয়নকক্ষ বা সেটব্যাক জাতীয় শব্দ দিয়ে চেষ্টা করুন।',
   };
 }
 
