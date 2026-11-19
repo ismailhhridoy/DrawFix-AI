@@ -293,6 +293,9 @@ app.get('/api/health', (_req, res) => {
     aiConfigured: Boolean(getGeminiClient()),
     model: workingModel || MODEL_CANDIDATES[0],
     lastAiError,
+    // Render sets RENDER_GIT_COMMIT; lets anyone check which commit is live.
+    commit: (process.env.RENDER_GIT_COMMIT || '').slice(0, 7) || null,
+    features: ['layout-proposals', 'fix-agent', 'plan-image-reading'],
   });
 });
 
