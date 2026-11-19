@@ -228,7 +228,7 @@ export async function runFixAgent(project: BuildingProject, opts: AgentOptions =
           policy = 'rules'; // Gemini is off: fall back to the fixed policy below.
           break;
         }
-        stoppedBecause = 'Gemini stopped answering; staged changes so far are kept.';
+        stoppedBecause = 'Layout search stopped; staged changes so far are kept.';
         break;
       }
       const step = res.step;
@@ -250,12 +250,12 @@ export async function runFixAgent(project: BuildingProject, opts: AgentOptions =
         break;
       }
     }
-    if (!stoppedBecause && policy === 'gemini') stoppedBecause = `Step limit (${maxSteps}) reached.`;
+    if (!stoppedBecause) stoppedBecause = `Step limit (${maxSteps}) reached.`;
   }
 
   if (policy === 'rules') {
     let out = execTool(ctx, 'run_audit', {});
-    push({ thought: 'Gemini is off: using the fixed hand-written fixes.', tool: 'run_audit', args: {}, result: out.result, ok: true });
+    push({ thought: '', tool: 'run_audit', args: {}, result: out.result, ok: true });
     const seen = new Set<string>();
     for (let guard = 0; guard < maxSteps; guard++) {
       const next = ctx.audit.violations.find((v) => isProblem(v) && !seen.has(v.id) && fixSpecToEdits(v, ctx.working));
@@ -263,7 +263,7 @@ export async function runFixAgent(project: BuildingProject, opts: AgentOptions =
       seen.add(next.id);
       const edits = fixSpecToEdits(next, ctx.working)!;
       out = execTool(ctx, 'try_edits', { targetIds: [next.id], edits });
-      push({ thought: `Fixed rule for ${next.ruleName}.`, tool: 'try_edits', args: { targetIds: [next.id], edits }, result: out.result, ok: out.ok, tryId: out.tryId });
+      push({ thought: `Trying fix for: ${next.ruleName}.`, tool: 'try_edits', args: { targetIds: [next.id], edits }, result: out.result, ok: out.ok, tryId: out.tryId });
       if (out.ok && out.tryId) {
         const st = execTool(ctx, 'stage', { tryId: out.tryId });
         push({ thought: '', tool: 'stage', args: { tryId: out.tryId }, result: st.result, ok: st.ok });
@@ -271,7 +271,7 @@ export async function runFixAgent(project: BuildingProject, opts: AgentOptions =
     }
     const fin = execTool(ctx, 'finish', { summary: 'Fixed-rule pass complete.' });
     push({ thought: '', tool: 'finish', args: {}, result: fin.result, ok: true });
-    stoppedBecause = 'Fixed-rule pass complete (Gemini off).';
+    stoppedBecause = 'Standard fix pass complete.';
   }
 
   return {

@@ -56,6 +56,19 @@ function candidateToStaged(c: VerifiedCandidate, key: string): StagedChange {
   };
 }
 
+const TOOL_KEYS: Record<string, Parameters<ReturnType<typeof useLang>['t']>[0]> = {
+  run_audit: 'agent.tool.run_audit',
+  get_floor: 'agent.tool.get_floor',
+  try_edits: 'agent.tool.try_edits',
+  stage: 'agent.tool.stage',
+  finish: 'agent.tool.finish',
+};
+
+function toolLabel(t: ReturnType<typeof useLang>['t'], tool: string): string {
+  const key = TOOL_KEYS[tool];
+  return key ? t(key) : t('agent.tool.invalid');
+}
+
 export function AiFixAgentPanel({ project, baseAudit, approved, onApprove, onClear }: Props) {
   const { t, num } = useLang();
   const ai = useAiStatus();
@@ -124,7 +137,6 @@ export function AiFixAgentPanel({ project, baseAudit, approved, onApprove, onCle
             <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border border-violet-200 bg-white text-violet-800">{t('agent.rule')}</span>
           </div>
           <p className="text-xs text-slate-600 max-w-3xl">{t('agent.lead')}</p>
-          {ai.checked && !ai.aiConfigured && <p className="text-xs text-amber-800">{t('agent.off')}</p>}
         </div>
         <div className="flex gap-2 shrink-0">
           {running ? (
@@ -176,7 +188,7 @@ export function AiFixAgentPanel({ project, baseAudit, approved, onApprove, onCle
                 <li key={s.n} className="text-xs border border-slate-200 rounded-lg p-2.5 space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-slate-400">{num(s.n)}</span>
-                    <span className="font-mono font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-800">{s.tool}</span>
+                    <span className="font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-800">{toolLabel(t, s.tool)}</span>
                     {sum.ok === true && <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold"><CheckCircle2 className="w-3.5 h-3.5" />{t('agent.accepted')}</span>}
                     {sum.ok === false && <span className="inline-flex items-center gap-1 text-red-700 font-semibold"><XCircle className="w-3.5 h-3.5" />{t('agent.rejected')}</span>}
                   </div>
