@@ -225,7 +225,7 @@ export function StepReview({
               {t('review.site.sprinklers')}
               <span className="font-normal text-slate-500">
                 {' '}
-                {t('review.site.screenRef', { d: site.sprinklered ? '22.5' : '16' })}
+                {t('review.site.screenRef', { d: site.sprinklered ? 22.5 : 16 })}
               </span>
             </span>
           </label>

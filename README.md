@@ -27,6 +27,21 @@ Sources and open questions: [`RESEARCH.md`](RESEARCH.md).
   (prototype value, not checked against the gazette) or `drawing` (consistency check on the drawing).
   Today: 9 verified, 12 screening, 2 drawing rules.
 
+## Bangla
+
+Switch the language in the header: **EN**, **বাংলা**, or **EN + বাংলা**. The choice is remembered per
+browser.
+
+- Interface, findings, proposed fixes, question answers and the review note are shown in Bangla.
+- Numbers never change between languages; only the digits do. AI-written text (English or Bangla) is
+  rejected and replaced with fixed wording if it contains a number that is not in the measured data.
+- Export has a **printable report** in English, Bangla or both. The browser shapes Bangla correctly;
+  use "Save as PDF" in the print dialog. The jsPDF download is English only.
+- Bangla room labels in DXF files are read, including AutoCAD `\U+09B6`-style escapes.
+- The question box understands Bangla questions without Gemini.
+- The Bangla wording is a machine draft until a native speaker with building-code knowledge reviews
+  it; the app says so on screen and shows its glossary (`src/i18n/glossary.ts`).
+
 ## Run locally
 
 ```bash
@@ -34,7 +49,7 @@ npm install
 cp .env.example .env     # optional: add GEMINI_API_KEY (https://aistudio.google.com/apikey)
 npm run dev              # http://localhost:3000
 npm run lint             # type-check
-npm test                 # 62 tests (engine, hand-checked plan, permits, rate limit)
+npm test                 # 94 tests (engine, hand-checked plan, permits, server, Bangla)
 ```
 
 `GET /api/health` shows whether Gemini is configured and which model is in use.
@@ -51,6 +66,8 @@ npm test                 # 62 tests (engine, hand-checked plan, permits, rate li
 - Permit checklist items marked "Procedural" are typical filing requirements, not verified; confirm with the authority.
 - Padlocked doors and changes of use happen after approval and are outside a drawing check.
 - Part 4 exit capacity, exit count, FAR, coverage and setback rules are screening values.
-- The PDF prints "[Bangla label]" instead of Bangla text (no Bangla font embedded).
+- The jsPDF download prints "[Bangla label]" for Bangla; use the printable report for Bangla.
+- Some text stays English in Bangla mode (parser notes, "not checked" reasons, names from the DXF,
+  permit checklist items). Bijoy/SutonnyMJ-encoded DXF text is not converted.
 
 See `CLAUDE.md` for the full handoff, status and next steps.

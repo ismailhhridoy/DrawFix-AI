@@ -60,7 +60,7 @@ npm install
 cp .env.example .env         # optional: add GEMINI_API_KEY (server reads .env only)
 npm run dev                  # http://localhost:3000
 npx tsc --noEmit             # type-check
-npm test                     # vitest: 62 tests in tests/ (engine, hand-checked plan, permits, rate limit)
+npm test                     # vitest: 94 tests in tests/ (engine, hand-checked plan, permits, server, Bangla)
 npx vite build               # production build
 ```
 
@@ -100,6 +100,13 @@ RESEARCH.md                  Sourced problem research with confidence tags. Keep
 src/engine/permitEngine.ts   Permit checklist + correction-letter handling, used by StepPermits.tsx.
                              Audited 2026-11-19 (see Not done #9); procedural items are marked not verified.
 src/engine/localIntelligence.ts  Local (non-LLM) room classification, question box, triage.
+src/engine/numberGuard.ts    Rejects AI text (EN/BN) with a number not in the source data.
+src/engine/banglaText.ts     DXF \U+ decoding, MTEXT cleanup, Bangla room words, Bangla query synonyms.
+src/i18n/                    index.tsx (LangProvider, useLang, Bi, LanguageSwitch), en.ts, bn.ts
+                             (typed: missing Bangla key fails tsc), digits.ts, glossary.ts.
+src/components/PrintReport.tsx   Printable EN/BN/both report (browser print dialog).
+src/components/BanglaNotice.tsx  "Bangla is a machine draft" bar + glossary, shown when Bangla is on.
+tests/bangla.test.ts         Bangla steps 1-7; tests/fixtures-bangla.ts builds a 2-room DXF.
 ```
 
 ## What was changed from the AI Studio version (and why)
@@ -157,18 +164,18 @@ src/engine/localIntelligence.ts  Local (non-LLM) room classification, question b
 | Dhanmondi residential L3 | 5 fail, 4 warn | 0 / 0 | 26.7 s → 12.1 s |
 
 23 rules in `rules.ts`: 9 verified, 12 screening, 2 drawing checks. Type-check, build and
-62 tests pass (checked 2026-11-19).
+94 tests pass (checked 2026-11-19, after the Bangla work).
 
 **Caveat on these numbers:** the sample-building baselines in `tests/engine.test.ts` were recorded
 from the engine's own output, so they catch regressions but do not prove the numbers are right
 (circular). Only `tests/handchecked.test.ts` is checked against arithmetic done by hand.
 
-## Bangla readiness plan (written 2026-11-19, in progress)
+## Bangla readiness plan (written 2026-11-19; steps 1-7 done the same day, see each step)
 
 Goal: a Bangla-speaking reviewer can use the whole flow in Bangla, upload plans with Bangla labels,
 and take away a Bangla report, without any number changing between languages.
 
-### What is true today (checked in code, 2026-11-19)
+### What was true before the work (audit of 2026-11-19, kept for context; now fixed unless a step says otherwise)
 - Bangla is **generated but never shown**. `aiFallback.ts` has Bangla templates and the server asks
   Gemini for `bn` / `actionBn` / `answerBn` / `headlineBn` / `memoBodyBn`, but components only render
   the English fields (`StepReport.tsx:648-652`, `StepExport.tsx:194`). No language toggle exists.
@@ -241,8 +248,17 @@ and take away a Bangla report, without any number changing between languages.
    offline and on the server. Also fixed `tests/server.test.ts` leaking the spawned server (killing npx
    left tsx running, so later runs silently tested stale code). Original plan: **Bangla questions offline.** Bangla keyword map for `queryLocalCorpus` (reuse the server synonym
    list, without `/g`), and return "no matching note" instead of an answer when the best score is 0.
-8. **Tests:** `\U+` decoding, Bijoy sample (if added), number guard rejects a changed number,
+8. **DONE 2026-11-19** (except Bijoy, not added). All in `tests/bangla.test.ts` plus two server tests;
+   94 tests total. Original plan: **Tests:** `\U+` decoding, Bijoy sample (if added), number guard rejects a changed number,
    language switch renders Bangla fields, offline Bangla question finds Sec 1.13.8.2.
+
+### Still open after steps 1-7
+- Native Bangla review of `bn.ts`, `glossary.ts`, the Bangla templates in `aiFallback.ts`/`ruleEngine.ts`
+  and `titleBn`/`textBn` in `bnbcCorpus.ts`. Until then the on-screen notice calls it a machine draft.
+- Still English in Bangla mode: parser notes, "Not checked" reasons, basis notes, room/floor names from
+  the DXF, sample-plan descriptions, permit checklist and correction-letter text, the jsPDF file.
+- Bijoy/SutonnyMJ text in DXF: not handled; needs a real file first.
+- Number guard does not catch numbers written as words.
 
 ### Needed from the team
 - The competition's exact wording on Bangla (UI? output? input? voice?), to set what "ready" means.
@@ -258,7 +274,8 @@ and take away a Bangla report, without any number changing between languages.
    occupant load, capacity factors) against the gazette. Then switch those rules in
    `rules.ts` from `screening` to `verified` with exact clause numbers. Do not guess.
 4. Dhaka Imarat Nirman Bidhimala 2008 FAR/MGC/setback tables (currently simplified ladder).
-5. Bangla font in PDF (embed a Bangla TTF in jsPDF) instead of "[Bangla label]".
+5. ~~Bangla font in PDF~~ Replaced by the printable HTML report (Bangla step 5). The jsPDF file stays
+   English only and is labelled so.
 6. Mobile layout pass (desktop checked at 1440 px only).
 7. ~~Commit and push~~ Done: work is on `main` and pushed (auto-push is the standing rule).
 8. ~~Rate limiter bug~~ Fixed 2026-11-19. `server.ts` now sets `trust proxy` (turn off with
@@ -297,6 +314,7 @@ and take away a Bangla report, without any number changing between languages.
 
 ## Update log (add a line every time work is done; newest first)
 
+- 2026-11-19: Bangla step 8 and docs: README Bangla section, CLAUDE.md layout/limits updated; 94 tests pass.
 - 2026-11-19: Bangla step 7: Bangla questions work offline and on the server; no-match answer; fixed stateful regexes and leaked test server.
 - 2026-11-19: Bangla step 6: decode \U+ escapes and MTEXT codes in DXF text; Bangla room dictionary in both classifiers.
 - 2026-11-19: Bangla step 5: printable HTML report (EN / BN / both) via the browser's print dialog.
