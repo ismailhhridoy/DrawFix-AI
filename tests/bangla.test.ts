@@ -11,7 +11,7 @@ import {
 } from '../src/engine/aiFallback';
 import { checkNumbers, guardText } from '../src/engine/numberGuard';
 import { queryLocalCorpus } from '../src/engine/localIntelligence';
-import { Bi, LangProvider, translate, fromBnDigits, toBnDigits } from '../src/i18n';
+import { Bi, LangProvider, LangScope, readStoredLang, translate, fromBnDigits, toBnDigits } from '../src/i18n';
 import { loadSample } from './helpers';
 import { twoRoomDxf } from './fixtures-bangla';
 import { cleanDxfText, decodeDxfUnicode, matchBanglaRoom } from '../src/engine/banglaText';
@@ -84,12 +84,26 @@ describe('step 1: language switch renders the right fields', () => {
     expect(html).toContain('Exit is locked');
     expect(html).toContain('দরজা তালাবদ্ধ');
   });
-  it('bn falls back to English and says so when no Bangla exists', () => {
+  it('bn falls back to English with no placeholder text', () => {
     const html = renderToStaticMarkup(
       createElement(LangProvider, { initial: 'bn' }, createElement(Bi, { en: 'Only English' }))
     );
     expect(html).toContain('Only English');
-    expect(html).toContain(translate('bn', 'lang.noBangla'));
+    expect(html).not.toMatch(/এখনও|placeholder|TODO|\[Bangla/i);
+  });
+  it('the homepage scope forces English even when Bangla is on', () => {
+    const html = renderToStaticMarkup(
+      createElement(
+        LangProvider,
+        { initial: 'bn' },
+        createElement(LangScope, { force: 'en', children: createElement(Bi, { en: 'Home', bn: 'হোম' }) })
+      )
+    );
+    expect(html).toContain('Home');
+    expect(html).not.toContain('হোম');
+  });
+  it('default language is English', () => {
+    expect(readStoredLang()).toBe('en');
   });
 });
 

@@ -138,7 +138,7 @@ export function Header({
 
       {/* Zone 3: Single Primary Action */}
       <div className="flex items-center gap-3 shrink-0">
-        <LanguageSwitch />
+        {!isLanding && <LanguageSwitch />}
         <button
           type="button"
           onClick={onPrimaryAction}

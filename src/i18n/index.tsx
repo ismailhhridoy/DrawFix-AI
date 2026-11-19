@@ -101,7 +101,7 @@ export function useLang(): LangApi {
 
 /**
  * Shows a piece of content in the chosen language(s).
- * In Bangla mode, falls back to English when no Bangla text exists, and says so.
+ * In Bangla mode, falls back to English when no Bangla text exists (no marker shown).
  */
 export function Bi({
   en: enText,
@@ -116,19 +116,12 @@ export function Bi({
   bnClassName?: string;
   as?: 'p' | 'div' | 'span';
 }) {
-  const { showEn, showBn, lang, t } = useLang();
+  const { showEn, showBn } = useLang();
   const hasBn = bnText !== undefined && bnText !== null && bnText !== '';
-  if (lang === 'bn' && !hasBn) {
-    return (
-      <Tag className={className} lang="en">
-        {enText}
-        <span className="ml-1 text-[10px] text-slate-400">({t('lang.noBangla')})</span>
-      </Tag>
-    );
-  }
+  // No placeholder text: when a Bangla string is missing, the English one is shown on its own.
   return (
     <>
-      {showEn && (
+      {(showEn || !hasBn) && (
         <Tag className={className} lang="en">
           {enText}
         </Tag>
@@ -166,4 +159,20 @@ export function LanguageSwitch({ className = '' }: { className?: string }) {
       ))}
     </div>
   );
+}
+
+/**
+ * Forces a language for a part of the page (used for the homepage, which is always English).
+ * The children stay mounted when `force` changes; only the language they read changes.
+ */
+export function LangScope({ force, children }: { force?: Lang; children: ReactNode }) {
+  const outer = useLang();
+  const api = force ? makeApi(force, outer.setLang) : outer;
+  const effective: 'en' | 'bn' = api.uiLang;
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = effective;
+    }
+  }, [effective]);
+  return <LangContext.Provider value={api}>{children}</LangContext.Provider>;
 }

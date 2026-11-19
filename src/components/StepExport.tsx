@@ -320,7 +320,7 @@ export function StepExport({
               className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors cursor-pointer shadow-xs whitespace-nowrap"
             >
               <FileDown className="w-4 h-4" />
-              {t('export.pdf.download')} {t('export.pdf.englishOnly')}
+              {t('export.pdf.download')}
             </button>
             <button
               type="button"

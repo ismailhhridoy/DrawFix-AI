@@ -2,7 +2,6 @@
 export const en = {
   'lang.both': 'EN + বাংলা',
   'lang.switchLabel': 'Display language',
-  'lang.noBangla': 'no Bangla text yet',
   'nav.upload': "Upload",
   'nav.review': "Review",
   'nav.report': "Report",
@@ -452,7 +451,6 @@ export const en = {
   'print.footer': "Every number in this report was measured by code from the drawing. A qualified reviewer must confirm the findings and the screening thresholds before any decision. Not a RAJUK or Fire Service document.",
   'print.button': "Printable report (English / বাংলা)",
   'print.hint': "Opens your browser’s print dialog. Choose “Save as PDF” to keep it. Follows the language switch: English, বাংলা, or both. Use this for Bangla; the PDF button above is English only.",
-  'export.pdf.englishOnly': "(English only)",
 } as const;
 
 export type MsgKey = keyof typeof en;

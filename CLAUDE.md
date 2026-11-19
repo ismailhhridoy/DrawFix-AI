@@ -314,6 +314,7 @@ and take away a Bangla report, without any number changing between languages.
 
 ## Update log (add a line every time work is done; newest first)
 
+- 2026-11-19: Language rules: homepage always English (`LangScope`), switch hidden there, no placeholder text when a Bangla string is missing, default English.
 - 2026-11-19: Bangla step 8 and docs: README Bangla section, CLAUDE.md layout/limits updated; 94 tests pass.
 - 2026-11-19: Bangla step 7: Bangla questions work offline and on the server; no-match answer; fixed stateful regexes and leaked test server.
 - 2026-11-19: Bangla step 6: decode \U+ escapes and MTEXT codes in DXF text; Bangla room dictionary in both classifiers.

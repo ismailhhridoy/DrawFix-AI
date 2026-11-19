@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Header } from './components/Header';
-import { useLang } from './i18n';
+import { LangScope, useLang } from './i18n';
 import { BanglaNotice } from './components/BanglaNotice';
 import { LandingPage } from './components/LandingPage';
 import { StepUpload } from './components/StepUpload';
@@ -589,6 +589,7 @@ export default function App() {
     : 0;
 
   return (
+    <LangScope force={activeStep === 'landing' ? 'en' : undefined}>
     <div className="min-h-screen flex flex-col bg-[#F4F6F9] text-slate-900">
       <Header
         activeStep={activeStep}
@@ -767,5 +768,6 @@ export default function App() {
       )}
       </Suspense>
     </div>
+    </LangScope>
   );
 }

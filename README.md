@@ -29,8 +29,8 @@ Sources and open questions: [`RESEARCH.md`](RESEARCH.md).
 
 ## Bangla
 
-Switch the language in the header: **EN**, **বাংলা**, or **EN + বাংলা**. The choice is remembered per
-browser.
+The app starts in English. Switch the language in the header (**EN**, **বাংলা**, or **EN + বাংলা**) on any
+working screen; the choice is remembered per browser. The homepage is always English.
 
 - Interface, findings, proposed fixes, question answers and the review note are shown in Bangla.
 - Numbers never change between languages; only the digits do. AI-written text (English or Bangla) is

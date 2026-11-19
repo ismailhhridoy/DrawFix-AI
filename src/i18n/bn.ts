@@ -7,7 +7,6 @@ import type { MsgKey } from './en';
 export const bnStrings: Record<MsgKey, string> = {
   'lang.both': 'EN + বাংলা',
   'lang.switchLabel': 'প্রদর্শনের ভাষা',
-  'lang.noBangla': 'বাংলা লেখা এখনও নেই',
   'nav.upload': "আপলোড",
   'nav.review': "পর্যালোচনা",
   'nav.report': "রিপোর্ট",
@@ -457,5 +456,4 @@ export const bnStrings: Record<MsgKey, string> = {
   'print.footer': "এই রিপোর্টের প্রতিটি সংখ্যা নকশা থেকে কোড দিয়ে মাপা। যেকোনো সিদ্ধান্তের আগে একজন যোগ্য পর্যালোচককে পর্যবেক্ষণ ও স্ক্রিনিং সীমা নিশ্চিত করতে হবে। এটি রাজউক বা ফায়ার সার্ভিসের নথি নয়।",
   'print.button': "ছাপার উপযোগী রিপোর্ট (বাংলা)",
   'print.hint': "ব্রাউজারের প্রিন্ট উইন্ডো খোলে। রাখতে চাইলে \"Save as PDF\" বেছে নিন। ভাষা বাছাই অনুযায়ী ইংরেজি, বাংলা বা দুটোই থাকে। বাংলার জন্য এটি ব্যবহার করুন; ওপরের PDF বোতাম শুধু ইংরেজি।",
-  'export.pdf.englishOnly': "(শুধু ইংরেজি)",
 };
