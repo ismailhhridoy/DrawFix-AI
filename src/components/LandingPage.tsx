@@ -10,6 +10,7 @@ import {
   buildScrutinyTriage,
   type ReviewerRole,
 } from '../engine/localIntelligence';
+import { bn } from '../engine/aiFallback';
 import { applyBuildingRemediationFixes, runBuildingAudit } from '../engine/ruleEngine';
 import { BNBC_P3_SOURCE_URL, RULES, type RuleBasis } from '../engine/rules';
 import { SAMPLE_BUILDINGS, type SampleBuildingMeta } from '../engine/sampleDxf';
@@ -135,10 +136,32 @@ export function LandingPage({
       floors,
     };
     const before = runBuildingAudit(project);
-    const { fixedProject } = applyBuildingRemediationFixes(project, before);
+    const { fixedProject, deltas } = applyBuildingRemediationFixes(project, before);
     const after = runBuildingAudit(fixedProject);
-    return { sample, project, fixedProject, before, after };
+    return { sample, project, fixedProject, before, after, deltas };
   }, []);
+
+  // Showcase examples come from the engine run on the demo building, never typed in.
+  const showcase = useMemo(() => {
+    if (!primaryBenchmark) return null;
+    const rank = { critical: 0, high: 1, medium: 2 } as const;
+    const seen = new Set<string>();
+    const findings = primaryBenchmark.before.violations
+      .filter((v) => v.status === 'FAIL')
+      .sort((a, b) => rank[a.severity] - rank[b.severity])
+      .filter((v) => (seen.has(v.ruleId) ? false : (seen.add(v.ruleId), true)))
+      .slice(0, 3);
+    const measured =
+      primaryBenchmark.before.violations.find(
+        (v) =>
+          v.status === 'FAIL' &&
+          !v.blocked &&
+          (v.unit === 'm' || v.unit === 'm²') &&
+          RULES[v.ruleId]?.nameBn
+      ) ?? null;
+    const delta = primaryBenchmark.deltas[0] ?? null;
+    return { findings, measured, delta };
+  }, [primaryBenchmark]);
 
   const safeHeroFloorIdx = primaryBenchmark
     ? Math.min(heroFloorIdx, primaryBenchmark.project.floors.length - 1)
@@ -244,7 +267,7 @@ export function LandingPage({
                   <span aria-hidden="true">·</span>
                   <span className="font-mono tabular-nums">
                     {reviewerRole === 'government'
-                      ? t('landing.inspector.gov', { d: t(`triage.${heroTriage.disposition}` as MsgKey), m: heroTriage.estimatedManualMinutesSaved })
+                      ? t('landing.inspector.gov', { d: t(`triage.${heroTriage.disposition}` as MsgKey) })
                       : t('landing.inspector.arch', { f: displayedHeroAudit.failCount, w: displayedHeroAudit.warnCount })}
                   </span>
                   {displayedHeroAudit.metrics && displayedHeroAudit.metrics.plotAreaSqM > 0 && (
@@ -412,27 +435,25 @@ export function LandingPage({
               </div>
 
               <div className="flex-1 space-y-3">
-                <div className="flex items-start gap-3 p-3 bg-red-500/15 rounded-xl border border-red-500/25">
-                  <span className="mt-0.5 text-red-400 shrink-0 text-lg leading-none">✕</span>
-                  <div>
-                    <div className="text-sm font-semibold text-red-300">Exit padlocked — no route</div>
-                    <div className="text-xs text-white/60 mt-0.5">Bailey Road 2024 scenario · 1 of 3 failures</div>
+                {(showcase?.findings ?? []).map((v) => (
+                  <div
+                    key={v.id}
+                    className="flex items-start gap-3 p-3 bg-red-500/15 rounded-xl border border-red-500/25"
+                  >
+                    <span className="mt-0.5 text-red-400 shrink-0 text-lg leading-none">✕</span>
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-red-300">{v.ruleName}</div>
+                      <div className="text-xs text-white/70 mt-0.5">
+                        {v.roomName}
+                        {v.floorLabel ? ` · ${v.floorLabel}` : ''} ·{' '}
+                        {v.blocked
+                          ? t('common.noRoute')
+                          : `${v.measuredValue} ${v.unit} (${v.comparator === '>=' ? 'needs at least' : 'limit'} ${v.limitValue} ${v.unit})`}
+                      </div>
+                      <div className="text-[11px] text-white/45 mt-0.5">{v.citation}</div>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-start gap-3 p-3 bg-red-500/15 rounded-xl border border-red-500/25">
-                  <span className="mt-0.5 text-red-400 shrink-0 text-lg leading-none">✕</span>
-                  <div>
-                    <div className="text-sm font-semibold text-red-300">1 staircase — BNBC requires 2</div>
-                    <div className="text-xs text-white/60 mt-0.5">3-storey · occupant load exceeded</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 p-3 bg-amber-500/15 rounded-xl border border-amber-500/25">
-                  <span className="mt-0.5 text-amber-400 shrink-0 text-lg leading-none">!</span>
-                  <div>
-                    <div className="text-sm font-semibold text-amber-300">Travel distance 23.4 m — limit 22.5 m</div>
-                    <div className="text-xs text-white/60 mt-0.5">BNBC 2012 Part 3, Sec 1.13.8.2</div>
-                  </div>
-                </div>
+                ))}
               </div>
 
               {primaryBenchmark && (
@@ -462,16 +483,22 @@ export function LandingPage({
                 <div className="p-3 bg-white rounded-xl border border-[#12111A]/10 space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-mono font-bold text-[#12111A]/35 tabular-nums shrink-0 w-5">01</span>
-                    <span className="text-xs font-semibold text-[#12111A]">Layout search proposes</span>
+                    <span className="text-xs font-semibold text-[#12111A]">A fix is proposed</span>
                   </div>
-                  <p className="text-sm text-[#12111A]/70 pl-7">Add exit door, north wall, midpoint, 1.2 m wide</p>
+                  <p className="text-sm text-[#12111A]/70 pl-7">
+                    {showcase?.delta?.summary ?? 'A change to the drawing, such as unlocking or widening a door.'}
+                  </p>
                 </div>
                 <div className="p-3 bg-white rounded-xl border border-[#12111A]/10 space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-mono font-bold text-[#12111A]/35 tabular-nums shrink-0 w-5">02</span>
                     <span className="text-xs font-semibold text-[#12111A]">Code re-checks</span>
                   </div>
-                  <p className="text-sm text-[#12111A]/70 pl-7">Travel drops 23.4 m → 15.7 m. Finding cleared. No new failure.</p>
+                  <p className="text-sm text-[#12111A]/70 pl-7">
+                    {primaryBenchmark
+                      ? `Failures go from ${primaryBenchmark.before.failCount} to ${primaryBenchmark.after.failCount} after all fixes. Slowest escape goes from ${primaryBenchmark.before.worstEscapeSec.toFixed(0)} s to ${primaryBenchmark.after.worstEscapeSec.toFixed(0)} s.`
+                      : 'The whole check runs again on a copy. A fix counts only if it clears the finding and breaks nothing else.'}
+                  </p>
                 </div>
                 <div className="p-3 bg-white rounded-xl border border-[#12111A]/10 space-y-1">
                   <div className="flex items-center gap-2">
@@ -499,18 +526,30 @@ export function LandingPage({
               </div>
 
               <div className="flex-1 space-y-3">
-                <div className="p-4 bg-[#F4F5F7] rounded-xl border border-[#12111A]/[0.06]">
-                  <div className="text-[11px] font-mono text-[#12111A]/45 mb-2 uppercase tracking-wider">English</div>
-                  <div className="font-semibold text-[#12111A] text-sm">Travel distance exceeds limit</div>
-                  <div className="text-sm text-[#12111A]/70 mt-1">Measured: 23.4 m · Limit: 22.5 m</div>
-                  <div className="text-xs text-[#12111A]/50 mt-1">BNBC 2012, Part 3, Sec 1.13.8.2</div>
-                </div>
-                <div className="p-4 bg-[#F4F5F7] rounded-xl border border-[#12111A]/[0.06]" style={{ fontFamily: "'Noto Sans Bengali', sans-serif" }}>
-                  <div className="text-[11px] font-mono text-[#12111A]/45 mb-2 uppercase tracking-wider">বাংলা</div>
-                  <div className="font-semibold text-[#12111A] text-sm">ভ্রমণ দূরত্ব সীমা ছাড়িয়েছে</div>
-                  <div className="text-sm text-[#12111A]/70 mt-1">মাপা: ২৩.৪ মিটার · সীমা: ২২.৫ মিটার</div>
-                  <div className="text-xs text-[#12111A]/50 mt-1">বিএনবিসি ২০১২, খণ্ড ৩, অনুচ্ছেদ ১.১৩.৮.২</div>
-                </div>
+                {showcase?.measured && (
+                  <>
+                    <div className="p-4 bg-[#F4F5F7] rounded-xl border border-[#12111A]/[0.06]">
+                      <div className="text-[11px] font-mono text-[#12111A]/45 mb-2 uppercase tracking-wider">English</div>
+                      <div className="font-semibold text-[#12111A] text-sm">{showcase.measured.ruleName}</div>
+                      <div className="text-sm text-[#12111A]/70 mt-1">
+                        Measured: {showcase.measured.measuredValue} {showcase.measured.unit} · Limit:{' '}
+                        {showcase.measured.limitValue} {showcase.measured.unit}
+                      </div>
+                      <div className="text-xs text-[#12111A]/50 mt-1">{showcase.measured.citation}</div>
+                    </div>
+                    <div className="p-4 bg-[#F4F5F7] rounded-xl border border-[#12111A]/[0.06]" style={{ fontFamily: "'Noto Sans Bengali', sans-serif" }}>
+                      <div className="text-[11px] font-mono text-[#12111A]/45 mb-2 uppercase tracking-wider">বাংলা</div>
+                      <div className="font-semibold text-[#12111A] text-sm">{RULES[showcase.measured.ruleId]?.nameBn}</div>
+                      <div className="text-sm text-[#12111A]/70 mt-1">
+                        মাপা: {bn(showcase.measured.measuredValue)}{' '}
+                        {showcase.measured.unit === 'm²' ? 'বর্গমিটার' : 'মিটার'} · সীমা:{' '}
+                        {bn(showcase.measured.limitValue)}{' '}
+                        {showcase.measured.unit === 'm²' ? 'বর্গমিটার' : 'মিটার'}
+                      </div>
+                      <div className="text-xs text-[#12111A]/50 mt-1">{showcase.measured.citation}</div>
+                    </div>
+                  </>
+                )}
               </div>
 
               <p className="text-xs text-[#12111A]/50 leading-relaxed">

@@ -117,12 +117,12 @@ export function classifyRoomWithGeometry(
   if (bnMatch) scores[bnMatch.taxonomy] += 5.6;
   if (/br-|bed|sleep|master|guest|dorm/.test(label)) scores.bedroom += 5.2;
   if (/living|dining|kitchen|lounge|family|drawing|apt|unit|flat/.test(label)) scores.habitable += 4.8;
-  if (/cbn|cabin|office|supv|manager|qa|clinic|medical|consult/.test(label)) scores.cabin += 4.6;
+  if (/cbn|cabin|office|supv|manager|qa|qc|clinic|medical|consult|control|security|desk|inspect|archive|record/.test(label)) scores.cabin += 4.6;
   if (/corr|passage|hallway|aisle|spine|veranda/.test(label)) scores.corridor += 5.0;
   if (/stair|step|core|riser/.test(label)) scores.stair += 5.4;
   if (/exit|escape|egress|discharge/.test(label)) scores.exit += 4.8;
-  if (/sew|line|cut|pack|finish|prod|work|canteen|floor|hall/.test(label)) scores.workfloor += 4.8;
-  if (/util|store|chem|elect|service|dock|wc|bath|toilet|wash|duct|shaft/.test(label)) scores.utility += 4.9;
+  if (/sew|line|cut|pack|finish|prod|work|canteen|floor|hall|dispatch|logistic|bay/.test(label)) scores.workfloor += 4.8;
+  if (/util|store|chem|elec|switch|gear|service|dock|wc|bath|toilet|wash|duct|shaft/.test(label)) scores.utility += 4.9;
   if (/lobby|foyer|vestibule|lift|atrium|reception/.test(label)) scores.lobby += 4.8;
 
   // 2. Geometric & topological priors
@@ -142,8 +142,9 @@ export function classifyRoomWithGeometry(
   if (room.areaSqM > 0 && room.areaSqM < 5.5 && windowTouches === 0 && !overlapsStair) {
     scores.utility += 1.5;
   }
+  // Geometry alone never makes a room a bedroom: that strict 9.5 m2 / 2.9 m rule needs a label saying so.
+  // A mid-sized room with a window and no readable label is only "habitable" at most.
   if (room.areaSqM >= 8.5 && room.areaSqM <= 26 && windowTouches >= 1 && aspect < 2.4) {
-    scores.bedroom += 0.9;
     scores.habitable += 0.8;
   }
   if (room.areaSqM >= 55 && aspect < 2.8 && compactness > 0.35) {
@@ -295,7 +296,6 @@ export interface ScrutinyTriage {
   egressFlagCount: number;
   totalRoomsAudited: number;
   checksEvaluated: number;
-  estimatedManualMinutesSaved: number;
   summaryPoints: string[];
 }
 
@@ -323,11 +323,6 @@ export function buildScrutinyTriage(
   ).length;
   const totalRoomsAudited = project.floors.reduce((s, f) => s + f.rooms.length, 0);
   const checksEvaluated = audit.passedCount + audit.failCount + audit.warnCount;
-  const estimatedManualMinutesSaved = Math.max(
-    18,
-    Math.round(totalRoomsAudited * 2.5 + project.floors.length * 18)
-  );
-
   const disposition: ScrutinyTriage['disposition'] =
     audit.failCount > 0
       ? 'RETURN_FOR_CORRECTIONS'
@@ -337,7 +332,7 @@ export function buildScrutinyTriage(
 
   const dispositionLabel =
     disposition === 'RETURN_FOR_CORRECTIONS'
-      ? 'Objections Found — Revisions Required'
+      ? 'Issues found — corrections needed'
       : disposition === 'CONDITIONAL_REVIEW'
         ? 'Conditional — Officer Verification Required'
         : 'Cleared Pre-Submission Screening';
@@ -387,7 +382,6 @@ export function buildScrutinyTriage(
     egressFlagCount,
     totalRoomsAudited,
     checksEvaluated,
-    estimatedManualMinutesSaved,
     summaryPoints,
   };
 }
