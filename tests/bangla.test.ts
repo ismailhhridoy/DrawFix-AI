@@ -13,6 +13,7 @@ import { checkNumbers, guardText } from '../src/engine/numberGuard';
 import { queryLocalCorpus } from '../src/engine/localIntelligence';
 import { Bi, LangProvider, translate, fromBnDigits, toBnDigits } from '../src/i18n';
 import { loadSample } from './helpers';
+import { PrintReport } from '../src/components/PrintReport';
 import { bnStrings } from '../src/i18n/bn';
 import { GLOSSARY, glossaryPromptLines } from '../src/i18n/glossary';
 import { RULES } from '../src/engine/rules';
@@ -178,5 +179,46 @@ describe('step 4: glossary keeps Bangla terms consistent', () => {
   it('the Gemini prompt carries the glossary', () => {
     const lines = glossaryPromptLines();
     for (const g of GLOSSARY) expect(lines).toContain(g.bn);
+  });
+});
+
+describe('step 5: printable Bangla report', () => {
+  const render = (lang: 'en' | 'bn' | 'both') =>
+    renderToStaticMarkup(
+      createElement(
+        LangProvider,
+        { initial: lang },
+        createElement(PrintReport, {
+          project,
+          beforeAudit: audit,
+          afterAudit: after,
+          deltas,
+          generatedAt: new Date('2026-11-19T00:00:00Z'),
+        })
+      )
+    );
+
+  it('renders a Bangla report with the same numbers in Bangla digits', () => {
+    const html = render('bn');
+    expect(html).toContain(translate('bn', 'print.title'));
+    expect(html).toContain(`${toBnDigits(audit.failCount)}টি ত্রুটি`);
+    const v = audit.violations.find((x) => !x.blocked && x.unit === 'm')!;
+    expect(html).toContain(`${toBnDigits(v.measuredValue)} m`);
+    expect(html).toContain(RULES[v.ruleId].nameBn!);
+    expect(html).not.toContain('[Bangla label]');
+    expect(html).toContain(translate('bn', 'bnNotice.text'));
+  });
+
+  it('renders English only in English mode, with no Bangla script', () => {
+    const html = render('en');
+    expect(html).toContain('DrawFix Ai: escape-route and plan check report');
+    expect(/[ঀ-৿]/.test(html)).toBe(false);
+  });
+
+  it('shows both languages for each finding in both mode', () => {
+    const html = render('both');
+    const ex = buildTemplateExplanation(audit.violations[0]);
+    expect(html).toContain(ex.bn.slice(-25));
+    expect(html).toContain(ex.en.slice(-15).replace(/"/g, "&quot;"));
   });
 });

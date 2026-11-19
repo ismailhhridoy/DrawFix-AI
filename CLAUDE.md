@@ -220,7 +220,11 @@ and take away a Bangla report, without any number changing between languages.
    setback, FAR...) used by templates, UI and the Gemini prompt so wording is consistent. A native
    Bangla speaker with building-code context must review templates and glossary; do not ship
    machine-only Bangla as "official".
-5. **Bangla report.** Recommended: a print-friendly HTML report and `window.print()` (the browser
+5. **DONE 2026-11-19.** Export has "Printable report (English / বাংলা)": `PrintReport.tsx` is portalled
+   into `<body>`, `@media print` CSS in `index.css` hides the app, and `window.print()` opens the dialog
+   (user saves as PDF). Follows the language switch. Checked in headless Chromium: Bangla conjuncts
+   shape correctly. The jsPDF button is now labelled "(English only)".
+   Original plan: **Bangla report.** Recommended: a print-friendly HTML report and `window.print()` (the browser
    shapes Bangla correctly; user saves as PDF). Alternatives to test: html2canvas image of the
    Bangla section inside the jsPDF file (not selectable), or a jsPDF Bangla font after a shaping test.
 6. **Bangla in drawings.** Decode `\U+XXXX` escapes in TEXT/MTEXT (and strip MTEXT formatting codes);
@@ -284,6 +288,7 @@ and take away a Bangla report, without any number changing between languages.
 
 ## Update log (add a line every time work is done; newest first)
 
+- 2026-11-19: Bangla step 5: printable HTML report (EN / BN / both) via the browser's print dialog.
 - 2026-11-19: Bangla step 4: shared glossary (prompts, tests, on-screen machine-draft notice). Native review still needed.
 - 2026-11-19: Bangla step 3: Bangla interface strings (typed dictionary), Bangla digits, Bangla rule names.
 - 2026-11-19: Bangla step 2: number guard rejects AI text (EN or BN) containing a number not in the finding's data.

@@ -442,6 +442,17 @@ export const en = {
   'bnNotice.show': "Show glossary ({n} terms)",
   'bnNotice.hide': "Hide glossary",
   'bnNotice.note': "Note",
+  'print.draft': "DRAFT · Prototype screening aid · Not an approval",
+  'print.title': "DrawFix Ai: escape-route and plan check report",
+  'print.generated': "generated {d}",
+  'print.summary': "Summary",
+  'print.asDrawn': "As drawn",
+  'print.withChanges': "With proposed changes",
+  'print.trust': "Trust level of findings",
+  'print.footer': "Every number in this report was measured by code from the drawing. A qualified reviewer must confirm the findings and the screening thresholds before any decision. Not a RAJUK or Fire Service document.",
+  'print.button': "Printable report (English / বাংলা)",
+  'print.hint': "Opens your browser’s print dialog. Choose “Save as PDF” to keep it. Follows the language switch: English, বাংলা, or both. Use this for Bangla; the PDF button above is English only.",
+  'export.pdf.englishOnly': "(English only)",
 } as const;
 
 export type MsgKey = keyof typeof en;
