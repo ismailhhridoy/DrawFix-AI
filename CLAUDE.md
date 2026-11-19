@@ -338,6 +338,16 @@ and take away a Bangla report, without any number changing between languages.
 - Say clearly: prototype, screening aid, not an approval; which limits are verified.
 - "Where is the AI?" → labels and language, never the measurement. That is the design.
 
+## Standing rule for the notes (set by Ismail, 2026-11-19)
+
+- Keep `CLAUDE.md`, `RESEARCH.md` and `README.md` as separate files. Do not merge them.
+- At the end of every work session, update each file that the work touched: a new line in the update log
+  below, new findings in `RESEARCH.md` (with a confidence tag and source), and any changed behaviour in `README.md`.
+- Never delete earlier content from these files. Add to them. If something turns out to be wrong, leave the old
+  text and mark it corrected, with the date and the reason.
+- Keep the same files in the local folder (`~/Work/Projects/Competition/drawfix-ai`). The repo on GitHub is the
+  source of truth; when the local computer is linked, pull or copy the files there after each session.
+
 ## Update log (add a line every time work is done; newest first)
 
 - 2026-11-19: Story is now "fewer correction rounds, faster approval" (ECPS: 45-day committee approval, many reviewers, applicant clarifications; RESEARCH.md 5a). Added `resubmission.ts` + `VersionCompare.tsx` (Report step: save version 1, upload revised DXF, see cleared / new / still open; English only for now; tests/resubmission.test.ts). DWG upload now gets a clear "SAVEAS DXF" message (tests/dwg.test.ts). Fixed a real bug: the offline room classifier called unlabelled rooms (ARCHIVE-3, FIRE-CONTROL, SECURITY-DESK) bedrooms, so the demo showed 11 failures in the report vs 9 on the landing page; geometry alone no longer makes a bedroom (tests/labels.test.ts). 116 tests pass.
