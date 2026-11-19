@@ -57,7 +57,7 @@ findings on the plan, proposes fixes, re-checks them, plays the escape in 3D, an
 
 ```bash
 npm install
-cp .env.example .env.local   # optional: add GEMINI_API_KEY
+cp .env.example .env         # optional: add GEMINI_API_KEY (server reads .env only)
 npm run dev                  # http://localhost:3000
 npx tsc --noEmit             # type-check
 npm test                     # vitest: 62 tests in tests/ (engine, hand-checked plan, permits, rate limit)
@@ -158,6 +158,10 @@ src/engine/localIntelligence.ts  Local (non-LLM) room classification, question b
 
 23 rules in `rules.ts`: 9 verified, 12 screening, 2 drawing checks. Type-check, build and
 62 tests pass (checked 2026-11-19).
+
+**Caveat on these numbers:** the sample-building baselines in `tests/engine.test.ts` were recorded
+from the engine's own output, so they catch regressions but do not prove the numbers are right
+(circular). Only `tests/handchecked.test.ts` is checked against arithmetic done by hand.
 
 ## Bangla readiness plan (written 2026-11-19, not started)
 
@@ -261,6 +265,7 @@ and take away a Bangla report, without any number changing between languages.
 
 ## Update log (add a line every time work is done; newest first)
 
+- 2026-11-19: Fixed `CLAUDE.md`: env file is `.env` (dotenv ignores `.env.local`); restored the circular-test caveat.
 - 2026-11-19: Bangla readiness audit and plan added (section "Bangla readiness plan"). No code changed.
 - 2026-11-19: Fixed rate limiter behind proxy; audited and fixed permit checklist and correction-letter
   classifier (trust labels, false "pass", substring mis-routing); lazy-loaded heavy steps (main chunk
