@@ -17,15 +17,23 @@ export interface DesignRouteDeps {
   generateJson: GenerateJson;
 }
 
-const EDIT_DOC = `Allowed edit kinds (use ONLY ids that appear in the plan JSON; coordinates are metres in the plan's own axes):
-- {"kind":"unlock_door","floorIndex":F,"doorId":ID}  remove a lock/obstruction from a door.
-- {"kind":"widen_door","floorIndex":F,"doorId":ID,"widthM":W}  W between 0.8 and 2.4.
-- {"kind":"move_wall","floorIndex":F,"wallId":ID,"dx":DX,"dy":DY}  inner walls only. A horizontal wall (same y at both ends) moves by dy only (dx=0); a vertical wall by dx only (dy=0). At most 3 m.
-- {"kind":"add_exit_door","floorIndex":0,"wallId":ID,"along":T,"widthM":W}  new street exit in an OUTER wall of the ground floor. T in 0..1 is the position along the wall from its first point to its second. Keep the opening at least 0.3 m from the wall ends and 0.6 m from other doors.
-- {"kind":"move_door","floorIndex":F,"doorId":ID,"wallId":ID,"along":T}  move an existing door to another place on a wall (the old opening is closed). Exit doors must stay in outer walls.
-- {"kind":"add_stair","x":X,"y":Y,"widthM":W,"depthM":D,"label":"NEW-STAIR-B"}  new stair core on ALL floors, centred at (X,Y), sides 2.4..6 m. The rectangle must not cross any wall on any floor and must be inside every floor's bounds, 3 m or more from other stairs. Put it in open floor space close to the rooms that are too far from a stair.
-- {"kind":"set_stair","floorIndex":F,"stairId":ID,"headroomM":H,"handrailHeightM":R,"treadMm":T,"riserMm":S}  only the fields you change; headroom 2.0..3.0, handrail 0.85..1.1, tread 220..350, riser 120..200.
-- {"kind":"sync_dimension","floorIndex":F,"dimensionId":ID}  rewrite a stale dimension text to the drawn length.`;
+const EDIT_DOC = `Allowed edit kinds. ALWAYS include every field shown; copy ids exactly from the plan JSON (never use a placeholder or omit an id field).
+
+RULES:
+- floorIndex: the integer index of the floor (0 = ground floor). Include it in every edit except add_stair.
+- IDs (doorId, wallId, stairId, dimensionId): copy the exact id string from the plan JSON (e.g. "d-3", "w-12"). Never invent an id; never output the string "undefined".
+- along: a fraction from 0 to 1 where 0=wall start, 0.5=midpoint, 1=wall end. It is NOT a distance in metres.
+- move_wall: a horizontal wall (same y at both ends) moves vertically — set dx=0 and dy=SHIFT (metres). A vertical wall (same x) moves horizontally — set dx=SHIFT and dy=0. Never set both.
+
+EDIT KINDS:
+- {"kind":"unlock_door","floorIndex":0,"doorId":"d-3"}  — remove lock from door d-3 on floor 0. doorId must be an id from floors[floorIndex].doors.
+- {"kind":"widen_door","floorIndex":0,"doorId":"d-3","widthM":1.2}  — widen door to 1.2 m (0.8–2.4). doorId as above.
+- {"kind":"move_wall","floorIndex":0,"wallId":"w-12","dx":0,"dy":1.0}  — shift horizontal inner wall 1 m up. wallId must be an id from floors[floorIndex].walls.
+- {"kind":"add_exit_door","floorIndex":0,"wallId":"w-5","along":0.5,"widthM":1.2}  — new exit door at the midpoint (along=0.5) of outer wall w-5 on the ground floor. wallId must be an id from floors[0].walls listed as "outer".
+- {"kind":"move_door","floorIndex":0,"doorId":"d-2","wallId":"w-5","along":0.3}  — move door to 30% along wall. doorId and wallId from floors[floorIndex].
+- {"kind":"add_stair","x":25.0,"y":10.0,"widthM":3.0,"depthM":3.0,"label":"NEW-STAIR-B"}  — new stair on ALL floors at (x,y) metres; sides 2.4–6 m; must be inside the floor bounds and not cross any wall.
+- {"kind":"set_stair","floorIndex":0,"stairId":"stair-1","headroomM":2.1}  — fix stair dimension. Include only the field(s) you are changing. stairId from floors[floorIndex].stairs.
+- {"kind":"sync_dimension","floorIndex":0,"dimensionId":"dim-1"}  — rewrite a stale dimension. dimensionId from floors[floorIndex].dimensions.`;
 
 const EDIT_SCHEMA = {
   type: Type.OBJECT,
@@ -49,7 +57,7 @@ const EDIT_SCHEMA = {
     treadMm: { type: Type.NUMBER },
     riserMm: { type: Type.NUMBER },
   },
-  required: ['kind'],
+  required: ['kind', 'floorIndex'],
 };
 
 const CANDIDATES_SCHEMA = {
@@ -105,7 +113,8 @@ const VISION_SYSTEM =
   'You trace architectural floor plan drawings into geometry. You report positions only, in normalised image coordinates; you never report real-world measurements or code compliance.';
 
 const VISION_PROMPT = `This is an architectural floor plan (one floor). Trace it.
-Use image coordinates normalised to 0-1000 on both axes: x from the left edge, y from the TOP edge of the image (for a PDF, of the first page).
+Use image coordinates where x=0 is the left edge and x=1000 is the right edge. Use the SAME scale for y: y=0 is the TOP of the image. Do NOT rescale y to 1000 — for a landscape image the y values will be less than 1000; for a portrait image they will be greater than 1000. Keep the x and y scales equal.
+(For a PDF, use the first page.)
 Return:
 - walls: every wall as a straight centre-line segment [x1,y1,x2,y2]; mark exterior=true for the outer boundary walls. Leave a gap in the wall where a door opening is.
 - doors: each door opening's centre {x,y}, its opening width in the same units (widthUnits), and isExit=true only if it leads outside or is labelled as an exit/fire exit. label = any text on it.
