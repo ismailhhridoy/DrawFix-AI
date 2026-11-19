@@ -13,6 +13,10 @@ import { checkNumbers, guardText } from '../src/engine/numberGuard';
 import { queryLocalCorpus } from '../src/engine/localIntelligence';
 import { Bi, LangProvider, translate, fromBnDigits, toBnDigits } from '../src/i18n';
 import { loadSample } from './helpers';
+import { twoRoomDxf } from './fixtures-bangla';
+import { cleanDxfText, decodeDxfUnicode, matchBanglaRoom } from '../src/engine/banglaText';
+import { DEFAULT_CONVENTIONS, parseDxfString } from '../src/engine/dxfParser';
+import { classifyRoomWithGeometry } from '../src/engine/localIntelligence';
 import { PrintReport } from '../src/components/PrintReport';
 import { bnStrings } from '../src/i18n/bn';
 import { GLOSSARY, glossaryPromptLines } from '../src/i18n/glossary';
@@ -220,5 +224,59 @@ describe('step 5: printable Bangla report', () => {
     const ex = buildTemplateExplanation(audit.violations[0]);
     expect(html).toContain(ex.bn.slice(-25));
     expect(html).toContain(ex.en.slice(-15).replace(/"/g, "&quot;"));
+  });
+});
+
+describe('step 6: Bangla labels in drawings', () => {
+  const esc = (s: string) => [...s].map((c) => `\\U+${c.codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0')}`).join('');
+
+  it('decodes AutoCAD \\U+ escapes', () => {
+    expect(decodeDxfUnicode('\\U+09B6\\U+09DF\\U+09A8')).toBe('শয়ন');
+    expect(decodeDxfUnicode('ROOM \\U+09E7')).toBe('ROOM ১');
+  });
+
+  it('strips MTEXT formatting but keeps the words', () => {
+    expect(cleanDxfText('{\\fArial|b0|i0|c0|p34;BED\\PROOM}')).toBe('BED ROOM');
+    expect(cleanDxfText('\\LKITCHEN\\l')).toBe('KITCHEN');
+    expect(cleanDxfText('{\\C1;\\H0.3x;' + esc('রান্নাঘর') + '}')).toBe('রান্নাঘর');
+    expect(cleanDxfText('Ø%%c 50')).toBe('ØØ 50');
+    expect(cleanDxfText('A\\\\B')).toBe('A\\B');
+  });
+
+  it('matches Bangla room words whichever way য় / ড় is encoded', () => {
+    expect(matchBanglaRoom('শয়নকক্ষ')?.taxonomy).toBe('bedroom');
+    expect(matchBanglaRoom('শয়নকক্ষ')?.taxonomy).toBe('bedroom');
+    expect(matchBanglaRoom('ড্রয়িং রুম')?.taxonomy).toBe('habitable');
+    expect(matchBanglaRoom('টয়লেট')?.taxonomy).toBe('utility');
+    expect(matchBanglaRoom('শৌচাগার')?.taxonomy).toBe('utility');
+    expect(matchBanglaRoom('বাথরুম ২')?.taxonomy).toBe('utility');
+    expect(matchBanglaRoom('ডাইনিং')?.taxonomy).toBe('habitable');
+    expect(matchBanglaRoom('লিফট লবি')?.taxonomy).toBe('lobby');
+    expect(matchBanglaRoom('জরুরি বহির্গমন')?.taxonomy).toBe('exit');
+    expect(matchBanglaRoom('BEDROOM')).toBeNull();
+  });
+
+  it('a DXF with \\U+ escaped Bangla labels gives the right rooms', () => {
+    const plan = parseDxfString(twoRoomDxf(esc('শয়নকক্ষ'), `{\\fArial|b0;${esc('রান্নাঘর')}}`, true), {
+      fileName: 'bangla.dxf',
+      conventions: DEFAULT_CONVENTIONS,
+      occupancyClass: 'residential',
+    });
+    const labels = plan.rooms.map((r) => [r.originalLabel, r.taxonomy]);
+    expect(labels).toContainEqual(['শয়নকক্ষ', 'bedroom']);
+    expect(labels).toContainEqual(['রান্নাঘর', 'habitable']);
+  });
+
+  it('plain UTF-8 Bangla labels still work, and the geometry classifier agrees', () => {
+    const plan = parseDxfString(twoRoomDxf('শোবার ঘর', 'টয়লেট'), {
+      fileName: 'bangla-utf8.dxf',
+      conventions: DEFAULT_CONVENTIONS,
+      occupancyClass: 'residential',
+    });
+    const byLabel = Object.fromEntries(plan.rooms.map((r) => [r.originalLabel, r]));
+    expect(byLabel['শোবার ঘর'].taxonomy).toBe('bedroom');
+    expect(byLabel['টয়লেট'].taxonomy).toBe('utility');
+    expect(classifyRoomWithGeometry(byLabel['শোবার ঘর'], plan).taxonomy).toBe('bedroom');
+    expect(classifyRoomWithGeometry(byLabel['টয়লেট'], plan).taxonomy).toBe('utility');
   });
 });

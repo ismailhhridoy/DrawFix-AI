@@ -1,4 +1,5 @@
 import { toBnDigits } from '../i18n/digits';
+import { matchBanglaRoom } from './banglaText';
 import { REGULATORY_CORPUS, type RegulatoryClauseChunk } from './bnbcCorpus';
 import type {
   BuildingProject,
@@ -111,7 +112,9 @@ export function classifyRoomWithGeometry(
     }
   }
 
-  // 1. Lexical morphology cues
+  // 1. Lexical morphology cues (Bangla dictionary first; longest word wins)
+  const bnMatch = matchBanglaRoom(room.originalLabel || '');
+  if (bnMatch) scores[bnMatch.taxonomy] += 5.6;
   if (/br-|bed|sleep|master|guest|dorm/.test(label)) scores.bedroom += 5.2;
   if (/living|dining|kitchen|lounge|family|drawing|apt|unit|flat/.test(label)) scores.habitable += 4.8;
   if (/cbn|cabin|office|supv|manager|qa|clinic|medical|consult/.test(label)) scores.cabin += 4.6;

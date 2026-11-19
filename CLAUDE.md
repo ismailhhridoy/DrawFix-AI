@@ -227,7 +227,12 @@ and take away a Bangla report, without any number changing between languages.
    Original plan: **Bangla report.** Recommended: a print-friendly HTML report and `window.print()` (the browser
    shapes Bangla correctly; user saves as PDF). Alternatives to test: html2canvas image of the
    Bangla section inside the jsPDF file (not selectable), or a jsPDF Bangla font after a shaping test.
-6. **Bangla in drawings.** Decode `\U+XXXX` escapes in TEXT/MTEXT (and strip MTEXT formatting codes);
+6. **DONE 2026-11-19 (Bijoy part not started).** `src/engine/banglaText.ts`: `decodeDxfUnicode`
+   (`\U+XXXX`), `cleanDxfText` (MTEXT codes incl. toggles, stacked fractions, `%%c/%%d/%%p`),
+   `BANGLA_ROOM_WORDS` + `matchBanglaRoom` (NFC-normalised, longest word wins), used by the parser and
+   the geometry classifier. `\U+` Bangla now classifies correctly (bedroom, not cabin). Test DXF builder:
+   `tests/fixtures-bangla.ts`. Bijoy/SutonnyMJ still waits for a real DXF.
+   Original plan: **Bangla in drawings.** Decode `\U+XXXX` escapes in TEXT/MTEXT (and strip MTEXT formatting codes);
    widen the Bangla room dictionary (রান্নাঘর, টয়লেট/শৌচাগার, বাথরুম, ডাইনিং, ড্রয়িং, লিফট...); add a
    Bijoy/SutonnyMJ-to-Unicode converter **only after** a real DXF shows that encoding.
 7. **Bangla questions offline.** Bangla keyword map for `queryLocalCorpus` (reuse the server synonym
@@ -288,6 +293,7 @@ and take away a Bangla report, without any number changing between languages.
 
 ## Update log (add a line every time work is done; newest first)
 
+- 2026-11-19: Bangla step 6: decode \U+ escapes and MTEXT codes in DXF text; Bangla room dictionary in both classifiers.
 - 2026-11-19: Bangla step 5: printable HTML report (EN / BN / both) via the browser's print dialog.
 - 2026-11-19: Bangla step 4: shared glossary (prompts, tests, on-screen machine-draft notice). Native review still needed.
 - 2026-11-19: Bangla step 3: Bangla interface strings (typed dictionary), Bangla digits, Bangla rule names.

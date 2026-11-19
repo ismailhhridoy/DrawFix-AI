@@ -1,5 +1,6 @@
 import DxfParser from 'dxf-parser';
 import type { IDxf, IPoint } from 'dxf-parser';
+import { cleanDxfText, matchBanglaRoom } from './banglaText';
 import type {
   DimensionEntity,
   DoorEntity,
@@ -58,6 +59,14 @@ export function heuristicRoomTaxonomy(label: string): {
   reason: string;
 } {
   const s = label.trim().toLowerCase();
+  const bnMatch = matchBanglaRoom(label);
+  if (bnMatch) {
+    return {
+      taxonomy: bnMatch.taxonomy,
+      confidence: 0.92,
+      reason: `Matched Bangla label "${bnMatch.word}"`,
+    };
+  }
   if (/stair|সিঁড়ি|সিড়ি|step/.test(s)) {
     return {
       taxonomy: 'stair',
@@ -189,11 +198,7 @@ function parseOverrideNumericMeters(text: string | undefined, unitScaleToM: numb
 }
 
 function stripMtextFormatting(raw: string): string {
-  return raw
-    .replace(/\{\\[^;]+;([^}]*)\}/g, '$1')
-    .replace(/\\P/g, ' ')
-    .replace(/\\[A-Za-z][^;]*;/g, '')
-    .trim();
+  return cleanDxfText(raw);
 }
 
 export function parseDxfString(
