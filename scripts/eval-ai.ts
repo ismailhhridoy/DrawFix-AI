@@ -9,7 +9,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { setApiBase } from '../src/engine/aiApi';
+import { setApiBase, setMinIntervalMs } from '../src/engine/aiApi';
 import { buildBenchmarkCases, loadSampleProject, searchBaseline } from '../src/engine/fixBenchmark';
 import { fixSpecToEdits, verifyCandidate } from '../src/engine/layoutEdits';
 import { proposeAndVerify } from '../src/engine/aiLayoutProposer';
@@ -26,6 +26,8 @@ const outDir = arg('out', 'eval');
 const limit = Number(arg('limit', '0'));
 const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
 setApiBase(server);
+// Against the public app use --min-interval-ms 1700 to stay under its 40 requests/minute limit.
+setMinIntervalMs(Number(arg('min-interval-ms', '0')));
 fs.mkdirSync(outDir, { recursive: true });
 
 const pct = (a: number, b: number) => (b ? `${a}/${b} (${Math.round((a / b) * 100)}%)` : '0/0');

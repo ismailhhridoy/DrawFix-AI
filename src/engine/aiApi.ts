@@ -3,13 +3,28 @@
  * In the browser this is the same origin; scripts call setApiBase('http://localhost:3000').
  */
 let base = '';
+let minIntervalMs = 0;
+let lastCall = 0;
 
 export function setApiBase(url: string) {
   base = url.replace(/\/$/, '');
 }
 
+/** Scripts only: space out calls (the public server allows 40 requests a minute per address). */
+export function setMinIntervalMs(ms: number) {
+  minIntervalMs = Math.max(0, ms);
+}
+
+async function pace() {
+  if (!minIntervalMs) return;
+  const wait = lastCall + minIntervalMs - Date.now();
+  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+  lastCall = Date.now();
+}
+
 export async function postJson<T>(path: string, body: unknown, timeoutMs = 120_000): Promise<T | null> {
   const ctl = new AbortController();
+  await pace();
   const timer = setTimeout(() => ctl.abort(), timeoutMs);
   try {
     const res = await fetch(`${base}${path}`, {
@@ -41,6 +56,7 @@ function fileToBase64(file: File): Promise<string> {
 
 /** Sends base64 image/PDF data to the AI tracer. Throws with a plain message on failure. */
 export async function requestPlanReadingBase64(dataBase64: string, mimeType: string): Promise<import('./visionPlan').VisionReading> {
+  await pace();
   const res = await fetch(`${base}/api/ai/read-plan-image`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
