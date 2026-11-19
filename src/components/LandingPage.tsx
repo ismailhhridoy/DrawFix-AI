@@ -568,7 +568,7 @@ export function LandingPage({
                   >
                     BNBC 2012 Part 3, Chapter 1 source text
                   </a>
-                  . Limits tagged <strong className="text-[#12111A]">Screening</strong> are prototype
+                  . Limits tagged <strong className="text-[#12111A]">Screening</strong> are screening
                   values not yet checked against the gazette; a licensed reviewer must confirm them.
                 </p>
               )}

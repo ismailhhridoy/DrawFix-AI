@@ -11,7 +11,7 @@ export function BanglaNotice() {
   const [open, setOpen] = useState(false);
   if (!showBn) return null;
   return (
-    <div className="bg-amber-50 border-b border-amber-200 px-4 sm:px-8 py-2 text-xs text-amber-900" lang="bn">
+    <div className="bg-slate-50 border-b border-slate-200 px-4 sm:px-8 py-1.5 text-xs text-slate-600" lang="bn">
       <div className="max-w-[1380px] mx-auto flex flex-wrap items-center gap-x-3 gap-y-1">
         <span>{t('bnNotice.text')}</span>
         <button
@@ -25,15 +25,15 @@ export function BanglaNotice() {
       </div>
       {open && (
         <div className="max-w-[1380px] mx-auto mt-2 overflow-x-auto">
-          <table className="min-w-[480px] w-full text-left border-collapse bg-white rounded-lg border border-amber-200">
+          <table className="min-w-[480px] w-full text-left border-collapse bg-white rounded-lg border border-slate-200">
             <thead>
-              <tr className="text-[11px] text-amber-800 border-b border-amber-200">
+              <tr className="text-[11px] text-slate-700 border-b border-slate-200">
                 <th className="py-1.5 px-3 font-semibold">English</th>
                 <th className="py-1.5 px-3 font-semibold">বাংলা</th>
                 <th className="py-1.5 px-3 font-semibold">{t('bnNotice.note')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-amber-100 text-slate-800">
+            <tbody className="divide-y divide-slate-100 text-slate-800">
               {GLOSSARY.map((g) => (
                 <tr key={g.id}>
                   <td className="py-1 px-3" lang="en">{g.en}</td>
