@@ -41,7 +41,7 @@ export function StepExport({
   shareUrl,
   onOpen3DView,
 }: StepExportProps) {
-  const { showEn, showBn } = useLang();
+  const { showEn, showBn, t, num } = useLang();
   const [copied, setCopied] = useState(false);
   const [memo, setMemo] = useState<DeficiencyMemo | null>(null);
   const [generatingMemo, setGeneratingMemo] = useState(false);
@@ -240,15 +240,13 @@ export function StepExport({
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200/90 pb-5">
         <div className="space-y-1.5">
           <p className="text-xs font-mono text-slate-500">
-            Step 07 · Export · {project.name} ({project.floors.length}{' '}
-            {project.floors.length === 1 ? 'Floor' : 'Floors'})
+            {t('export.kicker', { p: project.name, n: project.floors.length })}
           </p>
           <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900">
-            Take the results with you
+            {t('export.title')}
           </h1>
           <p className="text-sm text-slate-600">
-            Download the compliance audit PDF, authority scrutiny worksheet, architect validation
-            brief, or shareable 3D view.
+            {t('export.lead')}
           </p>
         </div>
 
@@ -262,7 +260,7 @@ export function StepExport({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Architect
+            {t('export.role.arch')}
           </button>
           <button
             type="button"
@@ -273,7 +271,7 @@ export function StepExport({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Government Desk
+            {t('export.role.gov')}
           </button>
         </div>
       </div>
@@ -283,21 +281,20 @@ export function StepExport({
         <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs p-6 flex flex-col justify-between space-y-6">
           <div className="space-y-3">
             <h2 className="font-display text-lg font-semibold text-slate-900">
-              Report PDF
+              {t('export.pdf.title')}
             </h2>
             <p className="text-sm text-slate-600 leading-relaxed">
-              Every finding with its measurement, limit, source and trust level, the list of
-              what was not checked, and the proposed geometric fixes.
+              {t('export.pdf.lead')}
             </p>
             <div className="pt-2 text-xs font-mono text-slate-700 space-y-1 tabular-nums">
               <div>
-                Floors audited: {project.floors.length} ({totalHeightM} m total height)
+                {t('export.floorsAudited', { n: project.floors.length, h: num(totalHeightM) })}
               </div>
               <div>
-                Findings: {beforeAudit.failCount} fail, {beforeAudit.warnCount} warn
+                {t('export.findings', { f: beforeAudit.failCount, w: beforeAudit.warnCount })}
               </div>
-              <div>Not checked: {(beforeAudit.notChecked || []).length} items</div>
-              <div>With proposed changes: {afterAudit.failCount} fail</div>
+              <div>{t('export.notChecked', { n: (beforeAudit.notChecked || []).length })}</div>
+              <div>{t('export.withChanges', { f: afterAudit.failCount })}</div>
             </div>
           </div>
 
@@ -308,7 +305,7 @@ export function StepExport({
               className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors cursor-pointer shadow-xs whitespace-nowrap"
             >
               <FileDown className="w-4 h-4" />
-              Download report PDF
+              {t('export.pdf.download')}
             </button>
             <button
               type="button"
@@ -316,7 +313,7 @@ export function StepExport({
               className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold text-slate-900 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
             >
               <FileText className="w-3.5 h-3.5 text-blue-700" />
-              {reviewerRole === 'government' ? 'Scrutiny Sheet (.TXT)' : 'Validation Brief (.TXT)'}
+              {reviewerRole === 'government' ? t('export.sheet.gov') : t('export.sheet.arch')}
             </button>
           </div>
         </div>
@@ -325,12 +322,12 @@ export function StepExport({
         <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs p-6 flex flex-col justify-between space-y-6">
           <div className="space-y-3">
             <h2 className="font-display text-lg font-semibold text-slate-900">
-              Link to the 3D escape view
+              {t('export.link.title')}
             </h2>
             <p className="text-sm text-slate-600 leading-relaxed">
               {shareUrl
-                ? 'Opens this reference plan in 3D on the floor, room and before/after state you last viewed.'
-                : 'Uploaded drawings stay in this browser and are not stored on a server, so there is no link to share. Use the PDF instead.'}
+                ? t('export.link.yes')
+                : t('export.link.no')}
             </p>
             {shareUrl && (
               <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 font-mono text-[11px] text-slate-700 break-all">
@@ -347,7 +344,7 @@ export function StepExport({
               className="disabled:opacity-40 disabled:cursor-not-allowed flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-semibold text-slate-900 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
             >
               {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-              {copied ? 'Copied' : 'Copy link'}
+              {copied ? t('common.copied') : t('export.copyLink')}
             </button>
             <button
               type="button"
@@ -355,7 +352,7 @@ export function StepExport({
               className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              Open 3D View
+              {t('export.open3d')}
             </button>
           </div>
         </div>
@@ -368,12 +365,11 @@ export function StepExport({
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-blue-700 shrink-0" />
               <h2 className="font-display text-lg font-semibold text-slate-900">
-                Draft review note
+                {t('export.memo.title')}
               </h2>
             </div>
             <p className="text-xs text-slate-600">
-              A plain summary of the findings for the owner or design team. Generated as an
-              advisory draft for pre-submission review, not an official RAJUK or Fire Service document.
+              {t('export.memo.lead')}
             </p>
           </div>
 
@@ -384,7 +380,7 @@ export function StepExport({
             className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors cursor-pointer disabled:opacity-50 shrink-0 shadow-xs"
           >
             <FileText className="w-3.5 h-3.5" />
-            {generatingMemo ? 'Drafting…' : memo ? 'Draft again' : 'Draft review note'}
+            {generatingMemo ? t('export.memo.drafting') : memo ? t('export.memo.again') : t('export.memo.title')}
           </button>
         </div>
 
@@ -402,14 +398,14 @@ export function StepExport({
                   }`}
                 >
                   {memo.decisionStatus === 'OBJECTION_RAISED'
-                    ? 'Issues found'
+                    ? t('export.memo.issues')
                     : memo.decisionStatus === 'CONDITIONAL_REVIEW'
-                      ? 'Warnings only'
-                      : 'Nothing flagged'}
+                      ? t('export.memo.warnings')
+                      : t('export.memo.nothing')}
                 </span>
                 <span className="text-slate-400">·</span>
                 <span className="text-slate-500">
-                  Advisory draft ready
+                  {t('export.memo.ready')}
                 </span>
               </div>
 
@@ -420,7 +416,7 @@ export function StepExport({
                   className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-slate-800 border border-slate-300 bg-white hover:bg-slate-50 rounded-lg cursor-pointer"
                 >
                   {copiedMemo ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copiedMemo ? 'Copied' : 'Copy'}
+                  {copiedMemo ? t('common.copied') : t('common.copy')}
                 </button>
                 <button
                   type="button"

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLang } from '../i18n';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -289,6 +290,7 @@ export function Viewport3D({
   initialFloorFocus = 'all',
   onStateChange,
 }: Viewport3DProps) {
+  const { t, num } = useLang();
   const [mode, setMode] = useState<'before' | 'after'>(initialMode);
   const [dockOpen, setDockOpen] = useState(true);
   const [playing, setPlaying] = useState(true);
@@ -1185,7 +1187,7 @@ export function Viewport3D({
         <div className="absolute inset-0 flex items-center justify-center bg-slate-100 p-6">
           <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 max-w-md text-center space-y-2">
             <div className="font-display font-semibold text-slate-900">
-              3D Viewport Unavailable
+              {t('v3d.unavailable')}
             </div>
             <p className="text-xs text-slate-600">{webglError}</p>
           </div>
@@ -1196,17 +1198,17 @@ export function Viewport3D({
       <div className="absolute top-4 left-4 z-10 bg-white border border-slate-200/90 rounded-xl px-4 py-3.5 space-y-1.5 max-w-sm shadow-sm">
         <div className="flex items-center justify-between gap-4 text-[11px] font-mono text-slate-500">
           <span>
-            {mode === 'before' ? 'As-Drawn' : 'Remediated'}
+            {mode === 'before' ? t('v3d.asDrawn') : t('v3d.remediated')}
             {isMultiFloor && activeEscape?.floorLabel
               ? ` · ${activeEscape.floorLabel} → GF`
               : ''}
           </span>
-          <span>Click any room in 3D</span>
+          <span>{t('v3d.clickRoom')}</span>
         </div>
 
         <div className="flex items-baseline justify-between gap-4">
           <div className="font-display text-base font-bold text-slate-900">
-            {activeEscape?.roomName || 'Select a Room'}
+            {activeEscape?.roomName || t('v3d.selectRoom')}
           </div>
           <div
             className={`font-mono text-xl font-bold tabular-nums ${
@@ -1214,40 +1216,40 @@ export function Viewport3D({
             }`}
           >
             {activeEscape?.blocked
-              ? 'TRAPPED'
+              ? t('v3d.trapped')
               : activeEscape
-                ? `${elapsedSec.toFixed(1)} / ${activeEscape.estimatedTimeSec.toFixed(1)} s`
+                ? `${num(elapsedSec, 1)} / ${t('common.seconds', { n: num(activeEscape.estimatedTimeSec, 1) })}`
                 : '—'}
           </div>
         </div>
 
         <div className="text-xs font-mono text-slate-600 tabular-nums flex flex-wrap items-center gap-x-2">
           <span>
-            {isMultiFloor && (activeEscape?.floorIndex ?? 0) > 0 ? 'Floor / Total:' : 'Path:'}{' '}
+            {isMultiFloor && (activeEscape?.floorIndex ?? 0) > 0 ? t('v3d.floorTotal') : t('v3d.path')}{' '}
             <strong>
               {activeEscape?.blocked
-                ? 'No open route'
+                ? t('v3d.noOpenRoute')
                 : isMultiFloor && (activeEscape?.floorIndex ?? 0) > 0
-                  ? `${horizDist.toFixed(1)}m / ${activeEscape?.distanceM.toFixed(1)}m`
-                  : `${activeEscape?.distanceM.toFixed(2)} m`}
+                  ? `${num(horizDist, 1)} m / ${num(activeEscape?.distanceM ?? 0, 1)} m`
+                  : `${num(activeEscape?.distanceM ?? 0, 2)} m`}
             </strong>
           </span>
           <span aria-hidden="true">·</span>
           <span>
-            Exit: <strong>{activeEscape?.targetExitName || 'None'}</strong>
+            {t('v3d.exit')} <strong>{activeEscape?.targetExitName || t('common.none')}</strong>
           </span>
         </div>
 
         {beforeEscape && afterEscape && (
           <div className="pt-1.5 border-t border-slate-200 text-[11px] font-mono text-slate-700 tabular-nums flex items-center justify-between">
-            <span>Before → After:</span>
+            <span>{t('v3d.beforeAfter')}</span>
             <span>
               <strong className="text-red-700">
-                {beforeEscape.blocked ? 'BLOCKED' : `${beforeEscape.estimatedTimeSec.toFixed(1)}s`}
+                {beforeEscape.blocked ? t('compare.blocked') : t('common.seconds', { n: num(beforeEscape.estimatedTimeSec, 1) })}
               </strong>{' '}
               →{' '}
               <strong className="text-emerald-700">
-                {afterEscape.blocked ? 'BLOCKED' : `${afterEscape.estimatedTimeSec.toFixed(1)}s`}
+                {afterEscape.blocked ? t('compare.blocked') : t('common.seconds', { n: num(afterEscape.estimatedTimeSec, 1) })}
               </strong>
             </span>
           </div>
@@ -1256,7 +1258,7 @@ export function Viewport3D({
 
       {/* Top-Right Simulation Illustration Disclaimer */}
       <div className="hidden md:block absolute top-4 right-4 z-10 bg-white border border-slate-200/90 rounded-lg shadow-xs px-3 py-1.5 text-[11px] font-mono text-slate-600 pointer-events-none">
-        Illustration only: walking speed assumed 1.2 m/s (0.75 m/s on stairs). Not a certified evacuation analysis.
+        {t('v3d.disclaimer')}
       </div>
 
       {/* Collapsible Unified Bottom Control Dock */}
@@ -1291,7 +1293,7 @@ export function Viewport3D({
                       : 'text-slate-700 hover:text-slate-900'
                   }`}
                 >
-                  Before Fix
+                  {t('v3d.beforeFix')}
                 </button>
                 <button
                   type="button"
@@ -1302,7 +1304,7 @@ export function Viewport3D({
                       : 'text-slate-700 hover:text-slate-900'
                   }`}
                 >
-                  After Fix
+                  {t('v3d.afterFix')}
                 </button>
               </div>
 
@@ -1312,7 +1314,7 @@ export function Viewport3D({
                   htmlFor="room-sim-select"
                   className="text-slate-600 font-medium whitespace-nowrap"
                 >
-                  Start Room:
+                  {t('v3d.startRoom')}
                 </label>
                 <select
                   id="room-sim-select"
@@ -1344,11 +1346,11 @@ export function Viewport3D({
                   className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg cursor-pointer whitespace-nowrap"
                 >
                   {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                  {playing ? 'Pause' : 'Play'}
+                  {playing ? t('v3d.pause') : t('v3d.play')}
                 </button>
                 <button
                   type="button"
-                  aria-label="Reset escape timer"
+                  aria-label={t('v3d.reset')}
                   onClick={() => {
                     simStateRef.current.elapsedSec = 0;
                     setElapsedSec(0);
@@ -1379,7 +1381,7 @@ export function Viewport3D({
                         : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
                     }`}
                   >
-                    {preset === 'iso' ? 'Isometric' : preset === 'top' ? 'Top Plan' : 'Follow'}
+                    {preset === 'iso' ? t('v3d.iso') : preset === 'top' ? t('v3d.top') : t('v3d.follow')}
                   </button>
                 ))}
               </div>

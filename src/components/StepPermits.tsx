@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { useLang } from '../i18n';
 import {
   ArrowRight,
   Check,
@@ -66,6 +67,7 @@ export function StepPermits({
   onGoToReport,
   onGoToExport,
 }: StepPermitsProps) {
+  const { t } = useLang();
   const [tab, setTab] = useState<'corrections' | 'checklist'>('corrections');
 
   // Flow 1: Corrections Letter Interpreter state
@@ -188,15 +190,13 @@ export function StepPermits({
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-slate-200/90 pb-5">
         <div className="space-y-1.5">
           <p className="text-xs font-mono text-slate-500">
-            Permit &amp; Corrections Desk · {project ? `Linked to ${project.name}` : 'Standalone or CAD-linked'}
+            {t('landing.hero.tag3')} · {project ? t('permits.linked', { p: project.name }) : t('permits.standalone')}
           </p>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-            Corrections response &amp; submittal readiness
+            {t('permits.title')}
           </h1>
           <p className="text-sm text-slate-600 max-w-2xl">
-            Interpret authority objection letters against your CAD floor plan, or generate a
-            jurisdiction-specific pre-submission checklist across zoning, habitability, and fire
-            safety.
+            {t('permits.lead')}
           </p>
         </div>
 
@@ -209,7 +209,7 @@ export function StepPermits({
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg cursor-pointer"
               >
                 <Layers className="w-3.5 h-3.5" />
-                Back to CAD report
+                {t('permits.backReport')}
               </button>
               {onGoToExport && (
                 <button
@@ -217,7 +217,7 @@ export function StepPermits({
                   onClick={onGoToExport}
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg cursor-pointer shadow-xs"
                 >
-                  Continue to Export
+                  {t('permits.toExport')}
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               )}
@@ -229,7 +229,7 @@ export function StepPermits({
               className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-[#12111A] hover:bg-[#2563EB] rounded-lg cursor-pointer"
             >
               <Upload className="w-3.5 h-3.5" />
-              Upload DXF to link geometry
+              {t('permits.uploadLink')}
             </button>
           )}
         </div>
@@ -247,7 +247,7 @@ export function StepPermits({
           }`}
         >
           <FileWarning className="w-3.5 h-3.5 text-blue-700" />
-          Corrections Letter Interpreter
+          {t('permits.tab.corr')}
         </button>
         <button
           type="button"
@@ -259,7 +259,7 @@ export function StepPermits({
           }`}
         >
           <ClipboardCheck className="w-3.5 h-3.5 text-blue-700" />
-          Pre-Submission Permit Checklist
+          {t('permits.tab.check')}
         </button>
       </div>
 
@@ -271,7 +271,7 @@ export function StepPermits({
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-blue-700" />
                 <h2 className="font-display text-base font-semibold text-slate-900">
-                  Authority corrections letter
+                  {t('permits.letter')}
                 </h2>
               </div>
               <input
@@ -287,12 +287,12 @@ export function StepPermits({
                 className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-slate-700 bg-slate-50 border border-slate-300 hover:bg-slate-100 rounded-lg cursor-pointer"
               >
                 <Upload className="w-3.5 h-3.5" />
-                Load .TXT
+                {t('permits.loadTxt')}
               </button>
             </div>
 
             <label className="block space-y-1 text-xs">
-              <span className="font-medium text-slate-700">Issuing office / department</span>
+              <span className="font-medium text-slate-700">{t('permits.office')}</span>
               <input
                 type="text"
                 value={authorityName}
@@ -303,7 +303,7 @@ export function StepPermits({
 
             <div className="space-y-1.5">
               <div className="text-[11px] font-medium text-slate-500">
-                Sample objection letters
+                {t('permits.samples')}
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {SAMPLE_CORRECTION_LETTERS.map((s) => (
@@ -317,14 +317,14 @@ export function StepPermits({
                     }}
                     className="text-[11px] px-2.5 py-1 rounded-md border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-slate-700 cursor-pointer transition-colors"
                   >
-                    {s.id === 'rajuk-scrutiny' ? 'Residential / Zoning Notice' : 'Industrial / Fire Notice'}
+                    {s.id === 'rajuk-scrutiny' ? t('permits.sample.res') : t('permits.sample.ind')}
                   </button>
                 ))}
               </div>
             </div>
 
             <label className="block space-y-1 text-xs">
-              <span className="font-medium text-slate-700">Paste objection items</span>
+              <span className="font-medium text-slate-700">{t('permits.paste')}</span>
               <textarea
                 rows={11}
                 value={letterText}
@@ -351,7 +351,7 @@ export function StepPermits({
               className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-[#12111A] hover:bg-[#2563EB] rounded-lg transition-colors cursor-pointer disabled:opacity-50"
             >
               <FileCheck2 className="w-4 h-4" />
-              {interpreting ? 'Cross-referencing rules & CAD…' : 'Analyze objections & draft response'}
+              {interpreting ? t('permits.analyzing') : t('permits.analyze')}
             </button>
           </div>
 
@@ -361,7 +361,7 @@ export function StepPermits({
               <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs p-8 text-center space-y-3">
                 <FileWarning className="w-8 h-8 text-slate-400 mx-auto" />
                 <h3 className="font-display text-base font-semibold text-slate-900">
-                  Ready to interpret plan corrections
+                  {t('permits.ready')}
                 </h3>
                 <p className="text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
                   Paste or load a municipal scrutiny letter on the left, then click{' '}
@@ -410,15 +410,15 @@ export function StepPermits({
 
                           <div className="text-xs text-slate-600 space-y-1 pt-1 border-t border-slate-200/70">
                             <div>
-                              <strong className="text-slate-800">Reference:</strong>{' '}
+                              <strong className="text-slate-800">{t('permits.reference')}</strong>{' '}
                               <span className="font-mono">{item.citedClause}</span>
                             </div>
                             <div>
-                              <strong className="text-slate-800">CAD Evidence:</strong>{' '}
+                              <strong className="text-slate-800">{t('permits.evidence')}</strong>{' '}
                               {item.cadEvidence}
                             </div>
                             <div className="text-blue-800 font-medium">
-                              <strong>Action:</strong> {item.recommendedResponse}
+                              <strong>{t('permits.action')}</strong> {item.recommendedResponse}
                             </div>
                           </div>
                         </div>
@@ -431,7 +431,7 @@ export function StepPermits({
                 <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
                     <h2 className="font-display text-base font-semibold text-slate-900">
-                      Draft resubmission response letter
+                      {t('permits.coverLetter')}
                     </h2>
                     <div className="flex items-center gap-2">
                       <button
@@ -444,7 +444,7 @@ export function StepPermits({
                         ) : (
                           <Copy className="w-3.5 h-3.5" />
                         )}
-                        {copiedLetter ? 'Copied' : 'Copy'}
+                        {copiedLetter ? t('common.copied') : t('common.copy')}
                       </button>
                       <button
                         type="button"
@@ -452,7 +452,7 @@ export function StepPermits({
                         className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-slate-800 border border-slate-300 bg-white hover:bg-slate-50 rounded-lg cursor-pointer"
                       >
                         <FileDown className="w-3.5 h-3.5" />
-                        Download .TXT
+                        {t('common.downloadTxt')}
                       </button>
                     </div>
                   </div>
@@ -471,11 +471,11 @@ export function StepPermits({
           {/* Parameters Panel */}
           <div className="lg:col-span-4 bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-4">
             <h2 className="font-display text-base font-semibold text-slate-900 border-b border-slate-200 pb-3">
-              Project filing profile
+              {t('permits.profile')}
             </h2>
 
             <label className="block space-y-1 text-xs">
-              <span className="font-medium text-slate-700">Approval Authority / Jurisdiction</span>
+              <span className="font-medium text-slate-700">{t('permits.authority')}</span>
               <select
                 value={jurisdiction}
                 onChange={(e) => setJurisdiction(e.target.value as PermitJurisdiction)}
@@ -490,7 +490,7 @@ export function StepPermits({
             </label>
 
             <label className="block space-y-1 text-xs">
-              <span className="font-medium text-slate-700">Occupancy Classification</span>
+              <span className="font-medium text-slate-700">{t('permits.occupancy')}</span>
               <select
                 value={occupancy}
                 onChange={(e) => setOccupancy(e.target.value as OccupancyClass)}
@@ -504,7 +504,7 @@ export function StepPermits({
 
             <div className="grid grid-cols-2 gap-3 text-xs">
               <label className="space-y-1">
-                <span className="font-medium text-slate-700">Floors</span>
+                <span className="font-medium text-slate-700">{t('permits.floors')}</span>
                 <input
                   type="number"
                   min={1}
@@ -515,7 +515,7 @@ export function StepPermits({
                 />
               </label>
               <label className="space-y-1">
-                <span className="font-medium text-slate-700">Storey height (m)</span>
+                <span className="font-medium text-slate-700">{t('permits.storey')}</span>
                 <input
                   type="number"
                   step={0.1}
@@ -527,7 +527,7 @@ export function StepPermits({
                 />
               </label>
               <label className="space-y-1">
-                <span className="font-medium text-slate-700">Plot area (m²)</span>
+                <span className="font-medium text-slate-700">{t('review.site.plotArea')}</span>
                 <input
                   type="number"
                   min={0}
@@ -537,7 +537,7 @@ export function StepPermits({
                 />
               </label>
               <label className="space-y-1">
-                <span className="font-medium text-slate-700">Road width (m)</span>
+                <span className="font-medium text-slate-700">{t('review.site.road')}</span>
                 <input
                   type="number"
                   step={0.5}
@@ -556,18 +556,18 @@ export function StepPermits({
                 onChange={(e) => setSprinklered(e.target.checked)}
                 className="rounded border-slate-300"
               />
-              Building equipped with automatic sprinkler system
+              {t('permits.sprinkler')}
             </label>
 
             <div className="pt-3 border-t border-slate-200 flex items-center justify-between text-xs">
               <span className="text-slate-600">
-                Total height:{' '}
+                {t('permits.totalHeight')}{' '}
                 <strong className="font-mono text-slate-900 tabular-nums">
                   {(floorsCount * storyHeightM).toFixed(1)} m
                 </strong>
               </span>
               <span className="font-mono text-slate-700">
-                {floorsCount * storyHeightM > 20 ? 'High-Rise (>20 m)' : 'Standard height'}
+                {floorsCount * storyHeightM > 20 ? t('permits.highRise') : t('permits.standard')}
               </span>
             </div>
           </div>

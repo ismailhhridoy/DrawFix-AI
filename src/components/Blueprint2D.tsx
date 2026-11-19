@@ -105,7 +105,7 @@ export function Blueprint2D({
           </span>
           <span className="text-slate-400" aria-hidden="true">·</span>
           <span className="font-mono text-slate-600 tabular-nums">
-            {plan.bounds.widthM.toFixed(1)} m × {plan.bounds.heightM.toFixed(1)} m
+            {num(plan.bounds.widthM, 1)} m × {num(plan.bounds.heightM, 1)} m
           </span>
           <span className="text-slate-400" aria-hidden="true">·</span>
           <span
@@ -127,7 +127,7 @@ export function Blueprint2D({
                 : 'border-slate-200 bg-slate-100 text-slate-500'
             }`}
           >
-            Dims
+            {t('bp.dims')}
           </button>
           <button
             type="button"
@@ -138,7 +138,7 @@ export function Blueprint2D({
                 : 'border-slate-200 bg-slate-100 text-slate-500'
             }`}
           >
-            Path
+            {t('bp.path')}
           </button>
           <div className="flex items-center border border-slate-300 rounded-lg bg-white overflow-hidden">
             <button

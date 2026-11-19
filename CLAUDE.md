@@ -201,7 +201,13 @@ and take away a Bangla report, without any number changing between languages.
    Original plan: **Number guard for Bangla AI text.** Before showing any Gemini Bangla, convert Bangla digits to
    Latin, extract every number, and reject the text (fall back to the fixed template) if a number is
    not in the finding's own data. Keeps the "AI never changes a measurement" rule true in Bangla.
-3. **UI strings.** Small in-house `t(key)` dictionary (`src/i18n/en.ts`, `bn.ts`), no library.
+3. **DONE 2026-11-19.** `src/i18n/en.ts` + `bn.ts` (bn typed `Record<MsgKey,string>`, so a missing
+   Bangla key fails `tsc`), `t(key, vars)` with Bangla digits for numeric vars, `num()` for engine
+   numbers, `ruleName()` + `nameBn` in `rules.ts`. Covered: Header, Landing, Review, Report, Fixes, plan
+   view, Upload, 3D overlay, Export, Permit desk chrome. Still English: parser notes, "Not checked"
+   reasons, room/floor names from the DXF, sample-plan descriptions, permit checklist item text,
+   correction-letter analysis, PDF. Also fixed two landing sentences that called screening limits
+   "confirmed by a licensed reviewer". Original plan: **UI strings.** Small in-house `t(key)` dictionary (`src/i18n/en.ts`, `bn.ts`), no library.
    Translate the demo path first: Header, Landing, Review, Report, Compare; then Upload, Permits,
    3D, Export. Set `<html lang>` on switch; Bangla digits for measurements via `bn()`. Keep clause
    names (e.g. "BNBC 2012, Part 3, Sec 1.13.8.2") in the original form next to the Bangla.
@@ -273,6 +279,7 @@ and take away a Bangla report, without any number changing between languages.
 
 ## Update log (add a line every time work is done; newest first)
 
+- 2026-11-19: Bangla step 3: Bangla interface strings (typed dictionary), Bangla digits, Bangla rule names.
 - 2026-11-19: Bangla step 2: number guard rejects AI text (EN or BN) containing a number not in the finding's data.
 - 2026-11-19: Bangla step 1: language switch (EN / বাংলা / both) and Bangla shown in Report, Fixes, question box, review note.
 - 2026-11-19: Fixed `CLAUDE.md`: env file is `.env` (dotenv ignores `.env.local`); restored the circular-test caveat.
