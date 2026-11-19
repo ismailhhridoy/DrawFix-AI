@@ -174,7 +174,7 @@ export interface BuildingProject {
 
 export interface RemediationDelta {
   id: string;
-  targetType: 'door' | 'wall' | 'stair' | 'dimension';
+  targetType: 'door' | 'wall' | 'stair' | 'dimension' | 'layout';
   targetId: string;
   floorIndex?: number;
   floorLabel?: string;
@@ -183,7 +183,9 @@ export interface RemediationDelta {
     | 'widen_door'
     | 'widen_passage'
     | 'adjust_stair'
-    | 'sync_dimension';
+    | 'sync_dimension'
+    /** A layout change proposed by Gemini, re-measured by the engine and approved by a person. */
+    | 'ai_layout';
   summary: string;
   /** Same change in Bangla, built from the same numbers. */
   summaryBn?: string;

@@ -9,6 +9,7 @@ import { StepReport } from './components/StepReport';
 import { StepCompare } from './components/StepCompare';
 const Viewport3D = lazy(() => import('./components/Viewport3D').then((m) => ({ default: m.Viewport3D })));
 const StepPermits = lazy(() => import('./components/StepPermits').then((m) => ({ default: m.StepPermits })));
+const AiFixAgentPanel = lazy(() => import('./components/AiFixAgentPanel').then((m) => ({ default: m.AiFixAgentPanel })));
 const StepExport = lazy(() => import('./components/StepExport').then((m) => ({ default: m.StepExport })));
 import { DEFAULT_CONVENTIONS, parseDxfString } from './engine/dxfParser';
 import { SAMPLE_BUILDINGS, type SampleBuildingMeta } from './engine/sampleDxf';
@@ -25,6 +26,7 @@ import {
   requestInferredConventions,
 } from './engine/aiFallback';
 import type { ReviewerRole } from './engine/localIntelligence';
+import type { ApprovedAiChanges } from './components/AiFixAgentPanel';
 import type {
   AppStep,
   BuildingProject,
@@ -32,6 +34,7 @@ import type {
   FixNarration,
   LayerConventions,
   OccupancyClass,
+  RemediationDelta,
   RoomTaxonomy,
   SiteContext,
   ViolationExplanation,
@@ -79,6 +82,8 @@ export default function App() {
 
   const [aiNarration, setAiNarration] = useState<FixNarration | null>(null);
   const [narratingAi, setNarratingAi] = useState(false);
+  /** AI layout changes a person approved (AI proposes, code verifies, a person approves). */
+  const [aiApproved, setAiApproved] = useState<ApprovedAiChanges | null>(null);
 
   const [simMode, setSimMode] = useState<'before' | 'after'>('before');
   const [simRoomId, setSimRoomId] = useState<string | null>(null);
@@ -102,10 +107,21 @@ export default function App() {
 
   const remediation = useMemo(() => {
     if (!project || !baseAudit) return null;
+    if (aiApproved) {
+      const deltas: RemediationDelta[] = aiApproved.descriptions.map((d, i) => ({
+        id: `ai-edit-${i + 1}`,
+        targetType: 'layout',
+        targetId: aiApproved.edits[i]?.kind ?? 'layout',
+        action: 'ai_layout',
+        summary: d.en,
+        summaryBn: d.bn,
+      }));
+      return { fixedProject: aiApproved.project, fixedAudit: aiApproved.audit, deltas, source: 'ai' as const };
+    }
     const { fixedProject, deltas } = applyBuildingRemediationFixes(project, baseAudit);
     const fixedAudit = runBuildingAudit(fixedProject);
-    return { fixedProject, fixedAudit, deltas };
-  }, [project, baseAudit]);
+    return { fixedProject, fixedAudit, deltas, source: 'rules' as const };
+  }, [project, baseAudit, aiApproved]);
 
   const activeNarration: FixNarration | null = useMemo(() => {
     if (!project || !baseAudit || !remediation) return null;
@@ -183,6 +199,7 @@ export default function App() {
       setSimRoomId(null);
       setExplanations({});
       setAiNarration(null);
+      setAiApproved(null);
       setAiLabelSource('heuristic');
       setActiveStep(nextStep);
       void runAiLabels(nextProject);
@@ -721,6 +738,24 @@ export default function App() {
             deltas={remediation.deltas}
             narration={activeNarration}
             narratingAi={narratingAi}
+            afterSource={remediation.source}
+            agentPanel={
+              baseAudit && (
+                <AiFixAgentPanel
+                  project={project}
+                  baseAudit={baseAudit}
+                  approved={aiApproved}
+                  onApprove={(a) => {
+                    setAiApproved(a);
+                    setAiNarration(null);
+                  }}
+                  onClear={() => {
+                    setAiApproved(null);
+                    setAiNarration(null);
+                  }}
+                />
+              )
+            }
             onProceedTo3D={() => setActiveStep('simulate')}
           />
         )}

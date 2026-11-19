@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { ArrowRight, CheckCircle2, FileText } from 'lucide-react';
 import { Bi, useLang } from '../i18n';
 import type {
@@ -18,6 +19,10 @@ interface StepCompareProps {
   deltas: RemediationDelta[];
   narration: FixNarration;
   narratingAi: boolean;
+  /** Whether the right-hand plan shows the fixed-rule fixes or AI changes a person approved. */
+  afterSource?: 'rules' | 'ai';
+  /** The AI design agent panel (lazy-loaded by the app). */
+  agentPanel?: ReactNode;
   onProceedTo3D: () => void;
 }
 
@@ -31,6 +36,8 @@ export function StepCompare({
   deltas,
   narration,
   narratingAi,
+  afterSource = 'rules',
+  agentPanel,
   onProceedTo3D,
 }: StepCompareProps) {
   const { t, num } = useLang();
@@ -80,6 +87,12 @@ export function StepCompare({
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
+
+      {agentPanel}
+
+      <p className={`text-xs font-semibold ${afterSource === 'ai' ? 'text-violet-800' : 'text-slate-600'}`}>
+        {afterSource === 'ai' ? t('agent.compareSource.ai') : t('agent.compareSource.rules')}
+      </p>
 
       {/* Building-Wide Before / After KPI Comparison Strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-slate-200/90 bg-white border border-slate-200/90 rounded-xl shadow-xs overflow-hidden">
