@@ -22,13 +22,25 @@ findings on the plan, proposes fixes, re-checks them, plays the escape in 3D, an
 
 ## Core design rule (do not break)
 
-**Code measures. A person confirms the inputs. AI only does the wording.**
+**AI proposes. Code verifies. A person approves.**
 
-- Every distance, width, area, pass/fail and limit comes from plain TypeScript.
-- Gemini is used only to: classify messy room labels, reword findings in English/Bangla,
-  answer questions from the tool's own reference notes, draft a review note.
-- Gemini never outputs a measurement, a limit or a clause number of its own.
-- If Gemini is off or fails, the whole app still works with fixed wording.
+(Changed 2026-11-19 from "AI only does the wording". Gemini now does real work, but never has the last word on a number.)
+
+- Every distance, width, area, pass/fail and limit comes from plain TypeScript. That has not changed.
+- Gemini **proposes**: layout changes (`src/engine/layoutEdits.ts` edit language: unlock/widen/move a
+  door, add an exit door, move a wall, add a stair core, set a stair value, fix a dimension text), the
+  next step of the fix agent (`fixAgent.ts`), and a trace of a plan image/PDF (`visionPlan.ts`, positions
+  in 0-1000 image units only, never metres). It also still classifies labels, rewords findings, answers
+  questions and drafts a review note.
+- Code **verifies**: every proposed edit is validated (ids exist, values inside `EDIT_BOUNDS`), applied to a
+  copy, and the full audit re-runs (`verifyCandidate`). A proposal is kept only if its target findings are
+  gone and nothing new fails or warns. Image readings are scaled by code from a width the reviewer types.
+- A person **approves**: nothing an AI proposed changes the "after" plan until the reviewer ticks it in the
+  approval list (`applyApprovedChanges` re-applies and re-audits again). Image readings go to Review.
+- Gemini never outputs a measurement, a limit or a clause number of its own. Its notes/rationales are
+  number-guarded (`numberGuard.ts`).
+- If Gemini is off or fails, the whole app still works: fixed wording, and the agent runs the hand-written
+  fixes through the same verifier (labelled "Fixed rules (Gemini off)"). Image reading needs Gemini.
 - Every finding carries a **trust level** (`basis`):
   - `verified` — limit read in the BNBC 2012 text, Part 3 Ch. 1
     (https://law.resource.org/pub/bd/bnbc.2012/gov.bd.bnbc.2012.03.01.pdf)
@@ -101,6 +113,20 @@ src/engine/permitEngine.ts   Permit checklist + correction-letter handling, used
                              Audited 2026-11-19 (see Not done #9); procedural items are marked not verified.
 src/engine/localIntelligence.ts  Local (non-LLM) room classification, question box, triage.
 src/engine/numberGuard.ts    Rejects AI text (EN/BN) with a number not in the source data.
+src/engine/layoutEdits.ts    AI feature core: LayoutEdit language, normalizeEdit (validation), applyLayoutEdits
+                             (copy only), verifyCandidate (re-audit; accept only if targets clear, nothing new).
+src/engine/aiLayoutProposer.ts  Gemini candidates -> validate -> verify; 2 rounds with the engine's reasons.
+src/engine/fixAgent.ts       Agent loop (run_audit, get_floor, try_edits, stage, finish); applyApprovedChanges.
+src/engine/visionPlan.ts     Plan image/PDF trace (0-1000 units) -> ParsedFloorPlan, scaled by reviewer width;
+                             scoreReading, planToSvg. Ported from the parallel thread's branch.
+src/engine/fixBenchmark.ts   56 benchmark cases (sets A/B/C) from the demo buildings + searchBaseline (no AI).
+src/engine/aiApi.ts          Client fetch helpers; setApiBase() for scripts.
+aiDesignRoutes.ts            /api/ai/propose-layout-fixes, /api/ai/agent-step, /api/ai/read-plan-image.
+src/components/AiFixAgentPanel.tsx  Fixes step: agent trace, options for one finding, approval list.
+src/components/VisionUpload.tsx     Upload step: read a plan image/PDF (needs Gemini).
+scripts/eval-ai.ts (+ eval-vision.ts)  Measures the three features; results in eval/. Fixture PNGs from
+                             scripts/render-vision-fixtures.ts (needs Playwright).
+tests/aiDesign.test.ts, tests/visionPlan.test.ts  Verifier, validation, agent gate (stubbed Gemini), vision.
 src/engine/banglaText.ts     DXF \U+ decoding, MTEXT cleanup, Bangla room words, Bangla query synonyms.
 src/i18n/                    index.tsx (LangProvider, useLang, Bi, LanguageSwitch), en.ts, bn.ts
                              (typed: missing Bangla key fails tsc), digits.ts, glossary.ts.
@@ -313,6 +339,11 @@ and take away a Bangla report, without any number changing between languages.
 - "Where is the AI?" → labels and language, never the measurement. That is the design.
 
 ## Update log (add a line every time work is done; newest first)
+
+- 2026-11-19: Real AI features. Design rule now "AI proposes, code verifies, a person approves". Gemini layout
+  proposals + verifier, fix agent with approval gate (Fixes step), plan image reading (Upload step, ported from
+  the parallel thread). No-AI search baseline solves 53/53 benchmark cases; hand-written fixes cover 26/53.
+  Gemini numbers: see eval/ once measured. 110 tests pass.
 
 - 2026-11-19: Language rules: homepage always English (`LangScope`), switch hidden there, no placeholder text when a Bangla string is missing, default English.
 - 2026-11-19: Bangla step 8 and docs: README Bangla section, CLAUDE.md layout/limits updated; 94 tests pass.

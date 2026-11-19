@@ -2,10 +2,10 @@
  * Gemini routes for the three "AI proposes, code verifies, a person approves" features:
  *   POST /api/ai/propose-layout-fixes  Gemini proposes layout edits; the browser re-measures them.
  *   POST /api/ai/agent-step            One step of the fix agent: Gemini picks the next tool call.
- *   POST /api/ai/read-plan-image       Gemini reads a floor-plan image/PDF into elements (positions only).
+ *   POST /api/ai/read-plan-image       Gemini traces a floor-plan image/PDF (positions only, 0-1000 units).
  *
  * The server only relays and shape-checks. Every edit is validated and re-measured by the
- * rule engine on the client (src/engine/layoutEdits.ts, fixAgent.ts, imagePlan.ts).
+ * rule engine on the client (src/engine/layoutEdits.ts, fixAgent.ts, visionPlan.ts).
  */
 import type { Express } from 'express';
 import { ThinkingLevel, Type, type GoogleGenAI } from '@google/genai';
@@ -101,35 +101,44 @@ const AGENT_STEP_SCHEMA = {
   required: ['thought', 'tool'],
 };
 
-const VISION_SYSTEM = `You read architectural floor-plan images. You report WHERE elements are, as positions on the image, never as metres: code converts positions to metres using a scale a person confirms. Coordinates are integers 0..1000, x from the left edge, y from the TOP edge of the image. Report:
-- walls: straight wall centre-lines as [x1,y1,x2,y2]; split a wall at every door opening (leave the gap open).
-- doors: centre of each door opening, the two ends of the opening [x1,y1,x2,y2], whether it leads outside (exit), and whether it is drawn or labelled locked/blocked.
-- rooms: each room's label text exactly as written (or "" if none) and its outline as a polygon of [x,y] points.
-- stairs: outline rectangle [x1,y1,x2,y2] and label.
-- scaleHint: any dimension text or scale bar you can read, copied exactly as written (for example "26000" or "1:100"), with the two image points it spans if it is a dimension line. Do not convert it.
-Never invent elements you cannot see. If unsure, leave it out.`;
+const VISION_SYSTEM =
+  'You trace architectural floor plan drawings into geometry. You report positions only, in normalised image coordinates; you never report real-world measurements or code compliance.';
+
+const VISION_PROMPT = `This is an architectural floor plan (one floor). Trace it.
+Use image coordinates normalised to 0-1000 on both axes: x from the left edge, y from the TOP edge of the image (for a PDF, of the first page).
+Return:
+- walls: every wall as a straight centre-line segment [x1,y1,x2,y2]; mark exterior=true for the outer boundary walls. Leave a gap in the wall where a door opening is.
+- doors: each door opening's centre {x,y}, its opening width in the same units (widthUnits), and isExit=true only if it leads outside or is labelled as an exit/fire exit. label = any text on it.
+- rooms: each room's label text exactly as written (any language) and its outline polygon as [[x,y],...] corners.
+- stairs: each stair's outline polygon and label.
+- notes: anything you could not read (scale bar, unclear areas).
+Do not guess dimensions in metres; only trace positions.`;
 
 const P = { type: Type.ARRAY, items: { type: Type.NUMBER } };
 const VISION_SCHEMA = {
   type: Type.OBJECT,
   properties: {
-    walls: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { line: P, outer: { type: Type.BOOLEAN } }, required: ['line'] } },
+    walls: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: { x1: { type: Type.NUMBER }, y1: { type: Type.NUMBER }, x2: { type: Type.NUMBER }, y2: { type: Type.NUMBER }, exterior: { type: Type.BOOLEAN } },
+        required: ['x1', 'y1', 'x2', 'y2'],
+      },
+    },
     doors: {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
-        properties: { center: P, ends: P, exit: { type: Type.BOOLEAN }, locked: { type: Type.BOOLEAN }, label: { type: Type.STRING } },
-        required: ['center', 'ends'],
+        properties: { x: { type: Type.NUMBER }, y: { type: Type.NUMBER }, widthUnits: { type: Type.NUMBER }, isExit: { type: Type.BOOLEAN }, label: { type: Type.STRING } },
+        required: ['x', 'y'],
       },
     },
-    rooms: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { label: { type: Type.STRING }, polygon: { type: Type.ARRAY, items: P } }, required: ['polygon'] } },
-    stairs: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { box: P, label: { type: Type.STRING } }, required: ['box'] } },
-    scaleHint: {
-      type: Type.OBJECT,
-      properties: { text: { type: Type.STRING }, from: P, to: P },
-    },
+    rooms: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { label: { type: Type.STRING }, polygon: { type: Type.ARRAY, items: P } }, required: ['label', 'polygon'] } },
+    stairs: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { label: { type: Type.STRING }, polygon: { type: Type.ARRAY, items: P } }, required: ['polygon'] } },
+    notes: { type: Type.ARRAY, items: { type: Type.STRING } },
   },
-  required: ['walls', 'doors', 'rooms', 'stairs'],
+  required: ['walls', 'doors', 'rooms'],
 };
 
 function parseJson(text: string): unknown {
@@ -209,13 +218,13 @@ export function registerDesignRoutes(app: Express, deps: DesignRouteDeps) {
       res.status(400).json({ error: 'Send a PNG, JPEG, WebP or PDF as base64.' });
       return;
     }
-    if (data.length > 7_000_000) {
-      res.status(413).json({ error: 'File too large (about 5 MB at most).' });
+    if (data.length > 14_500_000) {
+      res.status(413).json({ error: 'File too large (about 10 MB at most).' });
       return;
     }
     const ai = deps.getGeminiClient();
     if (!ai) {
-      res.json({ source: 'none' });
+      res.status(503).json({ source: 'none', error: 'Reading plan images needs the AI model, which is not configured on this server.' });
       return;
     }
     try {
@@ -224,12 +233,12 @@ export function registerDesignRoutes(app: Express, deps: DesignRouteDeps) {
           role: 'user',
           parts: [
             { inlineData: { mimeType, data } },
-            { text: 'Read this floor plan. Return walls, doors, rooms, stairs and any scale text, using 0..1000 image coordinates.' },
+            { text: VISION_PROMPT },
           ],
         },
       ];
       const text = await deps.generateJson(ai, contents, {
-        thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
+        thinkingConfig: { thinkingLevel: ThinkingLevel.MEDIUM },
         systemInstruction: VISION_SYSTEM,
         responseMimeType: 'application/json',
         responseSchema: VISION_SCHEMA,

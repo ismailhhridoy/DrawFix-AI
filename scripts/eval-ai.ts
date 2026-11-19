@@ -10,7 +10,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { setApiBase } from '../src/engine/aiApi';
-import { buildBenchmarkCases, loadSampleProject } from '../src/engine/fixBenchmark';
+import { buildBenchmarkCases, loadSampleProject, searchBaseline } from '../src/engine/fixBenchmark';
 import { fixSpecToEdits, verifyCandidate } from '../src/engine/layoutEdits';
 import { proposeAndVerify } from '../src/engine/aiLayoutProposer';
 import { runFixAgent } from '../src/engine/fixAgent';
@@ -47,6 +47,7 @@ async function evalFixes(model: string) {
     const hw = c.handWrittenAvailable
       ? c.targets.every((t) => verifyCandidate(c.project, c.audit, fixSpecToEdits(t, c.project)!, [t], 'rule').accepted)
       : null;
+    const search = searchBaseline(c);
     const t0 = Date.now();
     const res = await proposeAndVerify(c.project, c.audit, c.targets, { rounds: 2, maxCandidates: 3 });
     const ms = Date.now() - t0;
@@ -57,6 +58,8 @@ async function evalFixes(model: string) {
       set: c.set,
       targets: c.targets.length,
       handWritten: hw,
+      searchPassed: search.passed,
+      searchTries: search.tries,
       source: res.source,
       geminiError: res.source !== 'gemini',
       round1Candidates: r1.length,
@@ -82,17 +85,17 @@ async function evalFixes(model: string) {
     `Run ${new Date().toISOString()}, model \`${model}\`, ${rows.length} cases from the 4 synthetic demo buildings.`,
     `"First try" = Gemini's first candidate in its first reply passes the re-check (target findings gone, nothing new fails or warns, no new trapped room).`,
     ``,
-    `| Set | Cases | Hand-written fix exists | Hand-written passes | Gemini first try | Gemini any of 3 | Gemini after 1 retry |`,
-    `|---|---|---|---|---|---|---|`,
+    `| Set | Cases | Hand-written fix exists | Hand-written passes | Search, no AI (mean tries) | Gemini first try | Gemini any of 3 | Gemini after 1 retry |`,
+    `|---|---|---|---|---|---|---|---|`,
   ];
   for (const s of sets) {
     const rs = rows.filter((r) => s === 'all' || r.set === s);
     const hwAvail = rs.filter((r) => r.handWritten !== null);
     lines.push(
-      `| ${s} | ${rs.length} | ${pct(hwAvail.length, rs.length)} | ${pct(hwAvail.filter((r) => r.handWritten).length, rs.length)} | ${pct(rs.filter((r) => r.firstTry).length, rs.length)} | ${pct(rs.filter((r) => r.anyRound1).length, rs.length)} | ${pct(rs.filter((r) => r.anyAfterRetry).length, rs.length)} |`
+      `| ${s} | ${rs.length} | ${pct(hwAvail.length, rs.length)} | ${pct(hwAvail.filter((r) => r.handWritten).length, rs.length)} | ${pct(rs.filter((r) => r.searchPassed).length, rs.length)} (${(rs.reduce((n, r) => n + (r.searchTries as number), 0) / Math.max(1, rs.length)).toFixed(1)}) | ${pct(rs.filter((r) => r.firstTry).length, rs.length)} | ${pct(rs.filter((r) => r.anyRound1).length, rs.length)} | ${pct(rs.filter((r) => r.anyAfterRetry).length, rs.length)} |`
     );
   }
-  lines.push('', 'Set A: findings that have a hand-written fix. Set B: findings with none (travel distance, exit count). Set C: a ground-floor exit door deleted from the fixed building.', '');
+  lines.push('', 'Search: brute force over hand-written fixes, unlocking, and a 1.2 m exit door at 5 positions on each outer ground-floor wall; every try is a full re-audit. Set A: findings that have a hand-written fix. Set B: findings with none (travel distance, exit count). Set C: a ground-floor exit door deleted from the fixed building.', '');
   lines.push(`Gemini call errors (counted as fail above): ${rows.filter((r) => r.geminiError).length}.`, '');
   lines.push(`Edits refused before the check (unknown id or out of bounds): ${rows.reduce((n, r) => n + (r.refusedEdits as number), 0)}. Median time per case: ${median(rows.map((r) => r.ms as number))} ms.`, '');
   lines.push('| Case | First try | After retry | Engine reason (first candidate) | Accepted change |', '|---|---|---|---|---|');

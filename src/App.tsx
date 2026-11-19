@@ -688,6 +688,30 @@ export default function App() {
           }}
           parseError={parseError}
           onContinueToReview={() => setActiveStep('review')}
+          onLoadVisionPlan={(plan, occupancyClass) => {
+            setParseError(null);
+            activateProject(
+              {
+                id: `vision-${Date.now()}`,
+                name: plan.name,
+                subtitle: plan.subtitle,
+                occupancyClass,
+                storyHeightM: 3.2,
+                siteContext: {
+                  plotAreaSqM: 0,
+                  abuttingRoadWidthM: 0,
+                  frontSetbackM: 0,
+                  rearSetbackM: 0,
+                  sideSetbackM: 0,
+                  sprinklered: false,
+                  declared: false,
+                  zoneLabel: 'Plot data not entered',
+                },
+                floors: [plan],
+              },
+              'review'
+            );
+          }}
         />
       )}
 

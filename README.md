@@ -17,12 +17,27 @@ Sources and open questions: [`RESEARCH.md`](RESEARCH.md).
 
 ## Design rule
 
-**Code measures. A person confirms the inputs. AI only does the wording.**
+**AI proposes. Code verifies. A person approves.**
 
 - Every distance, width, area and pass/fail comes from plain TypeScript (`src/engine/ruleEngine.ts`).
-- Gemini only classifies messy room labels, rewords findings in English and Bangla, answers questions
-  from the tool's own reference notes, and drafts a review note. It never outputs a measurement or a clause.
-- With no Gemini key the whole app still works with fixed wording.
+- Gemini proposes layout fixes (move a door, add an exit, add a stair core, move a wall), drives a fix
+  agent through tools (run audit, try edits, stage, finish), and traces plan images/PDFs into walls,
+  doors and rooms. It also classifies room labels, rewords findings in English and Bangla, answers
+  questions from the tool's reference notes and drafts a review note.
+- Every proposal is applied to a copy and the whole audit re-runs; only proposals that clear their
+  findings without creating new ones are kept, and none counts until a reviewer approves it.
+- Gemini never outputs a measurement or a clause. With no Gemini key the app still works: fixed
+  wording, and the agent runs the hand-written fixes through the same re-check.
+
+### AI features and how they are measured
+
+- **Fixes step → AI design agent**: live trace of the agent's tool calls, "options for one finding",
+  and an approval list. Approved changes drive the after-plan, 3D view and export.
+- **Upload step → read a plan image (beta)**: Gemini traces the image; code scales it with the
+  building width you type; you confirm rooms and exits in Review.
+- `npm run eval:ai -- --server http://localhost:3000 --only fixes,agent,vision` measures all three
+  against the synthetic demo buildings (needs `GEMINI_API_KEY`; set `RATE_LIMIT_PER_MIN=1000` for the
+  server during the run). Results go to `eval/`.
 - Each finding has a trust level: `verified` (limit read in the BNBC 2012 text), `screening`
   (prototype value, not checked against the gazette) or `drawing` (consistency check on the drawing).
   Today: 9 verified, 12 screening, 2 drawing rules.

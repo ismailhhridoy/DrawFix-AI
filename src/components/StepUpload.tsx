@@ -17,7 +17,9 @@ import type {
   BuildingProject,
   LayerConventions,
   OccupancyClass,
+  ParsedFloorPlan,
 } from '../types/plan';
+import { VisionUpload } from './VisionUpload';
 
 interface StepUploadProps {
   activeProject: BuildingProject | null;
@@ -35,6 +37,8 @@ interface StepUploadProps {
   }) => void;
   parseError: string | null;
   onContinueToReview?: () => void;
+  /** A plan read by AI from an image, already scaled; goes to Review for confirmation. */
+  onLoadVisionPlan?: (plan: ParsedFloorPlan, occupancyClass: OccupancyClass) => void;
 }
 
 export function StepUpload({
@@ -44,6 +48,7 @@ export function StepUpload({
   onAddFloorDxf,
   parseError,
   onContinueToReview,
+  onLoadVisionPlan,
 }: StepUploadProps) {
   const { t, num } = useLang();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -435,6 +440,12 @@ export function StepUpload({
           </div>
         </div>
       </section>
+      {onLoadVisionPlan && (
+        <VisionUpload
+          occupancyClass={occupancyClass}
+          onPlanRead={(plan) => onLoadVisionPlan(plan, occupancyClass)}
+        />
+      )}
     </main>
   );
 }

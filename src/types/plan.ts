@@ -43,9 +43,9 @@ export interface DoorEntity {
   isLocked: boolean;
   connectsRooms?: [string, string];
   /** How the exit flag was decided: block name, position on the exterior wall, or the reviewer. */
-  exitSource?: 'block-name' | 'exterior-wall' | 'manual' | 'none';
+  exitSource?: 'block-name' | 'exterior-wall' | 'manual' | 'none' | 'ai-vision';
   /** Where the clear width came from: the wall gap measured in the drawing, or the block name. */
-  widthSource?: 'wall-gap' | 'block-name' | 'default';
+  widthSource?: 'wall-gap' | 'block-name' | 'default' | 'ai-vision';
   /** True when the door sits in the outer wall of the floor plate. */
   onExterior?: boolean;
   /** Set when the door was added or moved by a proposed layout change (not in the original drawing). */
@@ -101,7 +101,7 @@ export interface RoomEntity {
   floorIndex?: number;
   floorLabel?: string;
   /** 'polyline' = closed room boundary in the DXF; 'wall-enclosure' = area enclosed by walls, found by the parser. */
-  boundarySource?: 'polyline' | 'wall-enclosure' | 'text-only';
+  boundarySource?: 'polyline' | 'wall-enclosure' | 'text-only' | 'ai-vision';
   minWidthM?: number;
 }
 

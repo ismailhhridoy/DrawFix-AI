@@ -85,6 +85,16 @@ function isVertical(w: WallSegment) {
   return Math.abs(w.start.x - w.end.x) < 0.05;
 }
 
+/** Outer wall: flagged by the parser, or lying along the edge of the floor outline. */
+export function isOuterWall(w: WallSegment, floor: ParsedFloorPlan): boolean {
+  if (w.isExterior) return true;
+  const b = floor.bounds;
+  const tol = 0.35;
+  if (isHorizontal(w)) return Math.abs(w.start.y - b.minY) < tol || Math.abs(w.start.y - b.maxY) < tol;
+  if (isVertical(w)) return Math.abs(w.start.x - b.minX) < tol || Math.abs(w.start.x - b.maxX) < tol;
+  return false;
+}
+
 function segIntersectsRect(a: Point2D, b: Point2D, minX: number, minY: number, maxX: number, maxY: number): boolean {
   // Liang–Barsky clip.
   let t0 = 0;
@@ -160,7 +170,7 @@ export function normalizeEdit(raw: unknown, project: BuildingProject): { edit?: 
     case 'move_wall': {
       const wall = needWall();
       if (!wall) return { error: `wall "${String(r.wallId)}" not on floor ${floorIndex}` };
-      if (wall.isExterior) return { error: 'outer walls are not moved' };
+      if (isOuterWall(wall, floor)) return { error: 'outer walls are not moved' };
       const dx = num(r.dx) ?? 0;
       const dy = num(r.dy) ?? 0;
       if (isHorizontal(wall) && (Math.abs(dx) > 1e-9 || dy === 0)) return { error: 'a horizontal wall moves by dy only' };
@@ -177,7 +187,7 @@ export function normalizeEdit(raw: unknown, project: BuildingProject): { edit?: 
       if (along === null || along < 0 || along > 1) return { error: 'along must be between 0 and 1' };
       if (kind === 'add_exit_door') {
         if (floorIndex !== 0) return { error: 'exit doors to the street are added on the ground floor only; add a stair for upper floors' };
-        if (!wall.isExterior) return { error: 'an exit door must be in an outer wall' };
+        if (!isOuterWall(wall, floor)) return { error: 'an exit door must be in an outer wall' };
         const widthM = num(r.widthM) ?? 1.1;
         if (!inRange(widthM, EDIT_BOUNDS.doorWidthM)) return { error: 'door width out of range' };
         return { edit: { kind, floorIndex, wallId: wall.id, along: Math.round(along * 1000) / 1000, widthM: round2(widthM) } };
@@ -223,7 +233,7 @@ function cutGap(floor: ParsedFloorPlan, wall: WallSegment, along: number, widthM
   if (nearDoor) return { error: `too close to existing door ${nearDoor.id}` };
   const a = pointOnWall(wall, along - half);
   const b = pointOnWall(wall, along + half);
-  const tail: WallSegment = { ...wall, id: `${wall.id}-b`, start: b, end: { ...wall.end } };
+  const tail: WallSegment = { ...wall, id: `${wall.id}-b`, start: b, end: { ...wall.end }, isExterior: isOuterWall(wall, floor) || wall.isExterior };
   wall.end = a;
   floor.walls.push(tail);
   floor.openings = [...(floor.openings || []), { id: `${wall.id}-gap`, a, b, center, widthM }];
@@ -372,7 +382,7 @@ export function applyLayoutEdits(
         const door = floor.doors.find((d) => d.id === e.doorId);
         const wall = floor.walls.find((w) => w.id === e.wallId);
         if (!door || !wall) return fail('door or wall not found');
-        if (door.isExit && !wall.isExterior) return fail('an exit door must stay in an outer wall');
+        if (door.isExit && !isOuterWall(wall, floor)) return fail('an exit door must stay in an outer wall');
         const old = { ...door.position };
         if (!closeGapAt(floor, old)) return fail(`cannot find the wall opening of ${door.blockName} to close it`);
         const cut = cutGap(floor, wall, e.along, door.widthM);
@@ -583,7 +593,7 @@ export function planSummaryForAi(project: BuildingProject, audit: ComplianceAudi
       floorIndex: fi,
       label: f.floorLabel || (fi === 0 ? 'GF' : `L${fi + 1}`),
       bounds: { minX: r2(f.bounds.minX), minY: r2(f.bounds.minY), maxX: r2(f.bounds.maxX), maxY: r2(f.bounds.maxY) },
-      walls: f.walls.map((w) => [w.id, r2(w.start.x), r2(w.start.y), r2(w.end.x), r2(w.end.y), w.isExterior ? 'outer' : 'inner']),
+      walls: f.walls.map((w) => [w.id, r2(w.start.x), r2(w.start.y), r2(w.end.x), r2(w.end.y), isOuterWall(w, f) ? 'outer' : 'inner']),
       doors: f.doors.map((d) => ({ id: d.id, name: d.blockName, x: r2(d.position.x), y: r2(d.position.y), widthM: r2(d.widthM), exit: d.isExit, locked: d.isLocked })),
       stairs: f.stairs.map((s) => ({ id: s.id, label: s.label, x: r2(s.centroid.x), y: r2(s.centroid.y), headroomM: s.stated?.headroom ? s.headroomM : null, handrailM: s.stated?.handrail ? s.handrailHeightM : null })),
       rooms: f.rooms.map((rm) => {

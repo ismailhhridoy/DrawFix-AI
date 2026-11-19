@@ -12,7 +12,7 @@ import type { BuildingProject, ComplianceAudit, Violation } from '../types/plan'
 import { SAMPLE_BUILDINGS } from './sampleDxf';
 import { DEFAULT_CONVENTIONS, parseDxfString } from './dxfParser';
 import { applyBuildingRemediationFixes, runBuildingAudit } from './ruleEngine';
-import { closeGapAt, fixSpecToEdits, isProblem } from './layoutEdits';
+import { closeGapAt, fixSpecToEdits, isProblem, verifyCandidate, isOuterWall, type LayoutEdit } from './layoutEdits';
 
 export function loadSampleProject(id: string): BuildingProject {
   const s = SAMPLE_BUILDINGS.find((b) => b.id === id);
@@ -85,4 +85,27 @@ export function buildBenchmarkCases(sets: ('A' | 'B' | 'C')[] = ['A', 'B', 'C'])
     }
   }
   return cases;
+}
+
+/**
+ * Non-AI baseline: brute-force search over a fixed candidate list, judged by the same verifier.
+ * Order: the hand-written fixes, unlocking any locked exit, then a 1.2 m exit door at five
+ * positions on every outer ground-floor wall. Returns the first candidate that passes.
+ */
+export function searchBaseline(c: BenchmarkCase, maxTries = 200): { passed: boolean; tries: number; edits: LayoutEdit[] | null } {
+  const cands: LayoutEdit[][] = [];
+  const hw = c.targets.map((t) => fixSpecToEdits(t, c.project));
+  if (hw.every(Boolean)) cands.push(hw.flat() as LayoutEdit[]);
+  c.project.floors.forEach((f, fi) =>
+    f.doors.filter((d) => d.isLocked).forEach((d) => cands.push([{ kind: 'unlock_door', floorIndex: fi, doorId: d.id }]))
+  );
+  for (const w of c.project.floors[0].walls.filter((x) => isOuterWall(x, c.project.floors[0]))) {
+    for (const along of [0.1, 0.3, 0.5, 0.7, 0.9]) cands.push([{ kind: 'add_exit_door', floorIndex: 0, wallId: w.id, along, widthM: 1.2 }]);
+  }
+  let tries = 0;
+  for (const edits of cands.slice(0, maxTries)) {
+    tries++;
+    if (verifyCandidate(c.project, c.audit, edits, c.targets, 'rule').accepted) return { passed: true, tries, edits };
+  }
+  return { passed: false, tries, edits: null };
 }

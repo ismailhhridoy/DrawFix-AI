@@ -487,6 +487,13 @@ export const en = {
   "agent.retry": "second try",
   "agent.compareSource.ai": "After: original drawing + the changes you approved",
   "agent.compareSource.rules": "After: fixed-rule fixes",
+  'vision.title': "No DXF? Read a plan image with AI (beta)",
+  'vision.lead': "Upload a PNG, JPEG or PDF of one floor. The AI traces walls, doors, exits and rooms; code scales them with the width you give and runs the same checks. Every element is an estimate until you confirm it in Review.",
+  'vision.width': "Overall building width (m)",
+  'vision.choose': "Choose image or PDF",
+  'vision.reading': "AI is reading the plan…",
+  'vision.needsAi': "Needs Gemini, which is off on this server.",
+  'vision.needWidth': "Enter the building width first.",
 } as const;
 
 export type MsgKey = keyof typeof en;

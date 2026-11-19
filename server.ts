@@ -261,7 +261,10 @@ const app = express();
 // Render (and most hosts) put a proxy in front of the app. Without this, req.ip is the proxy's address,
 // so every visitor shares one rate-limit bucket. Set TRUST_PROXY=0 to turn it off.
 if (process.env.TRUST_PROXY !== '0') app.set('trust proxy', 1);
-app.use(express.json({ limit: '8mb' }));
+// Plan images need a larger body than the other endpoints.
+const smallJson = express.json({ limit: '4mb' });
+const imageJson = express.json({ limit: '15mb' });
+app.use((req, res, next) => (req.path === '/api/ai/read-plan-image' ? imageJson : smallJson)(req, res, next));
 
 // Small per-address limit so a public demo link cannot drain the API key.
 const hits = new Map<string, { n: number; t: number }>();
