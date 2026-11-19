@@ -215,6 +215,12 @@ export function parseDxfString(
     floorName?: string;
   }
 ): ParsedFloorPlan {
+  // A DWG is binary and starts with "AC10xx". Architects mostly work in DWG, so say exactly how to get a DXF.
+  if (/^AC10\d\d/.test(dxfText) || /\.dwg$/i.test(options.fileName)) {
+    throw new Error(
+      'This is a DWG file. DrawFix reads DXF. In AutoCAD, type SAVEAS, choose "AutoCAD 2018 DXF (*.dxf)" (or any ASCII DXF) and upload that file. Your DWG is not changed.'
+    );
+  }
   const parser = new DxfParser();
   let parsed: IDxf | null = null;
   try {

@@ -66,6 +66,34 @@ the Review step (Exit / Locked per door). Say this on stage before a judge says 
 - Drawing content is governed by the Dhaka Imarat Nirman Bidhimala 2008; a practitioner guide lists what
   sheets are expected ([Arch-Bangla](https://arch-bangla.com/rajuk-approval-drawing/)). Not an official source.
 
+### 5a. What the ECPS site itself says (read 2026-11-19 from ecps.gov.bd)
+
+Source: official RAJUK portal pages ([construction permit FAQ](https://ecps.gov.bd/permits/construction-permit/),
+[CP checklist](https://ecps.gov.bd/permits/construction-permit/cp-checklist/),
+[CP process manual](https://ecps.gov.bd/permits/construction-permit/cp-process-manual/)). **[confirmed: official site]**
+Note: the site disallows automated fetching, so these pages were read in a normal browser.
+
+- Design approval: the general building construction committee "approves the design within 45 days of
+  submission; however, the duration may vary depending on the frequency of meetings."
+- Many hands: reviewers named are AO, AAO, Chief Inspector, Inspector and Tracer. The officer manual shows each
+  application with Assignments, Attachments, **Applicants' Clarifications** and History tabs. This is where
+  correction rounds happen.
+- Rejection: a rejected plan can be appealed to the BC committee's appellate division.
+- The CP checklist lists "Architectural, Structural, Electrical, Plumbing Plan/Drawing as per Rule" and offers
+  **RAJUK's own DCQR checklists**: Means of Egress, Smoke and Heat Vents, Fire Fighting, Fire Detection and Alarm,
+  Electrical Material and Equipment, and a 130-item blank checklist. So egress is an official review item.
+  Mapping these to `rules.ts` is the next verification job (see section 8, item 7).
+- Footer: "Urban Resilience Project: RAJUK Part" (consistent with the World Bank claim in a Facebook post;
+  not stated outright on the pages read).
+- The FAQ also asks for "nine (9) copies of the plan"; the FAQ may predate online filing. Do not rely on it.
+- **Not stated anywhere public:** the drawing upload file type. The application form is behind login
+  (`rajuk.ecps.gov.bd`). Not read.
+- Informal input: one architect told the team that architects work in CAD files. This supports a CAD-based
+  workflow for the person preparing the drawing. It does not say what RAJUK accepts at upload. **[single informal source]**
+- A commercial firm's guide ([LVL7](https://www.lvl7arch.com/blogs/rajuk-building-approval-process-in-dhaka--a-complete-step-by-step-guide-2026))
+  says the most common delay is land records, then drawings that exceed FAR/setback/MGC. **[single-source, commercial]**
+  DrawFix does not touch land records.
+
 ## 6. What already exists (and the gap)
 
 | Tool | What it does | Limits found | Source |
@@ -102,3 +130,6 @@ open questions.
    Needed to move 12 screening rules to verified. Not found online in this pass.
 5. Outcome of the High Court committee on Dhaka fire safety and the Mirpur prosecution.
 6. Judging criteria for the congress track: a search found nothing about the event.
+7. Download RAJUK's DCQR "Means of Egress" and 130-item checklists from the CP checklist page and map each item
+   to a rule in `rules.ts`. Anything with a readable clause can move from screening to verified.
+8. What file type does the ECPS application form accept for drawings? (behind login; ask an architect who files.)

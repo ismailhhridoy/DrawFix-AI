@@ -29,6 +29,7 @@ import type {
 } from '../types/plan';
 import { Blueprint2D } from './Blueprint2D';
 import { BasisBadge, measuredText } from './shared';
+import { VersionCompare, type SavedVersion } from './VersionCompare';
 
 interface StepReportProps {
   project: BuildingProject;
@@ -40,6 +41,9 @@ interface StepReportProps {
   explainingAi: boolean;
   onRefreshExplanations: () => void;
   onProceedToCompare: () => void;
+  savedVersion: SavedVersion | null;
+  onSaveVersion: () => void;
+  onClearVersion: () => void;
 }
 
 type CategoryFilter = 'all' | 'egress' | 'zoning' | 'habitability' | 'capacity';
@@ -76,6 +80,9 @@ export function StepReport({
   explainingAi,
   onRefreshExplanations,
   onProceedToCompare,
+  savedVersion,
+  onSaveVersion,
+  onClearVersion,
 }: StepReportProps) {
   const { t, num, uiLang } = useLang();
   const [selectedViolationId, setSelectedViolationId] = useState<string | null>(
@@ -231,6 +238,14 @@ export function StepReport({
           </button>
         </div>
       </div>
+
+      <VersionCompare
+        projectName={project.name}
+        audit={audit}
+        saved={savedVersion}
+        onSave={onSaveVersion}
+        onClear={onClearVersion}
+      />
 
       {/* Fast Scrutiny / Architect Validation Triage Strip */}
       <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs p-4 sm:p-5 space-y-3">

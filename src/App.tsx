@@ -25,6 +25,7 @@ import {
   requestInferredConventions,
 } from './engine/aiFallback';
 import type { ReviewerRole } from './engine/localIntelligence';
+import type { SavedVersion } from './components/VersionCompare';
 import type { ApprovedAiChanges } from './components/AiFixAgentPanel';
 import type {
   AppStep,
@@ -84,6 +85,8 @@ export default function App() {
   /** AI layout changes a person approved (AI proposes, code verifies, a person approves). */
   const [aiApproved, setAiApproved] = useState<ApprovedAiChanges | null>(null);
 
+  // Earlier version kept in memory only, so a revised upload can be compared with it.
+  const [savedVersion, setSavedVersion] = useState<SavedVersion | null>(null);
   const [simMode, setSimMode] = useState<'before' | 'after'>('before');
   const [simRoomId, setSimRoomId] = useState<string | null>(null);
   const [simFloorFocus, setSimFloorFocus] = useState<number | 'all'>('all');
@@ -742,6 +745,13 @@ export default function App() {
           explainingAi={explainingAi}
           onRefreshExplanations={() => baseAudit && void runAiExplanations(baseAudit)}
           onProceedToCompare={handleProceedToCompare}
+          savedVersion={savedVersion}
+          onSaveVersion={() =>
+            baseAudit &&
+            project &&
+            setSavedVersion({ name: project.name, savedAt: Date.now(), audit: baseAudit })
+          }
+          onClearVersion={() => setSavedVersion(null)}
         />
       )}
 
