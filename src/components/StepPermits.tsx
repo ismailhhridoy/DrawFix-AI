@@ -246,7 +246,7 @@ export function StepPermits({
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <FileWarning className="w-3.5 h-3.5 text-blue-700" />
+          <FileWarning className="w-3.5 h-3.5 text-slate-600" />
           {t('permits.tab.corr')}
         </button>
         <button
@@ -258,7 +258,7 @@ export function StepPermits({
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <ClipboardCheck className="w-3.5 h-3.5 text-blue-700" />
+          <ClipboardCheck className="w-3.5 h-3.5 text-slate-600" />
           {t('permits.tab.check')}
         </button>
       </div>
@@ -269,7 +269,7 @@ export function StepPermits({
           <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-blue-700" />
+                <FileText className="w-4 h-4 text-slate-600" />
                 <h2 className="font-display text-base font-semibold text-slate-900">
                   {t('permits.letter')}
                 </h2>

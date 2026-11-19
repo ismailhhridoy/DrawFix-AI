@@ -141,7 +141,7 @@ export function StepReview({
             onClick={onRunAiReconcile}
             className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors whitespace-nowrap cursor-pointer disabled:opacity-50"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-blue-700" />
+            <RefreshCw className="w-3.5 h-3.5 text-slate-600" />
             {aiReconciling ? t('review.classifying') : t('review.autoClassify')}
           </button>
           <button
@@ -543,7 +543,7 @@ export function StepReview({
             {activeFloor.layersFound.join(' · ') || t('review.layer0')}
           </div>
           {layerMapNote && (
-            <div className="rounded-lg text-[11px] font-mono text-blue-800 bg-blue-50 border border-blue-200 px-3 py-2">
+            <div className="rounded-lg text-[11px] font-mono text-slate-700 bg-slate-50 border border-slate-200 px-3 py-2">
               {layerMapNote}
             </div>
           )}

@@ -51,7 +51,7 @@ export function VersionCompare({ projectName, audit, saved, onSave, onClear }: V
   const bad = diff.newlyFound.length + diff.stillOpen.filter((c) => c.direction === 'worse').length;
 
   return (
-    <section className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 space-y-3">
+    <section className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-0.5">
           <h2 className="text-sm font-semibold text-slate-900">Compared with version 1 ({saved.name})</h2>

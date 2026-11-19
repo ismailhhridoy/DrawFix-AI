@@ -224,7 +224,7 @@ export function StepReport({
             onClick={onRefreshExplanations}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg cursor-pointer whitespace-nowrap disabled:opacity-50"
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-blue-700 ${explainingAi ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-slate-600 ${explainingAi ? 'animate-spin' : ''}`} />
             {explainingAi ? t('common.updating') : t('report.refresh')}
           </button>
 
@@ -306,7 +306,7 @@ export function StepReport({
             onClick={handleDownloadWorksheet}
             className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-300 hover:bg-slate-100 rounded-lg cursor-pointer whitespace-nowrap shrink-0"
           >
-            <FileDown className="w-3.5 h-3.5 text-blue-700" />
+            <FileDown className="w-3.5 h-3.5 text-slate-600" />
             {reviewerRole === 'government'
               ? t('report.export.gov')
               : t('report.export.arch')}
@@ -725,7 +725,7 @@ export function StepReport({
           <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
               <div className="flex items-center gap-2.5">
-                <BookOpen className="w-4 h-4 text-blue-700 shrink-0" />
+                <BookOpen className="w-4 h-4 text-slate-600 shrink-0" />
                 <div>
                   <h2 className="font-display text-sm font-bold text-slate-900">
                     {t('report.lookup.title')}

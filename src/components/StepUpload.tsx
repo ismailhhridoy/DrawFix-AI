@@ -326,7 +326,7 @@ export function StepUpload({
                   )}
                 </div>
                 {layerInferNote && (
-                  <div className="rounded-md text-[11px] font-mono text-blue-800 bg-blue-50 border border-blue-200 px-2.5 py-1.5">
+                  <div className="rounded-md text-[11px] font-mono text-slate-700 bg-slate-50 border border-slate-200 px-2.5 py-1.5">
                     {layerInferNote}
                   </div>
                 )}

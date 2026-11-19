@@ -335,7 +335,7 @@ export function StepExport({
               onClick={handleDownloadWorksheet}
               className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold text-slate-900 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
             >
-              <FileText className="w-3.5 h-3.5 text-blue-700" />
+              <FileText className="w-3.5 h-3.5 text-slate-600" />
               {reviewerRole === 'government' ? t('export.sheet.gov') : t('export.sheet.arch')}
             </button>
           </div>
@@ -400,7 +400,7 @@ export function StepExport({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-blue-700 shrink-0" />
+              <FileText className="w-4 h-4 text-slate-600 shrink-0" />
               <h2 className="font-display text-lg font-semibold text-slate-900">
                 {t('export.memo.title')}
               </h2>
