@@ -211,7 +211,12 @@ and take away a Bangla report, without any number changing between languages.
    Translate the demo path first: Header, Landing, Review, Report, Compare; then Upload, Permits,
    3D, Export. Set `<html lang>` on switch; Bangla digits for measurements via `bn()`. Keep clause
    names (e.g. "BNBC 2012, Part 3, Sec 1.13.8.2") in the original form next to the Bangla.
-4. **Glossary + native review.** One `bn` glossary for code terms (travel distance, exit, stair,
+4. **DONE (code part) 2026-11-19; native review still needed.** `src/i18n/glossary.ts` (37 terms,
+   `avoid` variants, `GLOSSARY_STATUS = 'machine-draft'`), used in the Gemini prompts (`BN_STYLE` in
+   `server.ts`), enforced by tests (no avoided variant in any of our Bangla; Bangla rule names and
+   reference notes keep the English numbers). An amber notice under the header (`BanglaNotice.tsx`)
+   says the Bangla is a machine draft and shows the glossary whenever Bangla is on screen.
+   Original plan: **Glossary + native review.** One `bn` glossary for code terms (travel distance, exit, stair,
    setback, FAR...) used by templates, UI and the Gemini prompt so wording is consistent. A native
    Bangla speaker with building-code context must review templates and glossary; do not ship
    machine-only Bangla as "official".
@@ -279,6 +284,7 @@ and take away a Bangla report, without any number changing between languages.
 
 ## Update log (add a line every time work is done; newest first)
 
+- 2026-11-19: Bangla step 4: shared glossary (prompts, tests, on-screen machine-draft notice). Native review still needed.
 - 2026-11-19: Bangla step 3: Bangla interface strings (typed dictionary), Bangla digits, Bangla rule names.
 - 2026-11-19: Bangla step 2: number guard rejects AI text (EN or BN) containing a number not in the finding's data.
 - 2026-11-19: Bangla step 1: language switch (EN / বাংলা / both) and Bangla shown in Report, Fixes, question box, review note.

@@ -13,6 +13,10 @@ import { checkNumbers, guardText } from '../src/engine/numberGuard';
 import { queryLocalCorpus } from '../src/engine/localIntelligence';
 import { Bi, LangProvider, translate, fromBnDigits, toBnDigits } from '../src/i18n';
 import { loadSample } from './helpers';
+import { bnStrings } from '../src/i18n/bn';
+import { GLOSSARY, glossaryPromptLines } from '../src/i18n/glossary';
+import { RULES } from '../src/engine/rules';
+import { REGULATORY_CORPUS } from '../src/engine/bnbcCorpus';
 
 const project = loadSample('gazipur-3story');
 const audit = runBuildingAudit(project);
@@ -131,5 +135,48 @@ describe('step 2: number guard on AI text', () => {
     } finally {
       globalThis.fetch = realFetch;
     }
+  });
+});
+
+describe('step 4: glossary keeps Bangla terms consistent', () => {
+  const allBangla: string[] = [
+    ...Object.values(bnStrings),
+    ...Object.values(RULES).map((r) => r.nameBn || ''),
+    ...REGULATORY_CORPUS.flatMap((c) => [c.titleBn, c.textBn]),
+    ...audit.violations.flatMap((v) => {
+      const ex = buildTemplateExplanation(v);
+      return [ex.bn, ex.actionBn];
+    }),
+    ...deltas.map((d) => d.summaryBn || ''),
+    buildTemplateDeficiencyMemo(project, audit, after).memoBodyBn,
+  ];
+
+  it('no Bangla text uses a word the glossary says to avoid', () => {
+    for (const g of GLOSSARY) {
+      for (const bad of g.avoid || []) {
+        const hits = allBangla.filter((s) => s.includes(bad));
+        expect(hits, `"${bad}" (use "${g.bn}")`).toEqual([]);
+      }
+    }
+  });
+
+  it('every rule has a Bangla name', () => {
+    for (const [id, r] of Object.entries(RULES)) expect(r.nameBn, id).toBeTruthy();
+  });
+
+  it('Bangla rule names keep the same numbers as the English names', () => {
+    const nums = (s: string) => (fromBnDigits(s).match(/\d+(\.\d+)?/g) || []).map(Number);
+    for (const [id, r] of Object.entries(RULES)) expect(nums(r.nameBn!), id).toEqual(nums(r.name));
+  });
+
+  it('reference notes keep the same numbers in Bangla', () => {
+    const nums = (s: string) =>
+      (fromBnDigits(s).match(/\d+(?:\.\d+)*/g) || []).map((x) => x.replace(/\.0+$/, '')).sort();
+    for (const c of REGULATORY_CORPUS) expect(nums(c.textBn), c.id).toEqual(nums(c.text));
+  });
+
+  it('the Gemini prompt carries the glossary', () => {
+    const lines = glossaryPromptLines();
+    for (const g of GLOSSARY) expect(lines).toContain(g.bn);
   });
 });

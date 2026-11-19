@@ -7,6 +7,10 @@ import {
   REGULATORY_CORPUS,
   type RegulatoryClauseChunk,
 } from './src/engine/bnbcCorpus.ts';
+import { glossaryPromptLines } from './src/i18n/glossary.ts';
+
+/** Appended to every prompt that writes Bangla, so terms match the app's own Bangla. */
+const BN_STYLE = ` In Bangla, use these terms exactly (English = Bangla): ${glossaryPromptLines()}. Write numbers with Bangla or Latin digits but never change a number. Keep clause numbers such as "Sec 1.13.8.2" in their original Latin form.`;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
@@ -375,7 +379,7 @@ Violations JSON:
 ${JSON.stringify(violations)}`, {
         thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         systemInstruction:
-          'You explain building plan-check findings to owners and reviewers in Bangladesh. You only reword findings that a deterministic rule engine already produced. You never compute, estimate or add measurements, limits or clause numbers.',
+          'You explain building plan-check findings to owners and reviewers in Bangladesh. You only reword findings that a deterministic rule engine already produced. You never compute, estimate or add measurements, limits or clause numbers.' + BN_STYLE,
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.ARRAY,
@@ -424,7 +428,7 @@ Payload:
 ${JSON.stringify(payload)}`, {
         thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         systemInstruction:
-          'You write concise bilingual (English + Bangla) engineering captions comparing before/after fire-egress geometry transforms. Never invent numbers.',
+          'You write concise bilingual (English + Bangla) engineering captions comparing before/after fire-egress geometry transforms. Never invent numbers.' + BN_STYLE,
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,
@@ -521,7 +525,7 @@ Active Building Telemetry (deterministic rule-engine state):
 ${JSON.stringify(projectContext)}`, {
         thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         systemInstruction:
-          'You answer questions about a building plan check using only the retrieved reference notes and the project data supplied. You never add thresholds or clause numbers from memory.',
+          'You answer questions about a building plan check using only the retrieved reference notes and the project data supplied. You never add thresholds or clause numbers from memory.' + BN_STYLE,
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,
@@ -615,7 +619,7 @@ Retrieved Regulatory Reference Clauses:
 ${JSON.stringify(chunks.map((c) => ({ clause: `${c.chunk.part} ${c.chunk.clause}`, title: c.chunk.title })))}`, {
         thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         systemInstruction:
-          'You write concise draft review notes about building plans in English and Bangla. Every number and reference must come verbatim from the supplied audit JSON. You never imitate an official document.',
+          'You write concise draft review notes about building plans in English and Bangla. Every number and reference must come verbatim from the supplied audit JSON. You never imitate an official document.' + BN_STYLE,
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.OBJECT,

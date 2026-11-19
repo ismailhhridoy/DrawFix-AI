@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Header } from './components/Header';
 import { useLang } from './i18n';
+import { BanglaNotice } from './components/BanglaNotice';
 import { LandingPage } from './components/LandingPage';
 import { StepUpload } from './components/StepUpload';
 import { StepReview } from './components/StepReview';
@@ -609,6 +610,7 @@ export default function App() {
         onPrimaryAction={handleHeaderPrimary}
         primaryActionLabel={primaryLabel}
       />
+      <BanglaNotice />
 
       {/* Mobile compact step bar (workspace only) */}
       {project && activeStep !== 'landing' && (

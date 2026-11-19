@@ -438,6 +438,10 @@ export const en = {
   'export.withChanges': "With proposed changes: {f} fail",
   'bp.dims': "Dims",
   'bp.path': "Path",
+  'bnNotice.text': "Bangla wording is a machine draft. A native Bangla speaker with building-code knowledge has not reviewed it yet. Numbers and clause references are identical in both languages.",
+  'bnNotice.show': "Show glossary ({n} terms)",
+  'bnNotice.hide': "Hide glossary",
+  'bnNotice.note': "Note",
 } as const;
 
 export type MsgKey = keyof typeof en;
