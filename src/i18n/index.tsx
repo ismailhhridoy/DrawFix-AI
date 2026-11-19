@@ -80,7 +80,7 @@ function makeApi(lang: Lang, setLang: (l: Lang) => void): LangApi {
 
 const LangContext = createContext<LangApi>(makeApi('en', () => {}));
 
-export function LangProvider({ children, initial }: { children: ReactNode; initial?: Lang }) {
+export function LangProvider({ children, initial }: { children?: ReactNode; initial?: Lang }) {
   const [lang, setLangState] = useState<Lang>(() => initial ?? readStoredLang());
   const setLang = useCallback((l: Lang) => {
     setLangState(l);

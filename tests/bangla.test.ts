@@ -6,7 +6,10 @@ import {
   buildTemplateDeficiencyMemo,
   buildTemplateExplanation,
   buildTemplateNarration,
+  requestAiViolationExplanations,
+  violationNumberSources,
 } from '../src/engine/aiFallback';
+import { checkNumbers, guardText } from '../src/engine/numberGuard';
 import { queryLocalCorpus } from '../src/engine/localIntelligence';
 import { Bi, LangProvider, translate, fromBnDigits, toBnDigits } from '../src/i18n';
 import { loadSample } from './helpers';
@@ -78,5 +81,55 @@ describe('step 1: language switch renders the right fields', () => {
     );
     expect(html).toContain('Only English');
     expect(html).toContain(translate('bn', 'lang.noBangla'));
+  });
+});
+
+describe('step 2: number guard on AI text', () => {
+  const v = audit.violations.find((x) => !x.blocked && x.unit === 'm')!;
+  const sources = violationNumberSources(v);
+  it('accepts Bangla text whose numbers come from the finding', () => {
+    const txt = `পরিমাপ ${toBnDigits(v.measuredValue)} মিটার, সীমা ${toBnDigits(v.limitValue)} মিটার।`;
+    expect(checkNumbers(txt, sources).ok).toBe(true);
+  });
+  it('rejects Bangla text with a changed number and falls back to the template', () => {
+    const changed = Number((v.measuredValue + 3.4).toFixed(2));
+    const txt = `পরিমাপ ${toBnDigits(changed)} মিটার।`;
+    const res = checkNumbers(txt, sources);
+    expect(res.ok).toBe(false);
+    expect(guardText(txt, 'TEMPLATE', sources)).toBe('TEMPLATE');
+  });
+  it('rejects a clause number that is not in the data', () => {
+    expect(checkNumbers('See Sec 9.9.9.9', ['Sec 1.13.8.2']).ok).toBe(false);
+    expect(checkNumbers('See Sec 1.13.8.2', ['Sec 1.13.8.2']).ok).toBe(true);
+  });
+  it('allows rounding to fewer decimals but not a different value', () => {
+    expect(checkNumbers('about 18 m', [17.96]).ok).toBe(true);
+    expect(checkNumbers('about 17.9 m', [17.96]).ok).toBe(false);
+    expect(checkNumbers('১৮.০ মিটার', [17.96]).ok).toBe(true);
+  });
+  it('drops a Gemini explanation whose Bangla changes a number', async () => {
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(
+        JSON.stringify({
+          source: 'gemini',
+          explanations: [
+            {
+              id: v.id,
+              en: `Measured ${v.measuredValue} m against ${v.limitValue} m.`,
+              bn: `পরিমাপ ${toBnDigits(v.measuredValue + 5)} মিটার।`,
+              actionEn: 'Fix it.',
+              actionBn: 'ঠিক করুন।',
+            },
+          ],
+        })
+      )) as typeof fetch;
+    try {
+      const out = await requestAiViolationExplanations([v]);
+      expect(out[v.id].en).toBe(`Measured ${v.measuredValue} m against ${v.limitValue} m.`);
+      expect(out[v.id].bn).toBe(buildTemplateExplanation(v).bn);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
   });
 });

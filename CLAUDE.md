@@ -194,7 +194,11 @@ and take away a Bangla report, without any number changing between languages.
    both in the header, stored per viewer. Report shows `bn` + `actionBn`; Compare shows the Bangla
    narration; question box shows `answerBn`; review note shows `memoBodyBn`. Fixed (non-AI) Bangla
    templates cover the no-key case.
-2. **Number guard for Bangla AI text.** Before showing any Gemini Bangla, convert Bangla digits to
+2. **DONE 2026-11-19.** `src/engine/numberGuard.ts` (`checkNumbers`, `guardText`), applied in
+   `aiFallback.ts` to Gemini explanations, fix narration, question answers and review note, in English
+   and Bangla, field by field (a rejected field falls back to the fixed template). Rounding to fewer
+   decimals is allowed; dotted clause numbers must match exactly. Numbers written as words are not caught.
+   Original plan: **Number guard for Bangla AI text.** Before showing any Gemini Bangla, convert Bangla digits to
    Latin, extract every number, and reject the text (fall back to the fixed template) if a number is
    not in the finding's own data. Keeps the "AI never changes a measurement" rule true in Bangla.
 3. **UI strings.** Small in-house `t(key)` dictionary (`src/i18n/en.ts`, `bn.ts`), no library.
@@ -269,6 +273,7 @@ and take away a Bangla report, without any number changing between languages.
 
 ## Update log (add a line every time work is done; newest first)
 
+- 2026-11-19: Bangla step 2: number guard rejects AI text (EN or BN) containing a number not in the finding's data.
 - 2026-11-19: Bangla step 1: language switch (EN / বাংলা / both) and Bangla shown in Report, Fixes, question box, review note.
 - 2026-11-19: Fixed `CLAUDE.md`: env file is `.env` (dotenv ignores `.env.local`); restored the circular-test caveat.
 - 2026-11-19: Bangla readiness audit and plan added (section "Bangla readiness plan"). No code changed.

@@ -15,6 +15,7 @@ import type {
 } from '../types/plan';
 import { REGULATORY_CORPUS } from './bnbcCorpus';
 import { toBnDigits } from '../i18n/digits';
+import { guardText } from './numberGuard';
 import { classifyRoomWithGeometry, queryLocalCorpus } from './localIntelligence';
 
 /** Bangla numerals for numbers that come from the rule engine. */
@@ -287,6 +288,25 @@ export async function requestAiLabelReconciliation(
   }
 }
 
+/** Document names that longer texts (answers, review note) may mention. Not measurements. */
+const REFERENCE_NAMES = ['BNBC 2012', 'BNBC 2020', 'Imarat Nirman Bidhimala 2008', 'Part 3', 'Part 4', 'Ch. 1', 'Ch. 3'];
+
+/** Numbers a sentence about this finding may contain: its own data and nothing else. */
+export function violationNumberSources(v: Violation): (string | number | undefined)[] {
+  return [
+    v.blocked ? undefined : v.measuredValue,
+    v.limitValue,
+    v.roomName,
+    v.floorLabel,
+    v.citation,
+    v.ruleName,
+    v.description,
+    v.fixSpec?.summary,
+    v.fixSpec?.deltaBeforeM,
+    v.fixSpec?.deltaAfterM,
+  ];
+}
+
 export async function requestAiViolationExplanations(
   violations: Violation[]
 ): Promise<Record<string, ViolationExplanation>> {
@@ -320,15 +340,24 @@ export async function requestAiViolationExplanations(
     if (!res.ok) return out;
     const data = await res.json();
     if (data.source === 'gemini' && Array.isArray(data.explanations)) {
+      const byId = new Map(violations.map((v) => [v.id, v]));
       for (const item of data.explanations) {
-        if (item && item.id && item.en && item.bn) {
-          out[item.id] = {
-            en: item.en,
-            bn: item.bn,
-            actionEn: item.actionEn || out[item.id]?.actionEn || '',
-            actionBn: item.actionBn || out[item.id]?.actionBn || '',
+        const v = item && byId.get(String(item.id));
+        if (v && item.en && item.bn) {
+          // Every number Gemini writes must come from this finding's own data.
+          const sources = violationNumberSources(v);
+          const tpl = out[v.id];
+          const ex: ViolationExplanation = {
+            en: guardText(item.en, tpl.en, sources),
+            bn: guardText(item.bn, tpl.bn, sources),
+            actionEn: guardText(item.actionEn, tpl.actionEn, sources),
+            actionBn: guardText(item.actionBn, tpl.actionBn, sources),
             source: 'gemini',
           };
+          if (ex.en === tpl.en && ex.bn === tpl.bn && ex.actionEn === tpl.actionEn && ex.actionBn === tpl.actionBn) {
+            ex.source = 'template';
+          }
+          out[v.id] = ex;
         }
       }
     }
@@ -367,7 +396,36 @@ export async function requestAiFixNarration(
     if (!res.ok) return fallback;
     const data = await res.json();
     if (data.source === 'gemini' && data.narration && data.narration.headlineEn) {
-      return { ...data.narration, source: 'gemini' };
+      const n = data.narration;
+      const sources = [
+        planName,
+        deltas.length,
+        beforeAudit.failCount,
+        afterAudit.failCount,
+        beforeAudit.warnCount,
+        afterAudit.warnCount,
+        beforeAudit.worstEscapeSec,
+        afterAudit.worstEscapeSec,
+        beforeAudit.worstEscapeSec - afterAudit.worstEscapeSec,
+        beforeAudit.trappedRoomCount,
+        afterAudit.trappedRoomCount,
+        ...deltas.flatMap((d) => [d.summary, d.deltaBeforeM, d.deltaAfterM]),
+      ];
+      const bullets = Array.isArray(n.bulletChanges) ? n.bulletChanges : [];
+      return {
+        headlineEn: guardText(n.headlineEn, fallback.headlineEn, sources),
+        headlineBn: guardText(n.headlineBn, fallback.headlineBn, sources),
+        summaryEn: guardText(n.summaryEn, fallback.summaryEn, sources),
+        summaryBn: guardText(n.summaryBn, fallback.summaryBn, sources),
+        bulletChanges:
+          bullets.length === fallback.bulletChanges.length
+            ? bullets.map((b: { en?: string; bn?: string }, i: number) => ({
+                en: guardText(b?.en, fallback.bulletChanges[i].en, sources),
+                bn: guardText(b?.bn, fallback.bulletChanges[i].bn, sources),
+              }))
+            : fallback.bulletChanges,
+        source: 'gemini',
+      };
     }
     return fallback;
   } catch {
@@ -444,9 +502,23 @@ export async function requestRagQuery(
     if (!res.ok) return fallback;
     const data = await res.json();
     if (data && data.answerEn) {
+      const cites: RagClauseCitation[] = Array.isArray(data.citations) ? data.citations : localCitations;
+      const sources = [
+        ...REFERENCE_NAMES,
+        question,
+        project.name,
+        project.floors.length,
+        project.floors.length * project.storyHeightM,
+        ...cites.flatMap((c) => [c.clause, c.title, c.excerpt]),
+        ...REGULATORY_CORPUS.filter((c) => cites.some((x) => x.id === c.id)).map((c) => c.textBn),
+        ...audit.violations.slice(0, 6).flatMap((v) => violationNumberSources(v)),
+        ...(audit.metrics ? Object.values(audit.metrics).filter((x): x is number => typeof x === 'number') : []),
+        audit.failCount,
+        audit.warnCount,
+      ];
       return {
-        answerEn: data.answerEn,
-        answerBn: data.answerBn || fallback.answerBn,
+        answerEn: guardText(data.answerEn, fallback.answerEn, sources),
+        answerBn: guardText(data.answerBn, fallback.answerBn, sources),
         citations: Array.isArray(data.citations) ? data.citations : localCitations,
         source: data.source || 'lexical-rag',
         retrievalMode: data.retrievalMode || 'bm25-lexical',
@@ -572,12 +644,20 @@ export async function requestDeficiencyMemo(
     if (!res.ok) return fallback;
     const data = await res.json();
     if (data && data.source === 'gemini-rag' && data.memoBodyEn) {
+      const sources = [
+        ...REFERENCE_NAMES,
+        fallback.memoBodyEn,
+        fallback.memoBodyBn,
+        project.name,
+        ...beforeAudit.violations.flatMap((v) => violationNumberSources(v)),
+        ...(project.siteContext ? Object.values(project.siteContext).filter((x): x is number => typeof x === 'number') : []),
+      ];
       return {
-        subjectEn: data.subjectEn || fallback.subjectEn,
-        subjectBn: data.subjectBn || fallback.subjectBn,
+        subjectEn: guardText(data.subjectEn, fallback.subjectEn, sources),
+        subjectBn: guardText(data.subjectBn, fallback.subjectBn, sources),
         decisionStatus: data.decisionStatus || fallback.decisionStatus,
-        memoBodyEn: data.memoBodyEn,
-        memoBodyBn: data.memoBodyBn || fallback.memoBodyBn,
+        memoBodyEn: guardText(data.memoBodyEn, fallback.memoBodyEn, sources),
+        memoBodyBn: guardText(data.memoBodyBn, fallback.memoBodyBn, sources),
         citedClauses: Array.isArray(data.citedClauses) ? data.citedClauses : fallback.citedClauses,
         source: 'gemini-rag',
       };
