@@ -19,6 +19,7 @@ import {
   SAMPLE_CORRECTION_LETTERS,
   type PermitJurisdiction,
 } from '../engine/permitEngine';
+import { BasisBadge } from './shared';
 import type {
   BuildingProject,
   ComplianceAudit,
@@ -169,7 +170,7 @@ export function StepPermits({
       '',
       ...checklist.map((c, idx) => {
         const done = checkedIds[c.id] ?? c.status === 'pass';
-        return `${idx + 1}. [${done ? 'READY' : c.status.toUpperCase()}] (${c.category}) ${c.title}\n   Requirement: ${c.requirement}\n   Reference: ${c.citation}${c.measuredNote ? `\n   Measured: ${c.measuredNote}` : ''}`;
+        return `${idx + 1}. [${done ? 'READY' : c.status.toUpperCase()}] (${c.category}) ${c.title}\n   Requirement: ${c.requirement}\n   Trust: ${c.basis} | Reference: ${c.citation}${c.measuredNote ? `\n   Measured: ${c.measuredNote}` : ''}`;
       }),
     ];
     const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
@@ -623,6 +624,7 @@ export function StepPermits({
                       </div>
                       <p className="text-xs text-slate-600 leading-relaxed">{item.requirement}</p>
                       <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                        <BasisBadge basis={item.basis} />
                         <span className="font-mono">{item.citation}</span>
                         {item.measuredNote && (
                           <>

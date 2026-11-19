@@ -60,7 +60,7 @@ npm install
 cp .env.example .env.local   # optional: add GEMINI_API_KEY
 npm run dev                  # http://localhost:3000
 npx tsc --noEmit             # type-check
-npm test                     # vitest: 40 rule-engine tests (tests/engine.test.ts)
+npm test                     # vitest: 62 tests in tests/ (engine, hand-checked plan, permits, rate limit)
 npx vite build               # production build
 ```
 
@@ -93,11 +93,12 @@ src/components/
   Blueprint2D.tsx            SVG plan view.
 test-fixtures/               Unfamiliar-convention DXFs used to test the parser (all 3 come from one
                              script, make_fixtures.py, so they are one case, not three).
-tests/engine.test.ts         Vitest regression suite (baselines pinned from current engine output).
+tests/                       Vitest: engine.test.ts (sample baselines), handchecked.test.ts (arithmetic
+                             check), permit.test.ts (classifier + checklist honesty), server.test.ts (rate limit).
 render.yaml                  Render Blueprint (free web service). Dockerfile is unused/untested.
 RESEARCH.md                  Sourced problem research with confidence tags. Keep it updated.
 src/engine/permitEngine.ts   Permit checklist + correction-letter handling, used by StepPermits.tsx.
-                             NOT documented by the author and NOT audited for invented data.
+                             Audited 2026-11-19 (see Not done #9); procedural items are marked not verified.
 src/engine/localIntelligence.ts  Local (non-LLM) room classification, question box, triage.
 ```
 
@@ -156,7 +157,7 @@ src/engine/localIntelligence.ts  Local (non-LLM) room classification, question b
 | Dhanmondi residential L3 | 5 fail, 4 warn | 0 / 0 | 26.7 s → 12.1 s |
 
 23 rules in `rules.ts`: 9 verified, 12 screening, 2 drawing checks. Type-check, build and
-40 tests pass (checked 2026-11-18).
+62 tests pass (checked 2026-11-19).
 
 ## Not done yet (next steps, in order)
 
@@ -171,15 +172,27 @@ src/engine/localIntelligence.ts  Local (non-LLM) room classification, question b
 5. Bangla font in PDF (embed a Bangla TTF in jsPDF) instead of "[Bangla label]".
 6. Mobile layout pass (desktop checked at 1440 px only).
 7. ~~Commit and push~~ Done: work is on `main` and pushed (auto-push is the standing rule).
-8. **Rate limiter bug (confirmed 2026-11-18):** `server.ts` keys on `req.ip` with no
-   `app.set('trust proxy', 1)`. Behind Render every visitor shares one 40/min bucket: 45 requests from
-   45 different IPs gave 40 OK + 5 x 429. The app fires AI calls on load, so a few judges at once will
-   hit it. One-line fix. Also the `hits` map is never pruned.
-9. Audit `permitEngine.ts` / `StepPermits.tsx` for unverified or invented requirements.
-10. Lazy-load Viewport3D and heavy steps (single 1,565 kB chunk, no `React.lazy`).
-11. Add hand-calculated test cases (e.g. a room 17 m from an exit must fail). Current baselines are
-    circular: the sample plans were written by the same people as the rules. Changing the 16 m
-    constant to 18 only failed the constants test, so per-building checks do not depend on it.
+8. ~~Rate limiter bug~~ Fixed 2026-11-19. `server.ts` now sets `trust proxy` (turn off with
+   `TRUST_PROXY=0`) and prunes the `hits` map. `tests/server.test.ts` spawns the server and checks 45
+   different client IPs get no 429 while one IP over 40/min is still blocked (fails if the fix is removed).
+9. ~~Audit permitEngine~~ Done 2026-11-19. Found and fixed (covered by `tests/permit.test.ts`):
+   - Correction-letter matcher used substrings: "farther than 16 m" was filed under Zoning (FAR) and
+     "broad" matched "road". Now whole-word. A locked stair discharge is Fire & Egress, not stair geometry.
+   - Checklist showed "pass" (and counted "ready") for checks that never ran (`audit.notChecked`) and
+     for daylight, where the engine only checks a window exists, never the 15% area. Now "verify".
+   - Trust labels inflated: dimension check labelled verified (it is a drawing check); 22.5 m sprinklered
+     travel shown as verified (it is screening); high-rise item listed aviation/power NOCs and pressurised
+     stairs as verified (only the >20 m definition is sourced). Extra clearances are now a separate
+     `procedural` "not verified, confirm with authority" item. DIFE and professional-seal lists reworded
+     as "typical, not verified".
+   - Checklist rows now show a trust badge and the exported checklist includes the trust level.
+   - Still open: `REGULATORY_CORPUS` clause text was not re-read against the gazette; the Gemini
+     `/api/ai/interpret-corrections` output is only prompt-guarded, not validated against the audit.
+10. ~~Lazy-load~~ Done 2026-11-19: Viewport3D, StepExport and StepPermits load on demand. Main chunk
+    1,565 kB to 488 kB (gzip 444 to 141 kB). Still to do: screenshot-check these screens after lazy loading.
+11. ~~Hand-calculated tests~~ Done 2026-11-19 (`tests/handchecked.test.ts`): a 36 x 4 m hall with one
+    exit door measures 144 m2 and about 18 m travel, fails the 16 m limit, passes at 22.5 m if
+    sprinklered. Sample-building baselines in `tests/engine.test.ts` are still circular (see caveat above).
 12. Answer the open questions in `RESEARCH.md` section 8 (DXF vs PDF at RAJUK, BNBC Part 4 text).
 13. Confirm Gemini works after deploy: `/api/health` must show `aiConfigured: true`. Model ids
     `gemini-4-hydrogen` / `gemini-embedding-2` are unconfirmed; failover to `gemini-2.5-flash`.
@@ -195,6 +208,9 @@ src/engine/localIntelligence.ts  Local (non-LLM) room classification, question b
 
 ## Update log (add a line every time work is done; newest first)
 
+- 2026-11-19: Fixed rate limiter behind proxy; audited and fixed permit checklist and correction-letter
+  classifier (trust labels, false "pass", substring mis-routing); lazy-loaded heavy steps (main chunk
+  488 kB); added 22 tests (62 total).
 - 2026-11-18: Researched the problem; added `RESEARCH.md`; synced this file (rule count, permits step,
   tests, Render, rate-limit bug, circular-test caveat); rewrote README to match the design rule.
 - 2026-11-18: Added Vitest suite (40 tests) and fixed esbuild peer conflict (`^0.27.0`); CI runs

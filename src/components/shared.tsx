@@ -58,9 +58,15 @@ const BASIS_META = {
     cls: 'bg-slate-100 text-slate-700 border-slate-200',
     Icon: Ruler,
   },
+  procedural: {
+    label: 'Procedural · confirm with authority',
+    title: 'A typical filing requirement. Not verified against an official source; confirm with the approving authority.',
+    cls: 'bg-slate-50 text-slate-600 border-slate-200',
+    Icon: FileSearch,
+  },
 } as const;
 
-export function BasisBadge({ basis }: { basis: Violation['basis'] }) {
+export function BasisBadge({ basis }: { basis: Violation['basis'] | 'procedural' }) {
   const meta = BASIS_META[basis || 'screening'];
   const Icon = meta.Icon;
   return (

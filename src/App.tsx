@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Header } from './components/Header';
 import { LandingPage } from './components/LandingPage';
 import { StepUpload } from './components/StepUpload';
 import { StepReview } from './components/StepReview';
 import { StepReport } from './components/StepReport';
 import { StepCompare } from './components/StepCompare';
-import { Viewport3D } from './components/Viewport3D';
-import { StepPermits } from './components/StepPermits';
-import { StepExport } from './components/StepExport';
+const Viewport3D = lazy(() => import('./components/Viewport3D').then((m) => ({ default: m.Viewport3D })));
+const StepPermits = lazy(() => import('./components/StepPermits').then((m) => ({ default: m.StepPermits })));
+const StepExport = lazy(() => import('./components/StepExport').then((m) => ({ default: m.StepExport })));
 import { DEFAULT_CONVENTIONS, parseDxfString } from './engine/dxfParser';
 import { SAMPLE_BUILDINGS, type SampleBuildingMeta } from './engine/sampleDxf';
 import {
@@ -638,6 +638,13 @@ export default function App() {
         </div>
       )}
 
+      <Suspense
+        fallback={
+          <div className="flex-1 flex items-center justify-center p-12 text-sm text-slate-500" role="status">
+            Loading…
+          </div>
+        }
+      >
       {activeStep === 'landing' && (
         <LandingPage
           reviewerRole={reviewerRole}
@@ -754,6 +761,7 @@ export default function App() {
           onOpen3DView={() => setActiveStep('simulate')}
         />
       )}
+      </Suspense>
     </div>
   );
 }

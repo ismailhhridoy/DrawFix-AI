@@ -270,6 +270,9 @@ interface FixNarrationInput {
 }
 
 const app = express();
+// Render (and most hosts) put a proxy in front of the app. Without this, req.ip is the proxy's address,
+// so every visitor shares one rate-limit bucket. Set TRUST_PROXY=0 to turn it off.
+if (process.env.TRUST_PROXY !== '0') app.set('trust proxy', 1);
 app.use(express.json({ limit: '4mb' }));
 
 // Small per-address limit so a public demo link cannot drain the API key.
@@ -277,6 +280,9 @@ const hits = new Map<string, { n: number; t: number }>();
 app.use('/api', (req, res, next) => {
   const key = req.ip || 'unknown';
   const now = Date.now();
+  if (hits.size > 5000) {
+    for (const [k, v] of hits) if (now - v.t > 60_000) hits.delete(k);
+  }
   const rec = hits.get(key);
   if (!rec || now - rec.t > 60_000) hits.set(key, { n: 1, t: now });
   else if (++rec.n > 40) {

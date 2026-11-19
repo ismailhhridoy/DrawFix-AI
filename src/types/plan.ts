@@ -342,7 +342,7 @@ export interface PermitChecklistItem {
   title: string;
   requirement: string;
   citation: string;
-  basis: 'verified' | 'screening' | 'procedural';
+  basis: 'verified' | 'screening' | 'drawing' | 'procedural';
   status: 'pass' | 'action_needed' | 'verify';
   measuredNote?: string;
 }

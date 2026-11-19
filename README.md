@@ -34,7 +34,7 @@ npm install
 cp .env.example .env     # optional: add GEMINI_API_KEY (https://aistudio.google.com/apikey)
 npm run dev              # http://localhost:3000
 npm run lint             # type-check
-npm test                 # 40 rule-engine tests
+npm test                 # 62 tests (engine, hand-checked plan, permits, rate limit)
 ```
 
 `GET /api/health` shows whether Gemini is configured and which model is in use.
@@ -48,6 +48,7 @@ npm test                 # 40 rule-engine tests
 ## Known limits
 
 - Synthetic demo plans only; no real Bangladeshi architect DXF has been tested yet.
+- Permit checklist items marked "Procedural" are typical filing requirements, not verified; confirm with the authority.
 - Padlocked doors and changes of use happen after approval and are outside a drawing check.
 - Part 4 exit capacity, exit count, FAR, coverage and setback rules are screening values.
 - The PDF prints "[Bangla label]" instead of Bangla text (no Bangla font embedded).

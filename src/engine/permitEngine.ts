@@ -79,6 +79,14 @@ export function generatePermitChecklist(
 
   const items: PermitChecklistItem[] = [];
 
+  // A check the engine could not run (see audit.notChecked) or an input it still needs must never read
+  // as 'pass'. 'pass' means: the engine ran this check and raised nothing.
+  const notChecked = audit?.notChecked || [];
+  const ranNothing = (re: RegExp) => notChecked.some((n) => re.test(n.item));
+  const inputMissing = Boolean(audit?.violations.some((v) => v.category === 'input_required'));
+  const passIfRan = (didNotRun: boolean): PermitChecklistItem['status'] =>
+    audit && !didNotRun ? 'pass' : 'verify';
+
   // 1. Zoning & Site
   const farFail = audit?.violations.find((v) => v.ruleId.includes('far'));
   const mgcFail = audit?.violations.find((v) => v.ruleId.includes('mgc'));
@@ -129,7 +137,7 @@ export function generatePermitChecklist(
         'Every residential sleeping room must measure at least 9.5 m² net floor area with minimum width 2.9 m.',
       citation: 'BNBC 2012, Part 3, Ch. 1, Sec 1.13.2.2',
       basis: 'verified',
-      status: habViolation?.status === 'FAIL' ? 'action_needed' : audit ? 'pass' : 'verify',
+      status: habViolation?.status === 'FAIL' ? 'action_needed' : passIfRan(ranNothing(/area, width and windows/i)),
       measuredNote: habViolation ? `${habViolation.roomName}: ${habViolation.measuredValue} ${habViolation.unit}` : undefined,
     });
 
@@ -141,7 +149,12 @@ export function generatePermitChecklist(
         'Provide external window openings totaling at least 15% of net floor area (18% for kitchens).',
       citation: 'BNBC 2012, Part 3, Ch. 1, Sec 1.17.6 / Table 3.1.12',
       basis: 'verified',
-      status: ventViolation ? 'action_needed' : audit ? 'pass' : 'verify',
+      // The engine only checks that a window touches each room. It does not measure the 15% opening area,
+      // so this item can flag a problem but can never be marked ready by the tool.
+      status: ventViolation ? 'action_needed' : 'verify',
+      measuredNote: ventViolation
+        ? undefined
+        : 'Tool checks only that a window exists on each room. The 15% opening area is not measured.',
     });
   }
 
@@ -153,8 +166,8 @@ export function generatePermitChecklist(
     requirement:
       'Ensure typed dimension labels match actual drawn wall coordinates across every floor sheet.',
     citation: 'Drawing Consistency Check',
-    basis: 'verified',
-    status: dimViolation ? 'action_needed' : audit ? 'pass' : 'verify',
+    basis: 'drawing',
+    status: dimViolation ? 'action_needed' : passIfRan(false),
     measuredNote: dimViolation ? dimViolation.description : undefined,
   });
 
@@ -172,7 +185,7 @@ export function generatePermitChecklist(
       'Maintain at least two remote unlocked exits per floor and unobstructed clear exit door width.',
     citation: 'BNBC Part 4, Ch. 3 (Means of Escape — Advisory screening)',
     basis: 'screening',
-    status: exitFail ? 'action_needed' : audit ? 'pass' : 'verify',
+    status: exitFail ? 'action_needed' : passIfRan(inputMissing || ranNothing(/travel distance/i)),
     measuredNote: exitFail ? `${exitFail.roomName}: ${exitFail.ruleName}` : undefined,
   });
 
@@ -182,9 +195,15 @@ export function generatePermitChecklist(
     title: `Travel Distance (${input.sprinklered ? '<= 22.5 m Sprinklered' : '<= 16.0 m Cabin Limit'}) & >= 0.75 m Passages`,
     requirement:
       'Keep clear passages >= 0.75 m wide and walking travel paths within occupancy distance limits.',
-    citation: 'BNBC 2012, Part 3, Ch. 1, Sec 1.13.8.2',
-    basis: 'verified',
-    status: travelFail || passageFail ? 'action_needed' : audit ? 'pass' : 'verify',
+    citation: input.sprinklered
+      ? 'BNBC 2012, Part 3, Ch. 1, Sec 1.13.8.2 (16 m cabin / 0.75 m passage); 22.5 m sprinklered value is a screening threshold'
+      : 'BNBC 2012, Part 3, Ch. 1, Sec 1.13.8.2',
+    // 16 m (cabins) and 0.75 m are read in the BNBC text. The 22.5 m sprinklered figure is not.
+    basis: input.sprinklered ? 'screening' : 'verified',
+    status:
+      travelFail || passageFail
+        ? 'action_needed'
+        : passIfRan(inputMissing || ranNothing(/travel distance/i)),
     measuredNote:
       passageFail
         ? `${passageFail.roomName}: ${passageFail.measuredValue} ${passageFail.unit}`
@@ -212,10 +231,21 @@ export function generatePermitChecklist(
       category: 'Authority NOCs & Filing',
       title: `High-Rise Special Clearances (${totalHeightM} m > 20 m threshold)`,
       requirement:
-        'Buildings exceeding 20 m above road level trigger mandatory high-rise fire clearance (FSCD), fire lift / pressurized stair core, and Aviation / Power NOCs.',
-      citation: 'BNBC 2012, Part 3, Ch. 1, Sec 1.2 & Part 4',
+        'A building more than 20 m above the adjacent road level is a high-rise under BNBC and brings in the additional fire provisions of Part 4.',
+      citation: 'BNBC 2012, Part 3, Ch. 1, Sec 1.2 (definition of high-rise)',
       basis: 'verified',
       status: 'action_needed',
+      measuredNote: 'Height here is floors x declared storey height, not surveyed height above the road.',
+    });
+    items.push({
+      id: 'chk-highrise-clearances',
+      category: 'Authority NOCs & Filing',
+      title: 'High-Rise Fire Clearances and Other NOCs',
+      requirement:
+        'Ask the approving authority which clearances apply (for example FSCD, fire lift, pressurised stair, aviation, power). These are typical for high-rise filings; this tool has not verified them.',
+      citation: 'Not verified. Confirm with the approving authority.',
+      basis: 'procedural',
+      status: 'verify',
     });
   }
 
@@ -225,8 +255,8 @@ export function generatePermitChecklist(
       category: 'Authority NOCs & Filing',
       title: 'DIFE Factory Layout & Fire Service License Package',
       requirement:
-        'Include occupant load calculation per floor, emergency lighting schedule, fire hydrant/riser layout, and factory safety committee sign-off.',
-      citation: 'Bangladesh Labour Rules & FSCD Filing Requirements',
+        'Typical package contents (not verified here): occupant load per floor, emergency lighting schedule, fire hydrant/riser layout, factory safety committee sign-off. Confirm the exact list with DIFE and FSCD.',
+      citation: 'Not verified. Confirm with DIFE / FSCD.',
       basis: 'procedural',
       status: 'verify',
     });
@@ -237,8 +267,8 @@ export function generatePermitChecklist(
     category: 'Authority NOCs & Filing',
     title: `Signed Architectural, Structural & Soil Reports (${JURISDICTION_LABELS[input.jurisdiction].split(' ')[0]})`,
     requirement:
-      'Attach licensed Architect (IAB), Structural Engineer (IEB), and geotechnical soil investigation certificates along with ownership deed / mutation.',
-    citation: `${JURISDICTION_LABELS[input.jurisdiction]} Submittal Rules`,
+      'Typically required (not verified here): licensed architect and structural engineer sign-off, soil investigation report, ownership deed / mutation. Confirm the exact list with the authority.',
+    citation: `Not verified. Confirm with ${JURISDICTION_LABELS[input.jurisdiction].split(' ')[0]}.`,
     basis: 'procedural',
     status: 'verify',
   });
@@ -288,6 +318,14 @@ export function buildDeterministicCorrectionPackage(params: {
     let recommendedResponse =
       'Prepare and attach the requested signed engineering schedule or supporting statutory document in the resubmission binder.';
 
+    // Whole-word tests. Plain substrings misfire: /far/ matched "farther" and /road/ matched "broad".
+    const wordRe = {
+      zoning: /\b(far|mgc|coverage|setbacks?|road|zoning|plot)\b/,
+      habitability: /\b(bedroom|sleeping|habitable|windows?|daylight|ventilation)\b|9\.5|2\.9/,
+      stairGeometry: /\b(headroom|handrail|risers?|treads?|geometry|proportion)\b/,
+      egress: /\b(lock(ed)?|obstruct(ed|ion)?|blocked|exits?|discharge|corridor|passage|pinch|bottleneck|travel|distance|dimension|stale)\b/,
+    };
+
     const matchedDelta = deltas.find((d) => {
       const ds = d.summary.toLowerCase();
       if (/lock|obstruct|door/.test(lower) && /unlock|door|exit/.test(ds)) return true;
@@ -296,17 +334,17 @@ export function buildDeterministicCorrectionPackage(params: {
     });
 
     const matchedViolation = violations.find((v) => {
-      if (/bedroom|sleeping|9\.5|2\.9|habit|window|daylight|ventilation/.test(lower) && v.category === 'habitability_ventilation') return true;
+      if (wordRe.habitability.test(lower) && v.category === 'habitability_ventilation') return true;
       if (/corridor|passage|width|pinch|bottleneck/.test(lower) && v.category === 'passage_width') return true;
-      if (/lock|obstruct|exit/.test(lower) && (v.category === 'exit_obstruction' || v.category === 'egress_capacity')) return true;
-      if (/travel|distance|16\s?m/.test(lower) && v.category === 'egress_travel') return true;
-      if (/stair|headroom|handrail|riser|tread/.test(lower) && v.category === 'stair_safety') return true;
-      if (/far|mgc|coverage|setback|zoning|road/.test(lower) && v.category === 'zoning_far') return true;
+      if (/\b(lock(ed)?|obstruct(ed|ion)?|blocked|exits?|discharge)\b/.test(lower) && (v.category === 'exit_obstruction' || v.category === 'egress_capacity')) return true;
+      if (/\b(travel|distance|farther|16\s?m)\b/.test(lower) && v.category === 'egress_travel') return true;
+      if (wordRe.stairGeometry.test(lower) && v.category === 'stair_safety') return true;
+      if (wordRe.zoning.test(lower) && v.category === 'zoning_far') return true;
       if (/dimension|stale|override/.test(lower) && v.category === 'dimension_integrity') return true;
       return false;
     });
 
-    if (/far|mgc|coverage|setback|road/.test(lower)) {
+    if (wordRe.zoning.test(lower)) {
       category = 'Zoning & Setback';
       citedClause = 'Dhaka Imarat Nirman Bidhimala 2008 (Advisory)';
       if (params.beforeAudit?.metrics && params.beforeAudit.metrics.plotAreaSqM > 0) {
@@ -318,9 +356,9 @@ export function buildDeterministicCorrectionPackage(params: {
         resolutionStatus = 'needs_designer_action';
         recommendedResponse = 'Supply verified plot area, road width, and perimeter setbacks in Step 02 Review and attach signed area statement.';
       }
-    } else if (/bedroom|sleeping|9\.5|2\.9|window|daylight|ventilation/.test(lower)) {
+    } else if (wordRe.habitability.test(lower)) {
       category = 'Habitability & Space';
-      citedClause = /window|daylight|ventilation/.test(lower)
+      citedClause = /\b(windows?|daylight|ventilation)\b/.test(lower)
         ? 'BNBC 2012, Part 3, Ch. 1, Sec 1.17.6'
         : 'BNBC 2012, Part 3, Ch. 1, Sec 1.13.2.2';
       if (matchedViolation) {
@@ -328,7 +366,7 @@ export function buildDeterministicCorrectionPackage(params: {
         resolutionStatus = 'linked_to_cad_finding';
         recommendedResponse = `Revise ${matchedViolation.roomName} partition or window schedule on the CAD sheet so it satisfies ${citedClause}.`;
       }
-    } else if (/stair|headroom|handrail|riser|tread/.test(lower)) {
+    } else if (wordRe.stairGeometry.test(lower)) {
       category = 'Stair Safety';
       citedClause = 'BNBC 2012, Part 3, Ch. 1, Sec 1.13.5';
       if (matchedViolation) {
@@ -336,7 +374,7 @@ export function buildDeterministicCorrectionPackage(params: {
         resolutionStatus = 'linked_to_cad_finding';
         recommendedResponse = `Update stair section sheet for ${matchedViolation.roomName} to restore compliance with ${citedClause}.`;
       }
-    } else if (/lock|exit|corridor|passage|pinch|bottleneck|travel|distance|dimension/.test(lower)) {
+    } else if (wordRe.egress.test(lower) || /\b(stairs?|stairwell|vestibule)\b/.test(lower)) {
       category = 'Fire & Egress';
       const corpusHit = REGULATORY_CORPUS.find((c) =>
         c.keywords.some((k) => lower.includes(k.toLowerCase()))
