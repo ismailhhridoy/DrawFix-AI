@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react';
 import {
   ArrowRight,
+  Building2,
   ChevronDown,
   FileCheck2,
+  ShieldAlert,
+  ShieldCheck,
   Upload,
 } from 'lucide-react';
 import { DEFAULT_CONVENTIONS, parseDxfString } from '../engine/dxfParser';
@@ -195,7 +198,7 @@ export function LandingPage({
     <div className="bg-white text-[#12111A]">
       {/* 1. Hero Section with Interactive Architectural CAD Backdrop */}
       <section className="relative bg-white pb-16 sm:pb-20 lg:pb-24">
-        <div className="relative overflow-hidden bg-[#0D1120] text-white pt-14 pb-36 sm:pt-20 sm:pb-44 lg:pt-24 lg:pb-52">
+        <div className="relative overflow-hidden bg-[#0A1324] text-white pt-14 pb-36 sm:pt-20 sm:pb-44 lg:pt-24 lg:pb-52">
           <HeroCadBackdrop />
 
           <div className="relative z-10 max-w-[1180px] mx-auto px-4 sm:px-8">
@@ -258,7 +261,7 @@ export function LandingPage({
         <div className="relative z-20 max-w-[1180px] mx-auto px-4 sm:px-8 -mt-24 sm:-mt-32 lg:-mt-36">
           {/* Interactive CAD Inspection Viewport */}
           {primaryBenchmark && heroFloor && displayedHeroAudit && heroTriage && (
-            <div className="rounded-xl border border-[#12111A]/10 bg-[#F4F5F7] p-3 sm:p-5 space-y-3">
+            <div className="rounded-[1.75rem] border border-[#12111A]/[0.10] bg-[#F4F5F7] p-3 sm:p-5 shadow-xl shadow-slate-900/10 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3 px-2">
                 <div className="flex flex-wrap items-center gap-2 text-xs text-[#12111A]/70">
                   <span className="font-semibold text-[#12111A]">
@@ -367,7 +370,7 @@ export function LandingPage({
           )}
 
           {/* Quantitative Proof Bar */}
-          <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 border border-[#12111A]/10 rounded-xl bg-white divide-y lg:divide-y-0 lg:divide-x divide-[#12111A]/10">
+          <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 border border-[#12111A]/[0.08] rounded-2xl bg-white/95 backdrop-blur-xs divide-y lg:divide-y-0 lg:divide-x divide-[#12111A]/[0.08]">
             <div className="p-5 sm:p-6">
               <div className="text-sm text-[#12111A]/60">{t('landing.stat1.label')}</div>
               <div className="mt-1 font-display text-3xl font-bold tabular-nums text-[#12111A]">
@@ -414,19 +417,20 @@ export function LandingPage({
       <section className="bg-white py-16 sm:py-20 lg:py-24 px-4 sm:px-8 border-t border-[#12111A]/[0.06]">
         <div className="max-w-[1180px] mx-auto space-y-10">
           <div className="max-w-2xl space-y-2">
-            <div className="text-xs uppercase tracking-widest font-medium text-[#12111A]/40">
+            <div className="text-sm font-mono font-semibold text-[#2563EB]">
               {t('landing.show.kicker')}
             </div>
             <h2 className="font-display text-[clamp(2.1rem,3.8vw,3.25rem)] font-bold tracking-[-0.03em] leading-[1.08] text-[#12111A]">
-              {t('landing.show.title1')}{' '}{t('landing.show.title2')}
+              {t('landing.show.title1')}{' '}
+              <span className="text-[#2563EB]">{t('landing.show.title2')}</span>
             </h2>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             {/* Panel 1: Failure replay */}
-            <div className="bg-[#0D1120] text-white rounded-xl p-7 sm:p-8 flex flex-col space-y-5">
+            <div className="bg-[#0A1324] text-white rounded-3xl p-7 sm:p-8 flex flex-col space-y-5">
               <div>
-                <div className="text-xs uppercase tracking-widest font-medium text-white/40 mb-3">
+                <div className="text-xs font-mono font-semibold text-[#60A5FA] mb-3">
                   {t('landing.show.replay.kicker')}
                 </div>
                 <h3 className="font-display text-xl font-bold tracking-tight text-white">
@@ -469,9 +473,9 @@ export function LandingPage({
             </div>
 
             {/* Panel 2: AI trace */}
-            <div className="bg-[#F4F5F7] rounded-xl p-7 sm:p-8 flex flex-col space-y-5">
+            <div className="bg-[#F4F5F7] rounded-3xl p-7 sm:p-8 flex flex-col space-y-5">
               <div>
-                <div className="text-xs uppercase tracking-widest font-medium text-[#12111A]/40 mb-3">
+                <div className="text-xs font-mono font-semibold text-[#2563EB] mb-3">
                   {t('landing.show.trace.kicker')}
                 </div>
                 <h3 className="font-display text-xl font-bold tracking-tight text-[#12111A]">
@@ -480,32 +484,32 @@ export function LandingPage({
               </div>
 
               <div className="flex-1 space-y-2">
-                <div className="p-3 bg-white rounded-xl border border-[#12111A]/10 space-y-1">
+                <div className="p-3 bg-white rounded-xl border border-[#12111A]/[0.07] space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-[#12111A]/35 tabular-nums shrink-0 w-5">01</span>
-                    <span className="text-xs font-semibold text-[#12111A]">A fix is proposed</span>
+                    <span className="w-5 h-5 rounded-full bg-[#2563EB] text-white text-[10px] font-bold flex items-center justify-center shrink-0">1</span>
+                    <span className="text-xs font-semibold text-[#2563EB]">A fix is proposed</span>
                   </div>
-                  <p className="text-sm text-[#12111A]/70 pl-7">
+                  <p className="text-sm text-[#12111A]/80 pl-7">
                     {showcase?.delta?.summary ?? 'A change to the drawing, such as unlocking or widening a door.'}
                   </p>
                 </div>
-                <div className="p-3 bg-white rounded-xl border border-[#12111A]/10 space-y-1">
+                <div className="p-3 bg-white rounded-xl border border-[#12111A]/[0.07] space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-[#12111A]/35 tabular-nums shrink-0 w-5">02</span>
-                    <span className="text-xs font-semibold text-[#12111A]">Code re-checks</span>
+                    <span className="w-5 h-5 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0">2</span>
+                    <span className="text-xs font-semibold text-emerald-700">Code re-checks</span>
                   </div>
-                  <p className="text-sm text-[#12111A]/70 pl-7">
+                  <p className="text-sm text-[#12111A]/80 pl-7">
                     {primaryBenchmark
                       ? `Failures go from ${primaryBenchmark.before.failCount} to ${primaryBenchmark.after.failCount} after all fixes. Slowest escape goes from ${primaryBenchmark.before.worstEscapeSec.toFixed(0)} s to ${primaryBenchmark.after.worstEscapeSec.toFixed(0)} s.`
                       : 'The whole check runs again on a copy. A fix counts only if it clears the finding and breaks nothing else.'}
                   </p>
                 </div>
-                <div className="p-3 bg-white rounded-xl border border-[#12111A]/10 space-y-1">
+                <div className="p-3 bg-white rounded-xl border border-[#12111A]/[0.07] space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-[#12111A]/35 tabular-nums shrink-0 w-5">03</span>
+                    <span className="w-5 h-5 rounded-full bg-[#12111A] text-white text-[10px] font-bold flex items-center justify-center shrink-0">3</span>
                     <span className="text-xs font-semibold text-[#12111A]">You decide</span>
                   </div>
-                  <p className="text-sm text-[#12111A]/70 pl-7">Approve or skip each proposed change before anything is applied.</p>
+                  <p className="text-sm text-[#12111A]/80 pl-7">Approve or skip each proposed change before anything is applied.</p>
                 </div>
               </div>
 
@@ -515,9 +519,9 @@ export function LandingPage({
             </div>
 
             {/* Panel 3: Bilingual report */}
-            <div className="bg-white border border-[#12111A]/10 rounded-xl p-7 sm:p-8 flex flex-col space-y-5">
+            <div className="bg-white border border-[#12111A]/[0.08] rounded-3xl p-7 sm:p-8 flex flex-col space-y-5">
               <div>
-                <div className="text-xs uppercase tracking-widest font-medium text-[#12111A]/40 mb-3">
+                <div className="text-xs font-mono font-semibold text-[#2563EB] mb-3">
                   {t('landing.show.bi.kicker')}
                 </div>
                 <h3 className="font-display text-xl font-bold tracking-tight text-[#12111A]">
@@ -568,12 +572,12 @@ export function LandingPage({
         <div className="max-w-[1180px] mx-auto space-y-12">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
             <div className="max-w-2xl space-y-2.5">
-              <div className="text-xs uppercase tracking-widest font-medium text-[#12111A]/40">
+              <div className="text-sm font-mono font-semibold text-[#2563EB]">
                 {t('landing.process.kicker')}
               </div>
               <h2 className="font-display text-[clamp(2.1rem,3.8vw,3.25rem)] font-bold tracking-[-0.03em] leading-[1.08] text-[#12111A] text-balance">
                 {t('landing.process.title1')}
-                {t('landing.process.title2')}
+                <span className="text-[#2563EB]">{t('landing.process.title2')}</span>
               </h2>
             </div>
             <p className="max-w-md text-base leading-relaxed text-[#12111A]/70 lg:text-right">
@@ -585,10 +589,10 @@ export function LandingPage({
             {PROCESS_STEPS.map((step) => (
               <li
                 key={step.number}
-                className="bg-white border border-[#12111A]/10 rounded-xl p-6 sm:p-7 flex flex-col justify-between space-y-5"
+                className="bg-white border border-[#12111A]/[0.07] rounded-2xl p-6 sm:p-7 flex flex-col justify-between space-y-5"
               >
                 <div className="space-y-3">
-                  <div className="font-mono text-sm font-bold text-[#12111A]/40 tabular-nums">
+                  <div className="font-mono text-sm font-bold text-[#2563EB] tabular-nums">
                     {t('landing.stepN', { n: num(step.number) })}
                   </div>
                   <h3 className="font-display text-xl font-bold tracking-tight text-[#12111A]">
@@ -628,8 +632,8 @@ export function LandingPage({
         <div className="max-w-[1180px] mx-auto space-y-10">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
             <h2 className="max-w-xl font-display text-[clamp(2.1rem,3.8vw,3.25rem)] font-bold tracking-[-0.03em] leading-[1.08] text-[#12111A] text-balance">
-              {t('landing.wf.title1')}
-              {t('landing.wf.title2')}
+              {t('landing.wf.title1')}{' '}
+              <span className="text-[#2563EB]">{t('landing.wf.title2')}</span>
             </h2>
             <p className="max-w-md text-base leading-relaxed text-[#12111A]/70 lg:text-right">
               {t('landing.wf.lead')}
@@ -637,12 +641,13 @@ export function LandingPage({
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-            <div className="lg:col-span-7 bg-[#F4F5F7] border border-[#12111A]/10 rounded-xl p-7 sm:p-9 flex flex-col justify-between space-y-6">
+            <div className="lg:col-span-7 bg-[#F4F5F7] border border-[#12111A]/[0.07] rounded-3xl p-7 sm:p-9 flex flex-col justify-between space-y-6">
               <div className="space-y-4">
-                <div>
-                  <span className="text-xs uppercase tracking-widest font-medium text-[#12111A]/40">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-mono text-sm font-semibold text-[#2563EB]">
                     {t('landing.wf.arch.kicker')}
                   </span>
+                  <Building2 className="w-5 h-5 text-[#2563EB]" aria-hidden="true" />
                 </div>
                 <h3 className="font-display text-2xl sm:text-[1.7rem] font-bold tracking-tight text-[#12111A]">
                   {t('landing.wf.arch.title')}
@@ -681,12 +686,13 @@ export function LandingPage({
               </div>
             </div>
 
-            <div className="lg:col-span-5 bg-[#0D1120] text-white rounded-xl p-7 sm:p-9 flex flex-col justify-between space-y-6">
+            <div className="lg:col-span-5 bg-[#12111A] text-white rounded-3xl p-7 sm:p-9 flex flex-col justify-between space-y-6">
               <div className="space-y-4">
-                <div>
-                  <span className="text-xs uppercase tracking-widest font-medium text-white/40">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-mono text-sm font-semibold text-[#60A5FA]">
                     {t('landing.wf.gov.kicker')}
                   </span>
+                  <ShieldAlert className="w-5 h-5 text-[#60A5FA]" aria-hidden="true" />
                 </div>
                 <h3 className="font-display text-2xl sm:text-[1.7rem] font-bold tracking-tight">
                   {t('landing.wf.gov.title')}
@@ -759,7 +765,7 @@ export function LandingPage({
               )}
             </div>
 
-            <div className="inline-flex items-center gap-1 p-1 bg-white border border-[#12111A]/10 rounded-xl self-start">
+            <div className="inline-flex items-center gap-1 p-1 bg-white border border-[#12111A]/[0.08] rounded-xl self-start">
               {(
                 [
                   ['all', t('landing.filter.all', { n: ruleList.length })],
@@ -783,7 +789,7 @@ export function LandingPage({
             </div>
           </div>
 
-          <div className="bg-white border border-[#12111A]/10 rounded-xl overflow-x-auto">
+          <div className="bg-white border border-[#12111A]/[0.08] rounded-2xl overflow-x-auto">
             <table className="w-full text-left text-[15px] border-collapse min-w-[680px]">
               <thead>
                 <tr className="border-b border-[#12111A]/[0.08] bg-[#F4F5F7]/70 text-sm text-[#12111A]/65">
@@ -811,20 +817,26 @@ export function LandingPage({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="bg-white border border-[#12111A]/10 rounded-xl p-6 sm:p-7 space-y-3">
-              <h3 className="font-display text-lg font-semibold text-[#12111A]">
-                {t('landing.inputs.title')}
-              </h3>
+            <div className="bg-white border border-[#12111A]/[0.06] rounded-2xl p-6 sm:p-7 space-y-3">
+              <div className="flex items-center gap-2.5">
+                <FileCheck2 className="w-5 h-5 text-[#2563EB]" aria-hidden="true" />
+                <h3 className="font-display text-lg font-semibold text-[#12111A]">
+                  {t('landing.inputs.title')}
+                </h3>
+              </div>
               <ul className="text-[15px] text-[#12111A]/70 space-y-2 list-disc pl-5">
                 <li>{t('landing.inputs.b1')}</li>
                 <li>{t('landing.inputs.b2')}</li>
                 <li>{t('landing.inputs.b3')}</li>
               </ul>
             </div>
-            <div className="bg-white border border-[#12111A]/10 rounded-xl p-6 sm:p-7 space-y-3">
-              <h3 className="font-display text-lg font-semibold text-[#12111A]">
-                {t('landing.limits.title')}
-              </h3>
+            <div className="bg-white border border-[#12111A]/[0.06] rounded-2xl p-6 sm:p-7 space-y-3">
+              <div className="flex items-center gap-2.5">
+                <ShieldCheck className="w-5 h-5 text-[#12111A]" aria-hidden="true" />
+                <h3 className="font-display text-lg font-semibold text-[#12111A]">
+                  {t('landing.limits.title')}
+                </h3>
+              </div>
               <ul className="text-[15px] text-[#12111A]/70 space-y-2 list-disc pl-5">
                 <li>{t('landing.limits.b1')}</li>
                 <li>{t('landing.limits.b2')}</li>
@@ -840,7 +852,7 @@ export function LandingPage({
         <div className="max-w-[920px] mx-auto space-y-10">
           <div className="text-center space-y-3">
             <h2 className="font-display text-[clamp(2.1rem,3.8vw,3.25rem)] font-bold tracking-[-0.03em] text-[#12111A]">
-              {t('landing.faq.title1')} {t('landing.faq.title2')}
+              {t('landing.faq.title1')} <span className="text-[#2563EB]">{t('landing.faq.title2')}</span>
             </h2>
             <p className="text-base sm:text-lg text-[#12111A]/65 max-w-lg mx-auto">
               {t('landing.faq.lead')}
@@ -885,7 +897,7 @@ export function LandingPage({
       </section>
 
       {/* Footer with Monumental Bottom Brand Wordmark */}
-      <footer className="bg-[#0D1120] text-white border-t border-white/10 overflow-hidden">
+      <footer className="bg-[#090C14] text-white border-t border-white/10 overflow-hidden">
         <div className="max-w-[1180px] mx-auto px-4 sm:px-8 pt-14 pb-6 space-y-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
             <div className="flex items-center gap-4">

@@ -33,7 +33,7 @@ Sources and open questions: [`RESEARCH.md`](RESEARCH.md).
 
 - **Fixes step → AI design agent**: live trace of the agent's tool calls, "options for one finding",
   and an approval list. Approved changes drive the after-plan, 3D view and export.
-- **Upload step → read a plan image (beta)**: Gemini traces the image; code scales it with the
+- **Upload step → read a plan image**: Gemini traces the image; code scales it with the
   building width you type; you confirm rooms and exits in Review.
 - `npm run eval:ai -- --server http://localhost:3000 --only fixes,agent,vision` measures all three
   against the synthetic demo buildings (needs `GEMINI_API_KEY`; set `RATE_LIMIT_PER_MIN=1000` for the
@@ -55,7 +55,7 @@ working screen; the choice is remembered per browser. The homepage is always Eng
 - Bangla room labels in DXF files are read, including AutoCAD `\U+09B6`-style escapes.
 - The question box understands Bangla questions without Gemini.
 - The Bangla wording is a machine draft until a native speaker with building-code knowledge reviews
-  it; the app says so on screen and shows its glossary (`src/i18n/glossary.ts`).
+  it. The glossary is at `src/i18n/glossary.ts`.
 
 ## Run locally
 
