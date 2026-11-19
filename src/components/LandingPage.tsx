@@ -247,7 +247,7 @@ export function LandingPage({
                   <span aria-hidden="true">·</span>
                   <span className="font-mono tabular-nums">
                     {reviewerRole === 'government'
-                      ? t('landing.inspector.gov', { d: t(`triage.${heroTriage.disposition}` as MsgKey), m: heroTriage.estimatedManualMinutesSaved })
+                      ? t('landing.inspector.gov', { d: t(`triage.${heroTriage.disposition}` as MsgKey) })
                       : t('landing.inspector.arch', { f: displayedHeroAudit.failCount, w: displayedHeroAudit.warnCount })}
                   </span>
                   {displayedHeroAudit.metrics && displayedHeroAudit.metrics.plotAreaSqM > 0 && (

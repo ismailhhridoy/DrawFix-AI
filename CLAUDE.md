@@ -339,6 +339,7 @@ and take away a Bangla report, without any number changing between languages.
 
 ## Update log (add a line every time work is done; newest first)
 
+- 2026-11-19: Removed overclaiming copy: invented "~N min manual check saved" stat (formula had no source), "100% Local" (false with Gemini on), "Pre-Check Certificate", "Objections Found — Revisions Required" (sounded official). "floor(s)" labels reworded. 110 tests pass.
 - 2026-11-19: Ismail asked for a finished-product look: removed the on-screen Bangla machine-draft notice
   (BanglaNotice.tsx) and "beta"/"prototype"/"DRAFT" labels in the UI and print header. The Bangla is STILL
   unreviewed by a native speaker (internal fact, keep tracking it); the glossary remains in src/i18n/glossary.ts.

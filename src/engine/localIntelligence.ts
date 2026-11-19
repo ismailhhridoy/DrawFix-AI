@@ -295,7 +295,6 @@ export interface ScrutinyTriage {
   egressFlagCount: number;
   totalRoomsAudited: number;
   checksEvaluated: number;
-  estimatedManualMinutesSaved: number;
   summaryPoints: string[];
 }
 
@@ -323,11 +322,6 @@ export function buildScrutinyTriage(
   ).length;
   const totalRoomsAudited = project.floors.reduce((s, f) => s + f.rooms.length, 0);
   const checksEvaluated = audit.passedCount + audit.failCount + audit.warnCount;
-  const estimatedManualMinutesSaved = Math.max(
-    18,
-    Math.round(totalRoomsAudited * 2.5 + project.floors.length * 18)
-  );
-
   const disposition: ScrutinyTriage['disposition'] =
     audit.failCount > 0
       ? 'RETURN_FOR_CORRECTIONS'
@@ -337,7 +331,7 @@ export function buildScrutinyTriage(
 
   const dispositionLabel =
     disposition === 'RETURN_FOR_CORRECTIONS'
-      ? 'Objections Found — Revisions Required'
+      ? 'Issues found — corrections needed'
       : disposition === 'CONDITIONAL_REVIEW'
         ? 'Conditional — Officer Verification Required'
         : 'Cleared Pre-Submission Screening';
@@ -387,7 +381,6 @@ export function buildScrutinyTriage(
     egressFlagCount,
     totalRoomsAudited,
     checksEvaluated,
-    estimatedManualMinutesSaved,
     summaryPoints,
   };
 }
