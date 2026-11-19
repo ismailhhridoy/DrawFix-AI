@@ -1,6 +1,7 @@
 import type { AppStep } from '../types/plan';
 import { DrawFixLogo } from './DrawFixLogo';
-import { LanguageSwitch } from '../i18n';
+import { LanguageSwitch, useLang } from '../i18n';
+import type { MsgKey } from '../i18n/en';
 
 interface HeaderProps {
   activeStep: AppStep;
@@ -10,14 +11,14 @@ interface HeaderProps {
   primaryActionLabel: string;
 }
 
-const WORKSPACE_STEPS: { id: AppStep; label: string; alwaysEnabled?: boolean }[] = [
-  { id: 'upload', label: 'Upload', alwaysEnabled: true },
-  { id: 'review', label: 'Review' },
-  { id: 'report', label: 'Report' },
-  { id: 'compare', label: 'Fixes' },
-  { id: 'simulate', label: '3D view' },
-  { id: 'permits', label: 'Permit desk', alwaysEnabled: true },
-  { id: 'export', label: 'Export' },
+const WORKSPACE_STEPS: { id: AppStep; label: MsgKey; alwaysEnabled?: boolean }[] = [
+  { id: 'upload', label: 'nav.upload', alwaysEnabled: true },
+  { id: 'review', label: 'nav.review' },
+  { id: 'report', label: 'nav.report' },
+  { id: 'compare', label: 'nav.fixes' },
+  { id: 'simulate', label: 'nav.3d' },
+  { id: 'permits', label: 'nav.permits', alwaysEnabled: true },
+  { id: 'export', label: 'nav.export' },
 ];
 
 export function Header({
@@ -27,6 +28,7 @@ export function Header({
   onPrimaryAction,
   primaryActionLabel,
 }: HeaderProps) {
+  const { t, num } = useLang();
   const isLanding = activeStep === 'landing';
 
   const scrollToSection = (sectionId: string) => {
@@ -62,7 +64,7 @@ export function Header({
             }}
             className="hover:text-[#12111A] transition-colors whitespace-nowrap shrink-0"
           >
-            Process
+            {t('nav.process')}
           </a>
           <a
             href="#workflows"
@@ -72,14 +74,14 @@ export function Header({
             }}
             className="hover:text-[#12111A] transition-colors whitespace-nowrap shrink-0"
           >
-            Workflows
+            {t('nav.workflows')}
           </a>
           <button
             type="button"
             onClick={() => onSelectStep('permits')}
             className="hover:text-[#12111A] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
-            Permit desk
+            {t('nav.permits')}
           </button>
           <a
             href="#rules"
@@ -89,7 +91,7 @@ export function Header({
             }}
             className="hover:text-[#12111A] transition-colors whitespace-nowrap shrink-0"
           >
-            Code rules
+            {t('nav.rules')}
           </a>
           <a
             href="#faq"
@@ -99,7 +101,7 @@ export function Header({
             }}
             className="hover:text-[#12111A] transition-colors whitespace-nowrap shrink-0"
           >
-            FAQ
+            {t('nav.faq')}
           </a>
         </nav>
       ) : (
@@ -125,9 +127,9 @@ export function Header({
                 }`}
               >
                 <span className="font-mono text-[11px] text-slate-400 tabular-nums">
-                  0{index + 1}
+                  {num(`0${index + 1}`)}
                 </span>
-                <span>{step.label}</span>
+                <span>{t(step.label)}</span>
               </button>
             );
           })}

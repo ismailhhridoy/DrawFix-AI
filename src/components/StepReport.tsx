@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { Bi } from '../i18n';
+import { Bi, useLang } from '../i18n';
+import type { MsgKey } from '../i18n/en';
+import { ruleName } from '../engine/rules';
+import { REGULATORY_CORPUS } from '../engine/bnbcCorpus';
 import {
   AlertOctagon,
   AlertTriangle,
@@ -56,11 +59,11 @@ function matchesCategoryFilter(v: Violation, filter: CategoryFilter): boolean {
   );
 }
 
-const PRESET_QUESTIONS = [
-  'How far can a cabin be from an exit?',
-  'What are the stair headroom and handrail rules?',
-  'Minimum bedroom size and window area?',
-  'What are the stair riser and tread rules?',
+const PRESET_QUESTIONS: MsgKey[] = [
+  'report.q1',
+  'report.q2',
+  'report.q3',
+  'report.q4',
 ];
 
 export function StepReport({
@@ -74,6 +77,7 @@ export function StepReport({
   onRefreshExplanations,
   onProceedToCompare,
 }: StepReportProps) {
+  const { t, num, uiLang } = useLang();
   const [selectedViolationId, setSelectedViolationId] = useState<string | null>(
     audit.violations[0]?.id || null
   );
@@ -156,27 +160,27 @@ export function StepReport({
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-slate-200/90 pb-4">
         <div className="space-y-1">
           <div className="text-xs font-mono text-slate-500">
-            Step 03 · Rule check · {project.name}
+            {t('report.kicker')} · {project.name}
             {isMultiFloor
-              ? ` · ${project.floors.length} Floors (${(project.floors.length * project.storyHeightM).toFixed(1)} m)`
+              ? ` · ${t('report.floorsHeight', { n: project.floors.length, h: num(project.floors.length * project.storyHeightM, 1) })}`
               : ''}
           </div>
           <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900">
             {reviewerRole === 'government'
-              ? 'Authority plan scrutiny & triage'
-              : 'Architect pre-submission validation'}
+              ? t('report.title.gov')
+              : t('report.title.arch')}
           </h1>
           <div className="text-xs text-slate-600 flex flex-wrap items-center gap-3 pt-0.5 tabular-nums">
-            <span className="font-semibold text-red-700">{audit.failCount} Fail</span>
+            <span className="font-semibold text-red-700">{t('report.nFail', { n: audit.failCount })}</span>
             <span aria-hidden="true">·</span>
-            <span className="font-semibold text-amber-700">{audit.warnCount} Warn</span>
+            <span className="font-semibold text-amber-700">{t('report.nWarn', { n: audit.warnCount })}</span>
             <span aria-hidden="true">·</span>
-            <span className="font-semibold text-emerald-700">{audit.passedCount} Pass</span>
+            <span className="font-semibold text-emerald-700">{t('report.nPass', { n: audit.passedCount })}</span>
             <span aria-hidden="true">·</span>
             <span className="font-mono text-slate-700">
-              Slowest escape:{' '}
-              {audit.worstEscapeSec > 0 ? `${audit.worstEscapeSec.toFixed(1)} s` : 'not measured'}
-              {audit.trappedRoomCount > 0 ? ` · ${audit.trappedRoomCount} rooms with no route` : ''}
+              {t('report.slowest')}{' '}
+              {audit.worstEscapeSec > 0 ? t('common.seconds', { n: num(audit.worstEscapeSec, 1) }) : t('review.notMeasured')}
+              {audit.trappedRoomCount > 0 ? ` · ${t('report.trapped', { n: audit.trappedRoomCount })}` : ''}
             </span>
           </div>
         </div>
@@ -192,7 +196,7 @@ export function StepReport({
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Architect validation
+              {t('report.role.arch')}
             </button>
             <button
               type="button"
@@ -203,7 +207,7 @@ export function StepReport({
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Government scrutiny
+              {t('report.role.gov')}
             </button>
           </div>
 
@@ -214,7 +218,7 @@ export function StepReport({
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg cursor-pointer whitespace-nowrap disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-blue-700 ${explainingAi ? 'animate-spin' : ''}`} />
-            {explainingAi ? 'Updating…' : 'Refresh guidance'}
+            {explainingAi ? t('common.updating') : t('report.refresh')}
           </button>
 
           <button
@@ -222,7 +226,7 @@ export function StepReport({
             onClick={onProceedToCompare}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg cursor-pointer whitespace-nowrap shadow-xs"
           >
-            See proposed fixes
+            {t('report.seeFixes')}
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -248,36 +252,35 @@ export function StepReport({
                         : 'text-emerald-700'
                   }`}
                 >
-                  {triage.dispositionLabel}
+                  {t(`triage.${triage.disposition}` as MsgKey)}
                 </span>
                 <span className="text-slate-400">·</span>
                 <span className="text-slate-600 tabular-nums">
-                  {triage.checksEvaluated} checks across {triage.totalRoomsAudited} rooms (~
-                  {triage.estimatedManualMinutesSaved} min manual check automated locally)
+                  {t('report.triageLine', { c: triage.checksEvaluated, r: triage.totalRoomsAudited, m: triage.estimatedManualMinutesSaved })}
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600 pt-1">
                 <span>
-                  Height: <strong className="font-mono text-slate-900">{triage.totalHeightM} m</strong>{' '}
-                  {triage.isHighRise ? '(High-rise >20 m NOC triggered)' : '(Standard)'}
+                  {t('report.height')} <strong className="font-mono text-slate-900">{num(triage.totalHeightM)} m</strong>{' '}
+                  {triage.isHighRise ? t('report.highRise') : t('report.standard')}
                 </span>
                 <span className="text-slate-300">|</span>
                 <span>
-                  CAD dimension overrides:{' '}
+                  {t('report.dimOverrides')}{' '}
                   <strong
                     className={`font-mono ${
                       triage.dimensionTamperAlerts > 0 ? 'text-red-700' : 'text-emerald-700'
                     }`}
                   >
                     {triage.dimensionTamperAlerts > 0
-                      ? `${triage.dimensionTamperAlerts} mismatch flagged`
-                      : '0 mismatches'}
+                      ? t('report.nMismatchFlagged', { n: triage.dimensionTamperAlerts })
+                      : t('report.zeroMismatch')}
                   </strong>
                 </span>
                 <span className="text-slate-300">|</span>
                 <span>
-                  Zoning flags:{' '}
-                  <strong className="font-mono text-slate-900">{triage.zoningFlagCount}</strong>
+                  {t('report.zoningFlags')}{' '}
+                  <strong className="font-mono text-slate-900">{num(triage.zoningFlagCount)}</strong>
                 </span>
               </div>
             </div>
@@ -290,8 +293,8 @@ export function StepReport({
           >
             <FileDown className="w-3.5 h-3.5 text-blue-700" />
             {reviewerRole === 'government'
-              ? 'Export Scrutiny Objection Sheet (.TXT)'
-              : 'Export Pre-Check Certificate (.TXT)'}
+              ? t('report.export.gov')
+              : t('report.export.arch')}
           </button>
         </div>
       </div>
@@ -300,50 +303,50 @@ export function StepReport({
       {m && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-y lg:divide-y-0 sm:divide-x divide-slate-200/90 bg-white border border-slate-200/90 rounded-xl shadow-xs overflow-hidden">
           <div className="px-4 py-3.5">
-            <div className="text-[11px] font-mono text-slate-500">FAR (screening)</div>
+            <div className="text-[11px] font-mono text-slate-500">{t('report.far')}</div>
             {m.plotAreaSqM > 0 ? (
               <div
                 className={`mt-0.5 font-mono text-base font-bold tabular-nums ${
                   m.achievedFar > m.maxAllowedFar ? 'text-amber-700' : 'text-slate-900'
                 }`}
               >
-                {m.achievedFar.toFixed(2)}{' '}
+                {num(m.achievedFar, 2)}{' '}
                 <span className="text-xs font-normal text-slate-500">
-                  / {m.maxAllowedFar.toFixed(2)}
+                  / {num(m.maxAllowedFar, 2)}
                 </span>
               </div>
             ) : (
-              <div className="mt-0.5 text-xs text-slate-500">Plot data not entered</div>
+              <div className="mt-0.5 text-xs text-slate-500">{t('report.plotMissing')}</div>
             )}
           </div>
           <div className="px-4 py-3.5">
-            <div className="text-[11px] font-mono text-slate-500">Ground coverage (screening)</div>
+            <div className="text-[11px] font-mono text-slate-500">{t('report.mgc')}</div>
             {m.plotAreaSqM > 0 ? (
               <div
                 className={`mt-0.5 font-mono text-base font-bold tabular-nums ${
                   m.mgcPercent > m.maxAllowedMgcPercent ? 'text-amber-700' : 'text-slate-900'
                 }`}
               >
-                {m.mgcPercent.toFixed(1)}%{' '}
+                {num(m.mgcPercent, 1)}%{' '}
                 <span className="text-xs font-normal text-slate-500">
-                  / {m.maxAllowedMgcPercent}%
+                  / {num(m.maxAllowedMgcPercent)}%
                 </span>
               </div>
             ) : (
-              <div className="mt-0.5 text-xs text-slate-500">Plot data not entered</div>
+              <div className="mt-0.5 text-xs text-slate-500">{t('report.plotMissing')}</div>
             )}
           </div>
           <div className="px-4 py-3.5">
-            <div className="text-[11px] font-mono text-slate-500">Peak floor load (estimate)</div>
+            <div className="text-[11px] font-mono text-slate-500">{t('report.peak')}</div>
             <div className="mt-0.5 font-mono text-base font-bold text-slate-900 tabular-nums">
-              {m.peakFloorLoad}{' '}
+              {num(m.peakFloorLoad)}{' '}
               <span className="text-xs font-normal text-slate-500">
-                persons ({m.totalOccupantLoad} total)
+                {t('report.personsTotal', { n: m.totalOccupantLoad })}
               </span>
             </div>
           </div>
           <div className="px-4 py-3.5">
-            <div className="text-[11px] font-mono text-slate-500">Ground exit capacity (estimate)</div>
+            <div className="text-[11px] font-mono text-slate-500">{t('report.exitCap')}</div>
             <div
               className={`mt-0.5 font-mono text-base font-bold tabular-nums ${
                 m.groundExitCapacityPersons < m.peakFloorLoad
@@ -351,23 +354,23 @@ export function StepReport({
                   : 'text-slate-900'
               }`}
             >
-              {m.groundExitCapacityPersons}{' '}
-              <span className="text-xs font-normal text-slate-500">persons</span>
+              {num(m.groundExitCapacityPersons)}{' '}
+              <span className="text-xs font-normal text-slate-500">{t('report.persons')}</span>
             </div>
           </div>
           <div className="px-4 py-3.5">
-            <div className="text-[11px] font-mono text-slate-500">Stair capacity (estimate)</div>
+            <div className="text-[11px] font-mono text-slate-500">{t('report.stairCap')}</div>
             <div className="mt-0.5 font-mono text-base font-bold text-slate-900 tabular-nums">
-              {m.stairCapacityPersons}{' '}
-              <span className="text-xs font-normal text-slate-500">persons</span>
+              {num(m.stairCapacityPersons)}{' '}
+              <span className="text-xs font-normal text-slate-500">{t('report.persons')}</span>
             </div>
           </div>
           <div className="px-4 py-3.5">
-            <div className="text-[11px] font-mono text-slate-500">Travel reference</div>
+            <div className="text-[11px] font-mono text-slate-500">{t('report.travelRef')}</div>
             <div className="mt-0.5 font-mono text-base font-bold text-slate-900 tabular-nums">
-              {m.travelLimitM.toFixed(1)} m{' '}
+              {num(m.travelLimitM, 1)} m{' '}
               <span className="text-xs font-normal text-slate-500">
-                {m.sprinklered ? 'sprinklers declared' : 'cabins: 16 m rule'}
+                {m.sprinklered ? t('report.sprinklersDeclared') : t('report.cabins16')}
               </span>
             </div>
           </div>
@@ -396,14 +399,14 @@ export function StepReport({
                     [{fs.floorLabel}] {fs.floorName}
                   </span>
                   <span className="text-slate-600 tabular-nums">
-                    {fs.occupantLoad ? `${fs.occupantLoad}p · ` : ''}
-                    {fs.worstEscapeSec > 0 ? `${fs.worstEscapeSec.toFixed(1)}s` : '—'}
+                    {fs.occupantLoad ? `${t('review.people', { n: fs.occupantLoad })} · ` : ''}
+                    {fs.worstEscapeSec > 0 ? t('common.seconds', { n: num(fs.worstEscapeSec, 1) }) : '—'}
                   </span>
                 </div>
                 <div className="mt-1 text-xs font-mono tabular-nums flex items-center gap-2.5">
-                  <span className="text-red-700 font-semibold">{fs.failCount} Fail</span>
-                  <span className="text-amber-700 font-semibold">{fs.warnCount} Warn</span>
-                  <span className="text-emerald-700 font-semibold">{fs.passedCount} Pass</span>
+                  <span className="text-red-700 font-semibold">{t('report.nFail', { n: fs.failCount })}</span>
+                  <span className="text-amber-700 font-semibold">{t('report.nWarn', { n: fs.warnCount })}</span>
+                  <span className="text-emerald-700 font-semibold">{t('report.nPass', { n: fs.passedCount })}</span>
                 </div>
               </button>
             );
@@ -418,7 +421,7 @@ export function StepReport({
           <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/80 space-y-2.5">
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-semibold text-slate-900">
-                Findings ({filtered.length})
+                {t('report.findings', { n: filtered.length })}
               </span>
               <div className="flex items-center gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs">
                 {(['all', 'FAIL', 'WARN'] as const).map((f) => (
@@ -432,7 +435,7 @@ export function StepReport({
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    {f === 'all' ? 'All' : f}
+                    {f === 'all' ? t('common.all') : f === 'FAIL' ? t('common.fail') : t('common.warn')}
                   </button>
                 ))}
               </div>
@@ -442,11 +445,11 @@ export function StepReport({
             <div className="flex flex-wrap items-center gap-1 text-[11px] font-mono">
               {(
                 [
-                  ['all', 'All topics'],
-                  ['egress', 'Escape'],
-                  ['zoning', 'Zoning'],
-                  ['habitability', 'Rooms'],
-                  ['capacity', 'Capacity'],
+                  ['all', t('report.topic.all')],
+                  ['egress', t('report.topic.egress')],
+                  ['zoning', t('report.topic.zoning')],
+                  ['habitability', t('report.topic.rooms')],
+                  ['capacity', t('report.topic.capacity')],
                 ] as const
               ).map(([catId, label]) => (
                 <button
@@ -475,7 +478,7 @@ export function StepReport({
                       : 'border-slate-200 bg-white text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  All Floors
+                  {t('report.allFloors')}
                 </button>
                 {project.floors.map((fl, idx) => {
                   const lbl = fl.floorLabel || (idx === 0 ? 'GF' : `L${idx + 1}`);
@@ -505,11 +508,10 @@ export function StepReport({
             <div className="p-8 text-center space-y-2">
               <CheckCircle2 className="w-6 h-6 text-emerald-600 mx-auto" />
               <div className="text-sm font-semibold text-slate-900">
-                No findings in current filter
+                {t('report.noFindings')}
               </div>
               <p className="text-xs text-slate-500">
-                Nothing was flagged for this selection. See "Not checked" below for what the
-                tool could not assess.
+                {t('report.noFindingsNote')}
               </p>
             </div>
           ) : (
@@ -538,7 +540,7 @@ export function StepReport({
                             isWarn ? 'text-amber-700' : 'text-red-700'
                           }`}
                         >
-                          #{idx + 1} · {v.status}
+                          #{num(idx + 1)} · {v.status === 'FAIL' ? t('common.fail') : v.status === 'WARN' ? t('common.warn') : v.status}
                         </span>
                         <span className="text-slate-400">·</span>
                         <span className="text-slate-800 font-semibold">
@@ -553,21 +555,21 @@ export function StepReport({
                     </div>
 
                     <div className="mt-1 font-display text-sm font-semibold text-slate-900">
-                      {v.ruleName}
+                      {ruleName(v.ruleId, v.ruleName, uiLang)}
                     </div>
 
                     <div className="mt-1.5 font-mono text-xs text-slate-700 tabular-nums flex flex-wrap gap-x-3 gap-y-1">
                       <span>
-                        Measured:{' '}
+                        {t('report.measured')}{' '}
                         <strong className={isWarn ? 'text-amber-700' : 'text-red-700'}>
-                          {measuredText(v)}
+                          {measuredText(v, uiLang)}
                         </strong>
                       </span>
                       {!v.blocked && v.category !== 'input_required' && (
                         <>
                           <span className="text-slate-400">|</span>
                           <span>
-                            Limit: <strong>{v.comparator} {v.limitValue} {v.unit}</strong>
+                            {t('report.limit')} <strong>{v.comparator} {num(v.limitValue)} {v.unit}</strong>
                           </span>
                         </>
                       )}
@@ -589,7 +591,7 @@ export function StepReport({
           {isMultiFloor && (
             <div className="flex flex-wrap items-center justify-between gap-2 bg-white border border-slate-200/90 rounded-xl shadow-xs px-4 py-2.5 text-xs">
               <span className="font-mono text-slate-600">
-                2D Blueprint View: <strong>{activeFloor.floorName || activeFloor.floorLabel}</strong>
+                {t('report.bpView')} <strong>{activeFloor.floorName || activeFloor.floorLabel}</strong>
               </span>
               <div className="flex items-center gap-1 font-mono">
                 {project.floors.map((fl, idx) => {
@@ -637,10 +639,10 @@ export function StepReport({
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2.5">
                 <div className="text-xs font-mono text-slate-700">
                   {selectedViolation.floorLabel ? `[${selectedViolation.floorLabel}] ` : ''}
-                  <strong>{selectedViolation.ruleName}</strong>
+                  <strong>{ruleName(selectedViolation.ruleId, selectedViolation.ruleName, uiLang)}</strong>
                 </div>
                 <div className="text-[11px] font-mono text-slate-500">
-                  Rule citation &amp; remediation note
+                  {t('report.citationNote')}
                 </div>
               </div>
 
@@ -653,7 +655,7 @@ export function StepReport({
                 {selectedViolation.aiExplanation?.actionEn && (
                   <Bi
                     className="text-xs font-medium text-blue-800"
-                    en={`What to do: ${selectedViolation.aiExplanation.actionEn}`}
+                    en={`${t('report.whatToDo')} ${selectedViolation.aiExplanation.actionEn}`}
                     bn={selectedViolation.aiExplanation.actionBn ? `করণীয়: ${selectedViolation.aiExplanation.actionBn}` : undefined}
                   />
                 )}
@@ -672,25 +674,21 @@ export function StepReport({
           {/* What the tool did and did not check */}
           <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="font-display text-sm font-bold text-slate-900">How far to trust this report</h2>
+              <h2 className="font-display text-sm font-bold text-slate-900">{t('report.trust.title')}</h2>
               <span className="text-[11px] font-mono text-slate-500">
-                {verifiedCount} on verified thresholds · {screeningCount} on screening thresholds
+                {t('report.trust.counts', { v: verifiedCount, s: screeningCount })}
               </span>
             </div>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Every distance, width and area is measured by code from the drawing. Limits marked
-              “verified” were read in the BNBC 2012 text. Limits marked “screening” are advisory
-              thresholds that a qualified reviewer must confirm. This is an advisory screening, not
-              an official approval.
+              {t('report.trust.body')}
             </p>
             <div className="rounded-lg bg-slate-50 border border-slate-200 px-3.5 py-3">
               <div className="text-xs font-semibold text-slate-900">
-                Not checked ({notChecked.length})
+                {t('report.notChecked', { n: notChecked.length })}
               </div>
               {notChecked.length === 0 ? (
                 <p className="mt-1 text-xs text-slate-600">
-                  Nothing was skipped for missing data. Structure, fire-rating, services and
-                  anything not visible in a floor plan are outside this tool.
+                  {t('report.nothingSkipped')}
                 </p>
               ) : (
                 <ul className="mt-1.5 space-y-1 text-xs text-slate-700">
@@ -701,7 +699,7 @@ export function StepReport({
                     </li>
                   ))}
                   {notChecked.length > 8 && (
-                    <li className="text-slate-500">and {notChecked.length - 8} more in the PDF.</li>
+                    <li className="text-slate-500">{t('report.moreInPdf', { n: notChecked.length - 8 })}</li>
                   )}
                 </ul>
               )}
@@ -715,17 +713,16 @@ export function StepReport({
                 <BookOpen className="w-4 h-4 text-blue-700 shrink-0" />
                 <div>
                   <h2 className="font-display text-sm font-bold text-slate-900">
-                    Code Clause Lookup
+                    {t('report.lookup.title')}
                   </h2>
                   <p className="text-xs text-slate-500">
-                    Look up BNBC 2012 &amp; municipal rules directly from indexed clauses and this
-                    plan&apos;s measured findings.
+                    {t('report.lookup.lead')}
                   </p>
                 </div>
               </div>
               {ragResponse && (
                 <span className="text-[11px] font-mono text-slate-500">
-                  Matched from indexed regulatory clauses
+                  {t('report.lookup.matched')}
                 </span>
               )}
             </div>
@@ -736,10 +733,10 @@ export function StepReport({
                   key={q}
                   type="button"
                   disabled={ragLoading}
-                  onClick={() => void handleAskRag(q)}
+                  onClick={() => void handleAskRag(t(q))}
                   className="text-left text-[11px] px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-slate-700 cursor-pointer transition-colors disabled:opacity-50"
                 >
-                  {q}
+                  {t(q)}
                 </button>
               ))}
             </div>
@@ -755,7 +752,7 @@ export function StepReport({
                 type="text"
                 value={ragQuestion}
                 onChange={(e) => setRagQuestion(e.target.value)}
-                placeholder="e.g. minimum passage width or bedroom minimum area"
+                placeholder={t('report.lookup.placeholder')}
                 className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus-visible:outline-2 focus-visible:outline-blue-700"
               />
               <button
@@ -764,7 +761,7 @@ export function StepReport({
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg cursor-pointer disabled:opacity-50 whitespace-nowrap"
               >
                 <Send className="w-3.5 h-3.5" />
-                {ragLoading ? 'Looking up…' : 'Ask'}
+                {ragLoading ? t('report.lookup.loading') : t('report.lookup.ask')}
               </button>
             </form>
 
@@ -780,7 +777,7 @@ export function StepReport({
 
                 <div className="space-y-1.5">
                   <div className="text-[11px] font-mono font-semibold text-slate-600">
-                    Reference notes used ({ragResponse.citations.length})
+                    {t('report.notesUsed', { n: ragResponse.citations.length })}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {ragResponse.citations.map((c) => (
@@ -792,9 +789,11 @@ export function StepReport({
                           <span className="font-bold text-blue-800 truncate">{c.clause}</span>
                           <BasisBadge basis={c.basis} />
                         </div>
-                        <div className="text-xs font-semibold text-slate-900">{c.title}</div>
+                        <div className="text-xs font-semibold text-slate-900">
+                          {uiLang === 'bn' ? REGULATORY_CORPUS.find((x) => x.id === c.id)?.titleBn || c.title : c.title}
+                        </div>
                         <p className="text-[11px] text-slate-600 leading-snug line-clamp-3">
-                          {c.excerpt}
+                          {uiLang === 'bn' ? REGULATORY_CORPUS.find((x) => x.id === c.id)?.textBn || c.excerpt : c.excerpt}
                         </p>
                       </div>
                     ))}

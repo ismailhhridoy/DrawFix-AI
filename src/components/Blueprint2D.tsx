@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useLang } from '../i18n';
 import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import type { EscapePathResult, ParsedFloorPlan, Point2D, Violation } from '../types/plan';
 
@@ -27,6 +28,7 @@ export function Blueprint2D({
   mode = 'before',
   compact = false,
 }: Blueprint2DProps) {
+  const { t, num } = useLang();
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState<Point2D>({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -111,7 +113,7 @@ export function Blueprint2D({
               mode === 'after' ? 'text-emerald-700' : 'text-slate-700'
             }`}
           >
-            {mode === 'after' ? 'With proposed changes' : 'As drawn'}
+            {mode === 'after' ? t('bp.withChanges') : t('landing.mode.before')}
           </span>
         </div>
 
@@ -141,18 +143,18 @@ export function Blueprint2D({
           <div className="flex items-center border border-slate-300 rounded-lg bg-white overflow-hidden">
             <button
               type="button"
-              aria-label="Zoom out"
+              aria-label={t('bp.zoomOut')}
               onClick={() => setZoom((z) => Math.max(0.7, Number((z * 0.85).toFixed(2))))}
               className="p-1.5 hover:bg-slate-100 text-slate-700 cursor-pointer"
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
             <span className="px-2 font-mono text-[11px] text-slate-600 tabular-nums border-x border-slate-200">
-              {Math.round(zoom * 100)}%
+              {num(Math.round(zoom * 100))}%
             </span>
             <button
               type="button"
-              aria-label="Zoom in"
+              aria-label={t('bp.zoomIn')}
               onClick={() => setZoom((z) => Math.min(3.5, Number((z * 1.15).toFixed(2))))}
               className="p-1.5 hover:bg-slate-100 text-slate-700 cursor-pointer"
             >
@@ -160,7 +162,7 @@ export function Blueprint2D({
             </button>
             <button
               type="button"
-              aria-label="Reset blueprint view"
+              aria-label={t('bp.reset')}
               onClick={resetView}
               className="p-1.5 hover:bg-slate-100 text-slate-700 border-l border-slate-200 cursor-pointer"
             >
@@ -180,7 +182,7 @@ export function Blueprint2D({
       >
         <svg
           role="img"
-          aria-label={`Floor plan of ${title || plan.name}`}
+          aria-label={t('bp.aria', { p: title || plan.name })}
           className={`absolute inset-0 w-full h-full select-none touch-none ${dragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           viewBox={`0 0 ${vbWidth} ${vbHeight}`}
           preserveAspectRatio="xMidYMid meet"
@@ -386,7 +388,7 @@ export function Blueprint2D({
                       fill={color}
                       fontFamily="IBM Plex Mono, monospace"
                     >
-                      {door.isLocked ? 'LOCKED EXIT' : `EXIT ${door.widthM.toFixed(2)} m`}
+                      {door.isLocked ? t('bp.lockedExit') : t('bp.exitWidth', { w: num(door.widthM, 2) })}
                     </text>
                   )}
                 </g>
@@ -527,21 +529,21 @@ export function Blueprint2D({
 
       <div className="px-4 py-2 border-t border-slate-200 bg-white text-[11px] text-slate-600 flex flex-wrap items-center gap-x-4 gap-y-1">
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 bg-slate-900 inline-block" /> Wall
+          <span className="w-3 h-0.5 bg-slate-900 inline-block" /> {t('bp.wall')}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 bg-emerald-600 inline-block" /> Open exit
+          <span className="w-3 h-0.5 bg-emerald-600 inline-block" /> {t('bp.openExit')}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 bg-red-600 inline-block" /> Locked exit / fail
+          <span className="w-3 h-0.5 bg-red-600 inline-block" /> {t('bp.lockedFail')}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 bg-amber-600 inline-block" /> Warning
+          <span className="w-3 h-0.5 bg-amber-600 inline-block" /> {t('bp.warning')}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-3 border-t-2 border-dashed border-red-500 inline-block" /> Escape route
+          <span className="w-3 border-t-2 border-dashed border-red-500 inline-block" /> {t('bp.route')}
         </span>
-        <span className="ml-auto font-mono text-slate-400">Ctrl + scroll to zoom · drag to pan</span>
+        <span className="ml-auto font-mono text-slate-400">{t('bp.zoomHint')}</span>
       </div>
     </div>
   );

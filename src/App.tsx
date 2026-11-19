@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Header } from './components/Header';
+import { useLang } from './i18n';
 import { LandingPage } from './components/LandingPage';
 import { StepUpload } from './components/StepUpload';
 import { StepReview } from './components/StepReview';
@@ -62,6 +63,7 @@ function inferFloorSortRank(fileName: string, fallbackIndex: number): {
 }
 
 export default function App() {
+  const { t } = useLang();
   const [activeStep, setActiveStep] = useState<AppStep>('landing');
   const [reviewerRole, setReviewerRole] = useState<ReviewerRole>('architect');
   const [project, setProject] = useState<BuildingProject | null>(null);
@@ -574,12 +576,12 @@ export default function App() {
 
   const primaryLabel =
     activeStep === 'landing'
-      ? 'Start plan review'
+      ? t('app.primary.start')
       : !project
-        ? 'Load reference plan'
+        ? t('app.primary.loadSample')
         : activeStep === 'export'
-          ? 'Open 3D view'
-          : 'Export';
+          ? t('app.primary.open3d')
+          : t('app.primary.export');
 
   const safeFloorIdx = project
     ? Math.max(0, Math.min(selectedFloorIndex, project.floors.length - 1))

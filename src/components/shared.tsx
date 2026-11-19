@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BadgeCheck, FileSearch, Ruler } from 'lucide-react';
 import type { Violation } from '../types/plan';
+import { useLang, translate, toBnDigits } from '../i18n';
 
 export interface AiStatus {
   checked: boolean;
@@ -67,19 +68,22 @@ const BASIS_META = {
 } as const;
 
 export function BasisBadge({ basis }: { basis: Violation['basis'] | 'procedural' }) {
-  const meta = BASIS_META[basis || 'screening'];
+  const { t } = useLang();
+  const key = basis || 'screening';
+  const meta = BASIS_META[key];
   const Icon = meta.Icon;
   return (
     <span
-      title={meta.title}
+      title={t(`basis.${key}.title`)}
       className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-semibold whitespace-nowrap ${meta.cls}`}
     >
       <Icon className="w-3 h-3" aria-hidden="true" />
-      {meta.label}
+      {t(`basis.${key}.label`)}
     </span>
   );
 }
 
-export function measuredText(v: Violation): string {
-  return v.blocked ? 'No route' : `${v.measuredValue} ${v.unit}`;
+export function measuredText(v: Violation, uiLang: 'en' | 'bn' = 'en'): string {
+  if (v.blocked) return translate(uiLang, 'common.noRoute');
+  return uiLang === 'bn' ? `${toBnDigits(v.measuredValue)} ${v.unit}` : `${v.measuredValue} ${v.unit}`;
 }

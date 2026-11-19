@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react';
+import { useLang } from '../i18n';
+import type { MsgKey } from '../i18n/en';
 import {
   RefreshCw,
   CheckCircle2,
@@ -36,16 +38,16 @@ interface StepReviewProps {
   onConfirmAndAudit: () => void;
 }
 
-const TAXONOMY_OPTIONS: { value: RoomTaxonomy; label: string }[] = [
-  { value: 'workfloor', label: 'Work floor (production, canteen)' },
-  { value: 'cabin', label: 'Cabin / enclosed office' },
-  { value: 'bedroom', label: 'Bedroom (sleeping room)' },
-  { value: 'habitable', label: 'Living / dining / kitchen' },
-  { value: 'corridor', label: 'Corridor / passage' },
-  { value: 'lobby', label: 'Lobby' },
-  { value: 'stair', label: 'Stair' },
-  { value: 'exit', label: 'Exit zone' },
-  { value: 'utility', label: 'Store / toilet / service' },
+const TAXONOMY_OPTIONS: { value: RoomTaxonomy; label: MsgKey }[] = [
+  { value: 'workfloor', label: 'tax.workfloor' },
+  { value: 'cabin', label: 'tax.cabin' },
+  { value: 'bedroom', label: 'tax.bedroom' },
+  { value: 'habitable', label: 'tax.habitable' },
+  { value: 'corridor', label: 'tax.corridor' },
+  { value: 'lobby', label: 'tax.lobby' },
+  { value: 'stair', label: 'tax.stair' },
+  { value: 'exit', label: 'tax.exit' },
+  { value: 'utility', label: 'tax.utility' },
 ];
 
 export function StepReview({
@@ -64,6 +66,7 @@ export function StepReview({
   onConfirmAndAudit,
 }: StepReviewProps) {
   const addFloorInputRef = useRef<HTMLInputElement>(null);
+  const { t, num } = useLang();
   const [autoMappingLayers, setAutoMappingLayers] = useState(false);
   const [layerMapNote, setLayerMapNote] = useState<string | null>(null);
   const [hoverRoomId, setHoverRoomId] = useState<string | null>(null);
@@ -110,7 +113,7 @@ export function StepReview({
     setLayerMapNote(null);
     const res = await onAutoMapLayers();
     if (res) {
-      setLayerMapNote(`Layer detection: ${res.rationale}`);
+      setLayerMapNote(`${t('review.layerDetection')}: ${res.rationale}`);
     }
     setAutoMappingLayers(false);
   };
@@ -120,16 +123,14 @@ export function StepReview({
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/90 pb-5">
         <div className="space-y-1.5">
           <p className="text-xs font-mono text-slate-500">
-            Step 02 · Check what was read · {project.floors.length}{' '}
-            {project.floors.length === 1 ? 'Floor' : 'Floors'} ·{' '}
+            {t('review.kicker', { n: project.floors.length })} ·{' '}
             {activeFloor.sourceFileName}
           </p>
           <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900">
-            Confirm what the parser read from your drawing
+            {t('review.title')}
           </h1>
           <p className="text-sm text-slate-600 max-w-2xl">
-            Rooms, exits and room types below drive every check. Correct anything that is wrong
-            before you run the report.
+            {t('review.lead')}
           </p>
         </div>
 
@@ -141,14 +142,14 @@ export function StepReview({
             className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors whitespace-nowrap cursor-pointer disabled:opacity-50"
           >
             <RefreshCw className="w-3.5 h-3.5 text-blue-700" />
-            {aiReconciling ? 'Classifying…' : 'Auto-classify rooms'}
+            {aiReconciling ? t('review.classifying') : t('review.autoClassify')}
           </button>
           <button
             type="button"
             onClick={onConfirmAndAudit}
             className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors whitespace-nowrap cursor-pointer shadow-xs"
           >
-            Confirm and run checks
+            {t('review.confirm')}
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -157,45 +158,44 @@ export function StepReview({
       {/* Building-Wide Extracted Geometry Summary Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-y lg:divide-y-0 sm:divide-x divide-slate-200/90 bg-white border border-slate-200/90 rounded-xl shadow-xs overflow-hidden">
         <div className="p-4">
-          <div className="text-xs text-slate-500">Floors · height</div>
+          <div className="text-xs text-slate-500">{t('review.stat.floors')}</div>
           <div className="mt-1 font-mono text-lg font-semibold text-slate-900 tabular-nums">
-            {project.floors.length}F ·{' '}
-            {(project.floors.length * project.storyHeightM).toFixed(1)} m
+            {num(project.floors.length)}F · {num(project.floors.length * project.storyHeightM, 1)} m
           </div>
         </div>
         <div className="p-4">
-          <div className="text-xs text-slate-500">Wall segments</div>
+          <div className="text-xs text-slate-500">{t('review.stat.walls')}</div>
           <div className="mt-1 font-mono text-lg font-semibold text-slate-900 tabular-nums">
-            {totalWalls}
+            {num(totalWalls)}
           </div>
         </div>
         <div className="p-4">
-          <div className="text-xs text-slate-500">Doors</div>
+          <div className="text-xs text-slate-500">{t('review.stat.doors')}</div>
           <div className="mt-1 font-mono text-lg font-semibold text-slate-900 tabular-nums">
-            {totalDoors}{' '}
+            {num(totalDoors)}{' '}
             <span className="text-xs font-normal text-red-700">
-              {totalLocked > 0 ? `(${totalLocked} locked)` : ''}
+              {totalLocked > 0 ? t('review.nLocked', { n: totalLocked }) : ''}
             </span>
           </div>
         </div>
         <div className="p-4">
-          <div className="text-xs text-slate-500">Rooms</div>
+          <div className="text-xs text-slate-500">{t('review.stat.rooms')}</div>
           <div className="mt-1 font-mono text-lg font-semibold text-slate-900 tabular-nums">
-            {totalRooms}
+            {num(totalRooms)}
           </div>
         </div>
         <div className="p-4">
-          <div className="text-xs text-slate-500">Stairs</div>
+          <div className="text-xs text-slate-500">{t('review.stat.stairs')}</div>
           <div className="mt-1 font-mono text-lg font-semibold text-slate-900 tabular-nums">
-            {totalStairs}
+            {num(totalStairs)}
           </div>
         </div>
         <div className="p-4">
-          <div className="text-xs text-slate-500">Dimensions</div>
+          <div className="text-xs text-slate-500">{t('review.stat.dims')}</div>
           <div className="mt-1 font-mono text-lg font-semibold text-slate-900 tabular-nums">
-            {totalDims}{' '}
+            {num(totalDims)}{' '}
             <span className="text-xs font-normal text-amber-700">
-              {totalStaleDims > 0 ? `(${totalStaleDims} mismatch)` : ''}
+              {totalStaleDims > 0 ? t('review.nMismatch', { n: totalStaleDims }) : ''}
             </span>
           </div>
         </div>
@@ -206,12 +206,12 @@ export function StepReview({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="text-sm font-semibold text-slate-900">
-              Plot data <span className="text-slate-500 font-normal">(optional · {site.zoneLabel})</span>
+              {t('review.site.title')} <span className="text-slate-500 font-normal">({t('review.site.optional')})</span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
               {siteDeclared
-                ? 'Used to screen FAR, ground coverage and setbacks against simplified limits.'
-                : 'A floor plan does not contain these. Enter plot area and road width to screen zoning; left empty, zoning is listed as not checked.'}
+                ? t('review.site.used')
+                : t('review.site.empty')}
             </p>
           </div>
           <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 cursor-pointer select-none hover:bg-slate-100/80 transition-colors">
@@ -222,10 +222,10 @@ export function StepReview({
               className="accent-blue-700 cursor-pointer"
             />
             <span>
-              Sprinklers throughout
+              {t('review.site.sprinklers')}
               <span className="font-normal text-slate-500">
                 {' '}
-                (screening reference {site.sprinklered ? '22.5 m' : '16 m'})
+                {t('review.site.screenRef', { d: site.sprinklered ? '22.5' : '16' })}
               </span>
             </span>
           </label>
@@ -234,11 +234,11 @@ export function StepReview({
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
           {(
             [
-              ['Plot area (m²)', 'plotAreaSqM', 10],
-              ['Road width (m)', 'abuttingRoadWidthM', 0.5],
-              ['Front setback (m)', 'frontSetbackM', 0.25],
-              ['Rear setback (m)', 'rearSetbackM', 0.25],
-              ['Side setback (m)', 'sideSetbackM', 0.25],
+              [t('review.site.plotArea'), 'plotAreaSqM', 10],
+              [t('review.site.road'), 'abuttingRoadWidthM', 0.5],
+              [t('review.site.front'), 'frontSetbackM', 0.25],
+              [t('review.site.rear'), 'rearSetbackM', 0.25],
+              [t('review.site.side'), 'sideSetbackM', 0.25],
             ] as const
           ).map(([label, key, step]) => (
             <label key={key} className="block">
@@ -247,7 +247,7 @@ export function StepReview({
                 type="number"
                 min="0"
                 step={step}
-                placeholder="not entered"
+                placeholder={t('review.notEntered')}
                 value={numOrEmpty(site[key])}
                 onChange={(e) =>
                   onUpdateSiteContext({ [key]: Math.max(0, Number(e.target.value) || 0) })
@@ -262,7 +262,7 @@ export function StepReview({
       {/* Floor Selector Tabs + Add Floor DXF Action */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-slate-200/90 rounded-xl shadow-xs px-4 py-3">
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs font-semibold text-slate-500 mr-1.5">Floor Level:</span>
+          <span className="text-xs font-semibold text-slate-500 mr-1.5">{t('review.floorLevel')}</span>
           {project.floors.map((fl, idx) => {
             const isSel = idx === selectedFloorIndex;
             const label = fl.floorLabel || (idx === 0 ? 'GF' : `L${idx + 1}`);
@@ -279,12 +279,12 @@ export function StepReview({
                       : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  {label} · {fl.rooms.length} rooms
+                  {label} · {t('review.nRooms', { n: fl.rooms.length })}
                 </button>
                 {project.floors.length > 1 && idx > 0 && (
                   <button
                     type="button"
-                    aria-label={`Remove ${label}`}
+                    aria-label={t('review.removeFloor', { f: label })}
                     onClick={() => onRemoveFloor(idx)}
                     className="px-2 py-1.5 border border-l-0 border-slate-300 rounded-r-lg bg-white text-slate-500 hover:text-red-700 hover:bg-red-50 cursor-pointer"
                   >
@@ -303,7 +303,7 @@ export function StepReview({
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-blue-800 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-lg cursor-pointer transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
-            Add Floor (.dxf)
+            {t('review.addFloor')}
           </button>
           <input
             ref={addFloorInputRef}
@@ -337,14 +337,14 @@ export function StepReview({
             plan={activeFloor}
             selectedRoomId={hoverRoomId}
             onSelectRoom={(rid) => setHoverRoomId(rid)}
-            title={`${activeFloor.floorLabel || 'GF'} as read`}
+            title={t('review.asRead', { f: activeFloor.floorLabel || 'GF' })}
             mode="before"
             compact
           />
           <p className="text-[11px] text-slate-500 px-1">
-            Point at a row to find the room. Green doors are exits, red are locked.
+            {t('review.hoverHint')}
             {activeFloor.rooms[0]?.boundarySource === 'wall-enclosure'
-              ? ' Room outlines were worked out from the walls.'
+              ? ` ${t('review.outlinesFromWalls')}`
               : ''}
           </p>
         </div>
@@ -353,15 +353,15 @@ export function StepReview({
       <div className="xl:col-span-7 bg-white border border-slate-200/90 rounded-xl shadow-xs overflow-hidden">
         <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50/70 flex flex-wrap items-center justify-between gap-2">
           <div className="text-sm font-semibold text-slate-900">
-            [{activeFloor.floorLabel || 'GF'}] Rooms and their types
+            [{activeFloor.floorLabel || 'GF'}] {t('review.roomsTitle')}
             {lowConfidence > 0 && (
               <span className="ml-2 text-xs font-medium text-amber-700">
-                {lowConfidence} to confirm
+                {t('review.toConfirm', { n: lowConfidence })}
               </span>
             )}
           </div>
           <div className="text-xs text-slate-500">
-            {aiSource === 'gemini' ? 'Auto-classified' : 'Geometry & name matched'} · editable
+            {aiSource === 'gemini' ? t('review.autoClassified') : t('review.geomMatched')} · {t('review.editable')}
           </div>
         </div>
 
@@ -369,11 +369,11 @@ export function StepReview({
           <table className="w-full text-left border-collapse text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/50 text-xs text-slate-600">
-                <th className="py-3 px-4 font-semibold">Label in drawing</th>
-                <th className="py-3 px-4 font-semibold">Area</th>
-                <th className="py-3 px-4 font-semibold" title="Estimated from area with assumed factors">People (est.)</th>
-                <th className="py-3 px-4 font-semibold">Room type</th>
-                <th className="py-3 px-4 font-semibold">Why</th>
+                <th className="py-3 px-4 font-semibold">{t('review.th.label')}</th>
+                <th className="py-3 px-4 font-semibold">{t('review.th.area')}</th>
+                <th className="py-3 px-4 font-semibold" title="Estimated from area with assumed factors">{t('review.th.people')}</th>
+                <th className="py-3 px-4 font-semibold">{t('review.th.type')}</th>
+                <th className="py-3 px-4 font-semibold">{t('review.th.why')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200/80">
@@ -391,14 +391,14 @@ export function StepReview({
                       {room.originalLabel}
                     </td>
                     <td className="py-3 px-4 font-mono text-slate-700 tabular-nums whitespace-nowrap">
-                      {room.areaSqM > 0 ? `${room.areaSqM.toFixed(1)} m²` : 'not measured'}
+                      {room.areaSqM > 0 ? `${num(room.areaSqM, 1)} m²` : t('review.notMeasured')}
                     </td>
                     <td className="py-3 px-4 font-mono text-slate-700 tabular-nums whitespace-nowrap">
-                      {occLoad > 0 ? `${occLoad} p` : '—'}
+                      {occLoad > 0 ? t('review.people', { n: occLoad }) : '—'}
                     </td>
                     <td className="py-3 px-4">
                       <select
-                        aria-label={`Taxonomy for ${room.originalLabel}`}
+                        aria-label={t('review.typeFor', { r: room.originalLabel })}
                         value={room.taxonomy}
                         onChange={(e) =>
                           onUpdateRoomTaxonomy(room.id, e.target.value as RoomTaxonomy)
@@ -407,7 +407,7 @@ export function StepReview({
                       >
                         {TAXONOMY_OPTIONS.map((opt) => (
                           <option key={opt.value} value={opt.value}>
-                            {opt.label}
+                            {t(opt.label)}
                           </option>
                         ))}
                       </select>
@@ -419,8 +419,8 @@ export function StepReview({
                         }`}
                       >
                         {room.mappingSource === 'manual'
-                          ? 'You'
-                          : `${Math.round(room.confidence * 100)}%`}
+                          ? t('review.you')
+                          : `${num(Math.round(room.confidence * 100))}%`}
                       </span>{' '}
                       {room.mappingReason}
                     </td>
@@ -437,15 +437,15 @@ export function StepReview({
       <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs overflow-hidden">
         <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50/70 flex flex-wrap items-center justify-between gap-2">
           <div className="text-sm font-semibold text-slate-900">
-            [{activeFloor.floorLabel || 'GF'}] Exits and locked doors
+            [{activeFloor.floorLabel || 'GF'}] {t('review.exitsTitle')}
           </div>
           <div className="flex items-center gap-3 text-xs text-slate-500">
             <span>
               {activeFloor.exitDetection === 'block-name'
-                ? 'Exits read from door block names'
+                ? t('review.exits.blockName')
                 : activeFloor.exitDetection === 'exterior-wall'
-                  ? 'Exits assumed: doors in the outer wall'
-                  : 'No exit identified'}
+                  ? t('review.exits.exterior')
+                  : t('review.exits.none')}
             </span>
             {activeFloor.doors.length > keyDoors.length && (
               <button
@@ -453,7 +453,7 @@ export function StepReview({
                 onClick={() => setShowAllDoors((v) => !v)}
                 className="font-semibold text-blue-800 hover:underline cursor-pointer"
               >
-                {showAllDoors ? 'Show exits only' : `Show all ${activeFloor.doors.length} doors`}
+                {showAllDoors ? t('review.exitsOnly') : t('review.showAll', { n: activeFloor.doors.length })}
               </button>
             )}
           </div>
@@ -461,19 +461,19 @@ export function StepReview({
         {shownDoors.length === 0 ? (
           <p className="px-5 py-4 text-xs text-slate-600">
             {activeFloor.doors.length === 0
-              ? 'No doors were found in this drawing. Travel distances cannot be measured without an exit.'
-              : 'No door is marked as an exit. Choose "Show all doors" and tick the ones that lead outside.'}
+              ? t('review.noDoors')
+              : t('review.noExitMarked')}
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/50 text-xs text-slate-600">
-                  <th className="py-2.5 px-4 font-semibold">Door</th>
-                  <th className="py-2.5 px-4 font-semibold">Clear width</th>
-                  <th className="py-2.5 px-4 font-semibold">Position</th>
-                  <th className="py-2.5 px-4 font-semibold">Exit</th>
-                  <th className="py-2.5 px-4 font-semibold">Locked</th>
+                  <th className="py-2.5 px-4 font-semibold">{t('review.th.door')}</th>
+                  <th className="py-2.5 px-4 font-semibold">{t('review.th.width')}</th>
+                  <th className="py-2.5 px-4 font-semibold">{t('review.th.position')}</th>
+                  <th className="py-2.5 px-4 font-semibold">{t('review.th.exit')}</th>
+                  <th className="py-2.5 px-4 font-semibold">{t('review.th.locked')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200/80">
@@ -483,22 +483,22 @@ export function StepReview({
                       {d.blockName}
                     </td>
                     <td className="py-2.5 px-4 font-mono text-xs text-slate-700 tabular-nums whitespace-nowrap">
-                      {d.widthM.toFixed(2)} m{' '}
+                      {num(d.widthM, 2)} m{' '}
                       <span className="font-sans text-slate-500">
                         {d.widthSource === 'wall-gap'
-                          ? 'measured gap'
+                          ? t('review.gap')
                           : d.widthSource === 'block-name'
-                            ? 'from block name'
-                            : 'assumed'}
+                            ? t('review.fromBlock')
+                            : t('review.assumed')}
                       </span>
                     </td>
                     <td className="py-2.5 px-4 text-xs text-slate-600">
-                      {d.onExterior ? 'Outer wall' : 'Inside'}
+                      {d.onExterior ? t('review.outerWall') : t('review.inside')}
                     </td>
                     <td className="py-2.5 px-4">
                       <input
                         type="checkbox"
-                        aria-label={`${d.blockName} is an exit`}
+                        aria-label={t('review.isExit', { d: d.blockName })}
                         checked={d.isExit}
                         onChange={(e) => onUpdateDoor(d.id, { isExit: e.target.checked })}
                         className="accent-emerald-700 w-4 h-4 cursor-pointer"
@@ -507,7 +507,7 @@ export function StepReview({
                     <td className="py-2.5 px-4">
                       <input
                         type="checkbox"
-                        aria-label={`${d.blockName} is locked`}
+                        aria-label={t('review.isLocked', { d: d.blockName })}
                         checked={d.isLocked}
                         onChange={(e) => onUpdateDoor(d.id, { isLocked: e.target.checked })}
                         className="accent-red-700 w-4 h-4 cursor-pointer"
@@ -526,8 +526,8 @@ export function StepReview({
         <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-2.5">
           <div className="flex items-center justify-between gap-2">
             <div className="text-xs font-semibold text-slate-900">
-              Layers in this file ({activeFloor.layersFound.length}) · walls read from{' '}
-              <span className="font-mono">{Array.from(new Set(activeFloor.walls.map((w) => w.layer))).join(', ') || 'none'}</span>
+              {t('review.layers', { n: activeFloor.layersFound.length })}{' '}
+              <span className="font-mono">{Array.from(new Set(activeFloor.walls.map((w) => w.layer))).join(', ') || t('common.none')}</span>
             </div>
             <button
               type="button"
@@ -536,11 +536,11 @@ export function StepReview({
               className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-blue-800 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-lg cursor-pointer disabled:opacity-50"
             >
               <RefreshCw className="w-3 h-3" />
-              {autoMappingLayers ? 'Detecting…' : 'Re-detect layers'}
+              {autoMappingLayers ? t('review.detecting') : t('review.redetect')}
             </button>
           </div>
           <div className="text-xs font-mono text-slate-600 leading-relaxed">
-            {activeFloor.layersFound.join(' · ') || 'Default layer 0'}
+            {activeFloor.layersFound.join(' · ') || t('review.layer0')}
           </div>
           {layerMapNote && (
             <div className="rounded-lg text-[11px] font-mono text-blue-800 bg-blue-50 border border-blue-200 px-3 py-2">
@@ -551,23 +551,22 @@ export function StepReview({
 
         <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-2.5">
           <div className="text-xs font-semibold text-slate-900">
-            How this floor was read ({activeFloor.floorLabel || 'GF'})
+            {t('review.howRead', { f: activeFloor.floorLabel || 'GF' })}
           </div>
           <ul className="space-y-1 text-xs text-slate-700">
             <li className="flex items-start gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-700" />
-              Units: {activeFloor.units}. Plan size {activeFloor.bounds.widthM.toFixed(1)} m ×{' '}
-              {activeFloor.bounds.heightM.toFixed(1)} m.
+              {t('review.units', { u: activeFloor.units, w: num(activeFloor.bounds.widthM, 1), h: num(activeFloor.bounds.heightM, 1) })}
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-700" />
-              Rooms:{' '}
+              {t('review.roomsFrom')}{' '}
               {activeFloor.rooms[0]?.boundarySource === 'polyline'
-                ? 'boundary polylines in the file'
+                ? t('review.rooms.polyline')
                 : activeFloor.rooms[0]?.boundarySource === 'wall-enclosure'
-                  ? 'areas enclosed by the walls'
-                  : 'text labels only (walls not closed)'}
-              . {activeFloor.openings?.length ?? 0} door-sized wall gaps found.
+                  ? t('review.rooms.walls')
+                  : t('review.rooms.labels')}
+              . {t('review.gaps', { n: activeFloor.openings?.length ?? 0 })}
             </li>
             <li className="flex items-start gap-2">
               {activeFloor.stairs.every((st) => st.stated?.headroom && st.stated?.handrail) &&
@@ -576,12 +575,12 @@ export function StepReview({
               ) : (
                 <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
               )}
-              Stairs: {activeFloor.stairs.length} found.{' '}
+              {t('review.stairsFound', { n: activeFloor.stairs.length })}{' '}
               {activeFloor.stairs.length === 0
                 ? ''
                 : activeFloor.stairs.every((st) => st.stated?.headroom && st.stated?.handrail)
-                  ? 'Headroom and handrail are written in the drawing.'
-                  : 'Headroom, handrail or step sizes are not written in the drawing and will not be checked.'}
+                  ? t('review.hdHr.ok')
+                  : t('review.hdHr.missing')}
             </li>
           </ul>
         </div>
