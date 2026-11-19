@@ -48,6 +48,8 @@ export interface DoorEntity {
   widthSource?: 'wall-gap' | 'block-name' | 'default';
   /** True when the door sits in the outer wall of the floor plate. */
   onExterior?: boolean;
+  /** Set when the door was added or moved by a proposed layout change (not in the original drawing). */
+  proposedBy?: 'ai' | 'rule';
 }
 
 export interface WindowEntity {
@@ -70,6 +72,8 @@ export interface StairEntity {
   treadMm: number;
   /** Which stair values were actually written in the drawing. Anything false is a placeholder and is never checked. */
   stated?: { width: boolean; headroom: boolean; handrail: boolean; step: boolean };
+  /** Set when the stair was added by a proposed layout change (not in the original drawing). */
+  proposedBy?: 'ai' | 'rule';
 }
 
 export interface DimensionEntity {

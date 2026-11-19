@@ -9,6 +9,7 @@ import {
 } from './src/engine/bnbcCorpus.ts';
 import { glossaryPromptLines } from './src/i18n/glossary.ts';
 import { banglaNoteScore, expandBanglaQuery } from './src/engine/banglaText.ts';
+import { registerDesignRoutes } from './aiDesignRoutes.ts';
 
 /** Appended to every prompt that writes Bangla, so terms match the app's own Bangla. */
 const BN_STYLE = ` In Bangla, use these terms exactly (English = Bangla): ${glossaryPromptLines()}. Write numbers with Bangla or Latin digits but never change a number. Keep clause numbers such as "Sec 1.13.8.2" in their original Latin form.`;
@@ -48,7 +49,7 @@ function getGeminiClient(): GoogleGenAI | null {
 type GenConfig = Record<string, unknown>;
 
 /** Calls Gemini, falling back to the next model name if one is rejected. */
-async function generateJson(ai: GoogleGenAI, contents: string, config: GenConfig): Promise<string> {
+async function generateJson(ai: GoogleGenAI, contents: unknown, config: GenConfig): Promise<string> {
   const order = workingModel
     ? [workingModel, ...MODEL_CANDIDATES.filter((m) => m !== workingModel)]
     : MODEL_CANDIDATES;
@@ -59,7 +60,8 @@ async function generateJson(ai: GoogleGenAI, contents: string, config: GenConfig
       try {
         const cfg = { ...config };
         if (!withThinking) delete cfg.thinkingConfig;
-        const response = await ai.models.generateContent({ model, contents, config: cfg });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response = await ai.models.generateContent({ model, contents: contents as any, config: cfg });
         workingModel = model;
         lastAiError = null;
         return (response.text ?? '').trim();
@@ -259,10 +261,12 @@ const app = express();
 // Render (and most hosts) put a proxy in front of the app. Without this, req.ip is the proxy's address,
 // so every visitor shares one rate-limit bucket. Set TRUST_PROXY=0 to turn it off.
 if (process.env.TRUST_PROXY !== '0') app.set('trust proxy', 1);
-app.use(express.json({ limit: '4mb' }));
+app.use(express.json({ limit: '8mb' }));
 
 // Small per-address limit so a public demo link cannot drain the API key.
 const hits = new Map<string, { n: number; t: number }>();
+// Per address per minute. The measurement scripts raise it locally (RATE_LIMIT_PER_MIN).
+const RATE_LIMIT = Number(process.env.RATE_LIMIT_PER_MIN) || 40;
 app.use('/api', (req, res, next) => {
   const key = req.ip || 'unknown';
   const now = Date.now();
@@ -271,12 +275,14 @@ app.use('/api', (req, res, next) => {
   }
   const rec = hits.get(key);
   if (!rec || now - rec.t > 60_000) hits.set(key, { n: 1, t: now });
-  else if (++rec.n > 40) {
+  else if (++rec.n > RATE_LIMIT) {
     res.status(429).json({ error: 'Too many requests. Wait a minute and try again.' });
     return;
   }
   next();
 });
+
+registerDesignRoutes(app, { getGeminiClient, generateJson });
 
 // Tells the interface whether the language model is available, so it never claims AI that is not running.
 app.get('/api/health', (_req, res) => {

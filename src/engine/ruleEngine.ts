@@ -907,6 +907,108 @@ export function runBuildingAudit(project: BuildingProject): ComplianceAudit {
   };
 }
 
+/**
+ * Moves a straight wall line (and the wall pieces in line with it) by dx or dy,
+ * dragging the ends of walls that meet it, the doors in it and the room corners on it.
+ * Works on horizontal walls directly and on vertical walls by mirroring the plan.
+ * Returns false when the wall id does not exist. Edits `fixedPlan` in place.
+ */
+export function shiftWallChain(fixedPlan: ParsedFloorPlan, wallId: string, dx: number, dy: number): boolean {
+  if (!fixedPlan.walls.some((w) => w.id === wallId)) return false;
+  // The routine below moves a horizontal wall line. For a vertical wall the
+  // plan is mirrored across the diagonal, moved, and mirrored back.
+  const vertical = dx !== 0 && dy === 0;
+  const flip = () => {
+    const sw = (pt: Point2D) => {
+      const t = pt.x;
+      pt.x = pt.y;
+      pt.y = t;
+    };
+    fixedPlan.walls.forEach((w) => { sw(w.start); sw(w.end); });
+    fixedPlan.doors.forEach((d) => sw(d.position));
+    fixedPlan.rooms.forEach((r) => r.polygon.forEach(sw));
+  };
+  if (vertical) flip();
+  const shiftY = vertical ? dx : dy;
+  const shiftX = 0;
+  const targetWall = fixedPlan.walls.find((w) => w.id === wallId);
+  if (targetWall) {
+    const oldY = targetWall.start.y;
+    const sameY = fixedPlan.walls
+      .filter(
+        (w) =>
+          Math.abs(w.start.y - oldY) < 0.05 &&
+          Math.abs(w.end.y - oldY) < 0.05
+      )
+      .sort((a, b) => Math.min(a.start.x, a.end.x) - Math.min(b.start.x, b.end.x));
+
+    let chainMinX = Math.min(targetWall.start.x, targetWall.end.x);
+    let chainMaxX = Math.max(targetWall.start.x, targetWall.end.x);
+    let expanded = true;
+    while (expanded) {
+      expanded = false;
+      for (const w of sameY) {
+        const wMin = Math.min(w.start.x, w.end.x);
+        const wMax = Math.max(w.start.x, w.end.x);
+        if (wMin <= chainMaxX + 2.5 && wMax >= chainMinX - 2.5) {
+          if (wMin < chainMinX) {
+            chainMinX = wMin;
+            expanded = true;
+          }
+          if (wMax > chainMaxX) {
+            chainMaxX = wMax;
+            expanded = true;
+          }
+        }
+      }
+    }
+
+    for (const w of fixedPlan.walls) {
+      if (
+        Math.abs(w.start.y - oldY) < 0.05 &&
+        Math.abs(w.end.y - oldY) < 0.05 &&
+        Math.max(w.start.x, w.end.x) >= chainMinX - 0.1 &&
+        Math.min(w.start.x, w.end.x) <= chainMaxX + 0.1
+      ) {
+        w.start.x += shiftX;
+        w.end.x += shiftX;
+        w.start.y += shiftY;
+        w.end.y += shiftY;
+      } else if (
+        Math.abs(w.start.x - w.end.x) < 0.05 &&
+        w.start.x >= chainMinX - 0.1 &&
+        w.start.x <= chainMaxX + 0.1
+      ) {
+        if (Math.abs(w.start.y - oldY) < 0.05) w.start.y += shiftY;
+        if (Math.abs(w.end.y - oldY) < 0.05) w.end.y += shiftY;
+      }
+    }
+    for (const d of fixedPlan.doors) {
+      if (
+        Math.abs(d.position.y - oldY) < 0.08 &&
+        d.position.x >= chainMinX - 0.5 &&
+        d.position.x <= chainMaxX + 0.5
+      ) {
+        d.position.x += shiftX;
+        d.position.y += shiftY;
+      }
+    }
+    for (const rm of fixedPlan.rooms) {
+      for (const pt of rm.polygon) {
+        if (
+          Math.abs(pt.y - oldY) < 0.05 &&
+          pt.x >= chainMinX - 0.1 &&
+          pt.x <= chainMaxX + 0.1
+        ) {
+          pt.y += shiftY;
+        }
+      }
+    }
+  }
+  if (vertical) flip();
+  return true;
+}
+
 function applyFixesToFloor(
   fixedPlan: ParsedFloorPlan,
   floorViolations: Violation[]
@@ -929,97 +1031,7 @@ function applyFixesToFloor(
         }
       }
     } else if (fix.targetType === 'wall' && fix.wallShift) {
-      // The routine below moves a horizontal wall line. For a vertical wall the
-      // plan is mirrored across the diagonal, moved, and mirrored back.
-      const vertical = fix.wallShift.dx !== 0 && fix.wallShift.dy === 0;
-      const flip = () => {
-        const sw = (pt: Point2D) => {
-          const t = pt.x;
-          pt.x = pt.y;
-          pt.y = t;
-        };
-        fixedPlan.walls.forEach((w) => { sw(w.start); sw(w.end); });
-        fixedPlan.doors.forEach((d) => sw(d.position));
-        fixedPlan.rooms.forEach((r) => r.polygon.forEach(sw));
-      };
-      if (vertical) flip();
-      const shiftY = vertical ? fix.wallShift.dx : fix.wallShift.dy;
-      const shiftX = 0;
-      const targetWall = fixedPlan.walls.find((w) => w.id === fix.wallShift!.wallId);
-      if (targetWall) {
-        const oldY = targetWall.start.y;
-        const sameY = fixedPlan.walls
-          .filter(
-            (w) =>
-              Math.abs(w.start.y - oldY) < 0.05 &&
-              Math.abs(w.end.y - oldY) < 0.05
-          )
-          .sort((a, b) => Math.min(a.start.x, a.end.x) - Math.min(b.start.x, b.end.x));
-
-        let chainMinX = Math.min(targetWall.start.x, targetWall.end.x);
-        let chainMaxX = Math.max(targetWall.start.x, targetWall.end.x);
-        let expanded = true;
-        while (expanded) {
-          expanded = false;
-          for (const w of sameY) {
-            const wMin = Math.min(w.start.x, w.end.x);
-            const wMax = Math.max(w.start.x, w.end.x);
-            if (wMin <= chainMaxX + 2.5 && wMax >= chainMinX - 2.5) {
-              if (wMin < chainMinX) {
-                chainMinX = wMin;
-                expanded = true;
-              }
-              if (wMax > chainMaxX) {
-                chainMaxX = wMax;
-                expanded = true;
-              }
-            }
-          }
-        }
-
-        for (const w of fixedPlan.walls) {
-          if (
-            Math.abs(w.start.y - oldY) < 0.05 &&
-            Math.abs(w.end.y - oldY) < 0.05 &&
-            Math.max(w.start.x, w.end.x) >= chainMinX - 0.1 &&
-            Math.min(w.start.x, w.end.x) <= chainMaxX + 0.1
-          ) {
-            w.start.x += shiftX;
-            w.end.x += shiftX;
-            w.start.y += shiftY;
-            w.end.y += shiftY;
-          } else if (
-            Math.abs(w.start.x - w.end.x) < 0.05 &&
-            w.start.x >= chainMinX - 0.1 &&
-            w.start.x <= chainMaxX + 0.1
-          ) {
-            if (Math.abs(w.start.y - oldY) < 0.05) w.start.y += shiftY;
-            if (Math.abs(w.end.y - oldY) < 0.05) w.end.y += shiftY;
-          }
-        }
-        for (const d of fixedPlan.doors) {
-          if (
-            Math.abs(d.position.y - oldY) < 0.08 &&
-            d.position.x >= chainMinX - 0.5 &&
-            d.position.x <= chainMaxX + 0.5
-          ) {
-            d.position.x += shiftX;
-            d.position.y += shiftY;
-          }
-        }
-        for (const rm of fixedPlan.rooms) {
-          for (const pt of rm.polygon) {
-            if (
-              Math.abs(pt.y - oldY) < 0.05 &&
-              pt.x >= chainMinX - 0.1 &&
-              pt.x <= chainMaxX + 0.1
-            ) {
-              pt.y += shiftY;
-            }
-          }
-        }
-      }
-      if (vertical) flip();
+      shiftWallChain(fixedPlan, fix.wallShift.wallId, fix.wallShift.dx, fix.wallShift.dy);
     } else if (fix.targetType === 'stair') {
       const stair = fixedPlan.stairs.find((s) => s.id === fix.targetId);
       if (stair) {
