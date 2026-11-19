@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Bi } from '../i18n';
 import {
   AlertOctagon,
   AlertTriangle,
@@ -644,13 +645,17 @@ export function StepReport({
               </div>
 
               <div className="space-y-1">
-                <p className="text-sm text-slate-900 leading-relaxed">
-                  {selectedViolation.aiExplanation?.en || selectedViolation.description}
-                </p>
+                <Bi
+                  className="text-sm text-slate-900 leading-relaxed"
+                  en={selectedViolation.aiExplanation?.en || selectedViolation.description}
+                  bn={selectedViolation.aiExplanation?.bn}
+                />
                 {selectedViolation.aiExplanation?.actionEn && (
-                  <p className="text-xs font-medium text-blue-800">
-                    What to do: {selectedViolation.aiExplanation.actionEn}
-                  </p>
+                  <Bi
+                    className="text-xs font-medium text-blue-800"
+                    en={`What to do: ${selectedViolation.aiExplanation.actionEn}`}
+                    bn={selectedViolation.aiExplanation.actionBn ? `করণীয়: ${selectedViolation.aiExplanation.actionBn}` : undefined}
+                  />
                 )}
               </div>
 
@@ -766,9 +771,11 @@ export function StepReport({
             {ragResponse && (
               <div className="space-y-3 pt-1">
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-2.5">
-                  <p className="text-xs sm:text-sm text-slate-900 leading-relaxed">
-                    {ragResponse.answerEn}
-                  </p>
+                  <Bi
+                    className="text-xs sm:text-sm text-slate-900 leading-relaxed"
+                    en={ragResponse.answerEn}
+                    bn={ragResponse.answerBn}
+                  />
                 </div>
 
                 <div className="space-y-1.5">

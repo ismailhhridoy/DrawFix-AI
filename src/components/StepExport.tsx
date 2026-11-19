@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Bi, useLang } from '../i18n';
 import { jsPDF } from 'jspdf';
 import {
   Copy,
@@ -40,6 +41,7 @@ export function StepExport({
   shareUrl,
   onOpen3DView,
 }: StepExportProps) {
+  const { showEn, showBn } = useLang();
   const [copied, setCopied] = useState(false);
   const [memo, setMemo] = useState<DeficiencyMemo | null>(null);
   const [generatingMemo, setGeneratingMemo] = useState(false);
@@ -70,11 +72,11 @@ export function StepExport({
 
   const getMemoPlainText = () => {
     if (!memo) return '';
+    const enPart = showEn || !memo.memoBodyBn ? [memo.subjectEn, '', memo.memoBodyEn, ''] : [];
+    const bnPart = showBn && memo.memoBodyBn ? [memo.subjectBn, '', memo.memoBodyBn, ''] : [];
     return [
-      memo.subjectEn,
-      '',
-      memo.memoBodyEn,
-      '',
+      ...enPart,
+      ...bnPart,
       'References:',
       ...memo.citedClauses.map((c) => `- ${c}`),
     ].join('\n');
@@ -432,10 +434,13 @@ export function StepExport({
             </div>
 
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-2">
-              <div className="text-xs font-bold text-slate-900">{memo.subjectEn}</div>
-              <pre className="whitespace-pre-wrap font-sans text-xs text-slate-800 leading-relaxed">
-                {memo.memoBodyEn}
-              </pre>
+              <Bi as="div" className="text-xs font-bold text-slate-900" en={memo.subjectEn} bn={memo.subjectBn} />
+              <Bi
+                as="div"
+                className="whitespace-pre-wrap font-sans text-xs text-slate-800 leading-relaxed"
+                en={memo.memoBodyEn}
+                bn={memo.memoBodyBn}
+              />
             </div>
 
             <div className="text-[11px] font-mono text-slate-600">

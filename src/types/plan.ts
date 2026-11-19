@@ -181,6 +181,8 @@ export interface RemediationDelta {
     | 'adjust_stair'
     | 'sync_dimension';
   summary: string;
+  /** Same change in Bangla, built from the same numbers. */
+  summaryBn?: string;
   deltaBeforeM?: number;
   deltaAfterM?: number;
   wallShift?: {

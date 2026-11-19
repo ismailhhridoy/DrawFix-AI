@@ -1,4 +1,5 @@
 import { ArrowRight, CheckCircle2, FileText } from 'lucide-react';
+import { Bi } from '../i18n';
 import type {
   BuildingProject,
   ComplianceAudit,
@@ -192,12 +193,17 @@ export function StepCompare({
             </span>
           </div>
 
-          <h2 className="font-display text-base font-semibold text-slate-900">
-            {narration.headlineEn}
-          </h2>
-          <p className="text-sm text-slate-700 leading-relaxed">
-            {narration.summaryEn}
-          </p>
+          <Bi
+            as="div"
+            className="font-display text-base font-semibold text-slate-900"
+            en={narration.headlineEn}
+            bn={narration.headlineBn}
+          />
+          <Bi
+            className="text-sm text-slate-700 leading-relaxed"
+            en={narration.summaryEn}
+            bn={narration.summaryBn}
+          />
         </div>
 
         <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-3">
@@ -215,7 +221,7 @@ export function StepCompare({
               <li key={delta.id} className="py-2.5 flex items-start gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <div className="space-y-0.5">
-                  <div className="text-slate-900 font-medium">{delta.summary}</div>
+                  <Bi as="div" className="text-slate-900 font-medium" en={delta.summary} bn={delta.summaryBn} />
                   {delta.deltaBeforeM !== undefined && delta.deltaAfterM !== undefined && (
                     <div className="text-xs font-mono text-slate-500 tabular-nums">
                       {delta.deltaBeforeM.toFixed(2)} m → {delta.deltaAfterM.toFixed(2)} m

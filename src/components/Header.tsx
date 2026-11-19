@@ -1,5 +1,6 @@
 import type { AppStep } from '../types/plan';
 import { DrawFixLogo } from './DrawFixLogo';
+import { LanguageSwitch } from '../i18n';
 
 interface HeaderProps {
   activeStep: AppStep;
@@ -134,7 +135,8 @@ export function Header({
       )}
 
       {/* Zone 3: Single Primary Action */}
-      <div className="flex items-center shrink-0">
+      <div className="flex items-center gap-3 shrink-0">
+        <LanguageSwitch />
         <button
           type="button"
           onClick={onPrimaryAction}

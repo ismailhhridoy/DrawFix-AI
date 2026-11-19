@@ -20,6 +20,7 @@ import {
 } from './pathfinding';
 import { pointToSegmentDist } from './geometry';
 import { ruleDef } from './rules';
+import { toBnDigits as bn } from '../i18n/digits';
 
 /** Reference distance for cabins, read in BNBC 2012 Part 3 Sec 1.13.8.2. */
 export const CABIN_TRAVEL_LIMIT_M = 16.0;
@@ -176,6 +177,7 @@ export function runBuildingAudit(project: BuildingProject): ComplianceAudit {
             floorLabel,
             action: 'unlock_exit',
             summary: `[${floorLabel}] Unlock "${door.blockName}" and make the clear opening 1.10 m`,
+            summaryBn: `[${floorLabel}] "${door.blockName}" তালামুক্ত করুন এবং খোলা অংশ ${bn(1.1, 2)} মিটার করুন`,
             deltaBeforeM: 0,
             deltaAfterM: 1.1,
           },
@@ -204,6 +206,7 @@ export function runBuildingAudit(project: BuildingProject): ComplianceAudit {
             floorLabel,
             action: 'widen_door',
             summary: `[${floorLabel}] Widen "${door.blockName}" from ${door.widthM.toFixed(2)} m to 1.10 m`,
+            summaryBn: `[${floorLabel}] "${door.blockName}" দরজা ${bn(door.widthM, 2)} মিটার থেকে ${bn(1.1, 2)} মিটার চওড়া করুন`,
             deltaBeforeM: door.widthM,
             deltaAfterM: 1.1,
           },
@@ -464,6 +467,7 @@ export function runBuildingAudit(project: BuildingProject): ComplianceAudit {
             floorLabel,
             action: 'widen_passage',
             summary: `[${floorLabel}] Move the partition wall ${shift.toFixed(2)} m to widen the passage from ${pinch.widthM.toFixed(2)} m to 1.20 m`,
+            summaryBn: `[${floorLabel}] পার্টিশন দেয়াল ${bn(shift, 2)} মিটার সরিয়ে চলাচলের পথ ${bn(pinch.widthM, 2)} মিটার থেকে ${bn(1.2, 2)} মিটার চওড়া করুন`,
             deltaBeforeM: pinch.widthM,
             deltaAfterM: 1.2,
             wallShift: { wallId: pinch.shiftWallId, dx: pinch.shiftDx, dy: pinch.shiftDy },
@@ -502,6 +506,7 @@ export function runBuildingAudit(project: BuildingProject): ComplianceAudit {
             floorLabel,
             action: 'adjust_stair',
             summary: `[${floorLabel}] Raise "${stair.label}" headroom from ${stair.headroomM.toFixed(2)} m to 2.25 m`,
+            summaryBn: `[${floorLabel}] "${stair.label}" সিঁড়ির মাথার উপরের ফাঁকা উচ্চতা ${bn(stair.headroomM, 2)} মিটার থেকে ${bn(2.25, 2)} মিটার করুন`,
             deltaBeforeM: stair.headroomM,
             deltaAfterM: 2.25,
           },
@@ -533,6 +538,7 @@ export function runBuildingAudit(project: BuildingProject): ComplianceAudit {
             floorLabel,
             action: 'adjust_stair',
             summary: `[${floorLabel}] Raise "${stair.label}" handrail from ${stair.handrailHeightM.toFixed(2)} m to 0.95 m`,
+            summaryBn: `[${floorLabel}] "${stair.label}" সিঁড়ির হাতলের উচ্চতা ${bn(stair.handrailHeightM, 2)} মিটার থেকে ${bn(0.95, 2)} মিটার করুন`,
             deltaBeforeM: stair.handrailHeightM,
             deltaAfterM: 0.95,
           },
@@ -603,6 +609,7 @@ export function runBuildingAudit(project: BuildingProject): ComplianceAudit {
             floorLabel,
             action: 'sync_dimension',
             summary: `[${floorLabel}] Make the dimension text show the real distance (${after.toFixed(2)} m)`,
+            summaryBn: `[${floorLabel}] মাপের লেখায় প্রকৃত দূরত্ব (${bn(after, 2)} মিটার) দেখান`,
             deltaBeforeM: dim.measuredValueM,
             deltaAfterM: after,
           },

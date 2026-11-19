@@ -1,3 +1,4 @@
+import { toBnDigits } from '../i18n/digits';
 import { REGULATORY_CORPUS, type RegulatoryClauseChunk } from './bnbcCorpus';
 import type {
   BuildingProject,
@@ -247,6 +248,16 @@ export function queryLocalCorpus(
           .join('; ')}.`
       : '';
 
+  const activeNoteBn =
+    activeMatches.length > 0
+      ? ` চলমান নকশায় (${project?.name || 'Plan'}): ${activeMatches
+          .map(
+            (v) =>
+              `${v.roomName}: পরিমাপ ${v.blocked ? 'কোনো খোলা পথ নেই' : `${toBnDigits(v.measuredValue)} ${v.unit}`}, সীমা ${v.comparator} ${toBnDigits(v.limitValue)} ${v.unit}`
+          )
+          .join('; ')}।`
+      : '';
+
   return {
     source: 'lexical-rag',
     retrievalMode: 'bm25-lexical',
@@ -262,7 +273,9 @@ export function queryLocalCorpus(
     answerEn: best
       ? `${best.part}, ${best.clause} (${best.basis === 'verified' ? 'BNBC verified limit' : 'Advisory screening threshold'}): ${best.text}${activeNote}`
       : 'No indexed BNBC or Imarat Bidhimala clause matched that query.',
-    answerBn: '',
+    answerBn: best
+      ? `${best.part}, ${best.clause} (${best.basis === 'verified' ? 'বিএনবিসি-তে যাচাই করা সীমা' : 'প্রাথমিক স্ক্রিনিং সীমা'}): ${best.textBn}${activeNoteBn}`
+      : 'বিএনবিসি বা ইমারত বিধিমালার কোনো সূচিভুক্ত ধারা এই প্রশ্নের সঙ্গে মেলেনি।',
   };
 }
 

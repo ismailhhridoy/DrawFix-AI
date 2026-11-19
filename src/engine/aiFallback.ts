@@ -14,13 +14,12 @@ import type {
   ViolationExplanation,
 } from '../types/plan';
 import { REGULATORY_CORPUS } from './bnbcCorpus';
+import { toBnDigits } from '../i18n/digits';
 import { classifyRoomWithGeometry, queryLocalCorpus } from './localIntelligence';
 
-const BN_DIGITS = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
 /** Bangla numerals for numbers that come from the rule engine. */
 export function bn(value: number | string, decimals?: number): string {
-  const str = typeof value === 'number' && decimals !== undefined ? value.toFixed(decimals) : String(value);
-  return str.replace(/\d/g, (d) => BN_DIGITS[Number(d)]);
+  return toBnDigits(value, decimals);
 }
 
 const BASIS_BN: Record<string, string> = {
@@ -241,7 +240,7 @@ export function buildTemplateNarration(
     } থেকে ${bn(afterAudit.worstEscapeSec, 1)} সেকেন্ডে এসেছে, আর আটকা পড়া কক্ষ ${bn(beforeAudit.trappedRoomCount)}টি থেকে ${bn(afterAudit.trappedRoomCount)}টিতে। পরিবর্তনগুলো জ্যামিতির একটি অনুলিপিতে করা হয়েছে; মূল DXF ফাইল অপরিবর্তিত।`,
     bulletChanges: deltas.map((d) => ({
       en: d.summary,
-      bn: d.summary,
+      bn: d.summaryBn || d.summary,
     })),
     source: 'template',
   };
@@ -483,8 +482,8 @@ export function buildTemplateDeficiencyMemo(
     : '';
   const zoningLineBn = m
     ? m.plotAreaSqM > 0
-      ? `জোনিং স্ক্রিনিং: প্লট ${m.plotAreaSqM} m², ভূমি-আচ্ছাদন ${m.mgcPercent}% (স্ক্রিনিং সীমা ${m.maxAllowedMgcPercent}%), এফএআর ${m.achievedFar} (স্ক্রিনিং সীমা ${m.maxAllowedFar})। আনুমানিক সর্বোচ্চ ফ্লোর লোড ${m.peakFloorLoad} জন।`
-      : `জোনিং যাচাই করা হয়নি: প্লটের তথ্য দেওয়া হয়নি। আনুমানিক সর্বোচ্চ ফ্লোর লোড ${m.peakFloorLoad} জন।`
+      ? `জোনিং স্ক্রিনিং: প্লট ${bn(m.plotAreaSqM)} m², ভূমি-আচ্ছাদন ${bn(m.mgcPercent)}% (স্ক্রিনিং সীমা ${bn(m.maxAllowedMgcPercent)}%), এফএআর ${bn(m.achievedFar)} (স্ক্রিনিং সীমা ${bn(m.maxAllowedFar)})। এক তলায় আনুমানিক সর্বোচ্চ ${bn(m.peakFloorLoad)} জন।`
+      : `জোনিং যাচাই করা হয়নি: প্লটের তথ্য দেওয়া হয়নি। এক তলায় আনুমানিক সর্বোচ্চ ${bn(m.peakFloorLoad)} জন।`
     : '';
 
   const topFindingsEn = beforeAudit.violations
@@ -501,9 +500,9 @@ export function buildTemplateDeficiencyMemo(
     .slice(0, 8)
     .map(
       (v, i) =>
-        `${i + 1}. [${v.floorLabel || 'GF'}] ${v.ruleName} (${v.roomName}): পরিমাপ ${
-          v.blocked ? 'পথ নেই' : `${v.measuredValue} ${v.unit}`
-        }, বিধি সীমা ${v.comparator} ${v.limitValue} ${v.unit} [${v.citation}]।`
+        `${bn(i + 1)}. [${v.floorLabel || 'GF'}] ${v.status === 'FAIL' ? 'ত্রুটি' : 'সতর্কতা'}: ${v.ruleName} (${v.roomName}): পরিমাপ ${
+          v.blocked ? 'কোনো পথ নেই' : `${bn(v.measuredValue)} ${v.unit}`
+        }, সীমা ${v.comparator} ${bn(v.limitValue)} ${v.unit} [${v.citation}]।`
     )
     .join('\n');
 
@@ -519,16 +518,17 @@ export function buildTemplateDeficiencyMemo(
       : decisionStatus === 'CONDITIONAL_REVIEW'
         ? 'শুধু সতর্কতা; পর্যালোচকের যাচাই প্রয়োজন'
         : 'এই স্ক্রিনিংয়ে কোনো ত্রুটি পাওয়া যায়নি';
+  const skippedBn = (beforeAudit.notChecked || []).map((n) => `- ${n.floorLabel ? `[${n.floorLabel}] ` : ''}${n.item}: ${n.reason}`);
   const skipped = (beforeAudit.notChecked || []).map((n) => `- ${n.floorLabel ? `[${n.floorLabel}] ` : ''}${n.item}: ${n.reason}`);
   const verifiedCount = beforeAudit.violations.filter((v) => v.basis === 'verified').length;
   const screeningCount = beforeAudit.violations.filter((v) => v.basis === 'screening').length;
 
   return {
     subjectEn: `Draft pre-submission review note: ${project.name}`,
-    subjectBn: `Draft pre-submission review note: ${project.name}`,
+    subjectBn: `দাখিলের আগের পর্যালোচনা নোটের খসড়া: ${project.name}`,
     decisionStatus,
     memoBodyEn: `DRAFT, produced by DrawFix Ai. Not a RAJUK or Fire Service document and not an approval.\n\nResult: ${statusEn}\nProject: ${project.name} (${project.floors.length} floor${project.floors.length === 1 ? '' : 's'}, ${(project.floors.length * project.storyHeightM).toFixed(1)} m)\n${zoningLineEn}\n\nFindings (${beforeAudit.failCount} fail, ${beforeAudit.warnCount} warn; ${verifiedCount} on thresholds verified in BNBC 2012 Part 3, ${screeningCount} on screening thresholds):\n${topFindingsEn || 'None.'}\n\nNot checked:\n${skipped.join('\n') || '- Nothing skipped.'}\n\nWith the proposed changes applied to a copy of the geometry: ${afterAudit.failCount} fail, ${afterAudit.warnCount} warn.\n\nEvery number above was measured by code from the drawing. A qualified reviewer must confirm the findings and the screening thresholds before any decision.`,
-    memoBodyBn: '',
+    memoBodyBn: `খসড়া, DrawFix Ai তৈরি করেছে। এটি রাজউক বা ফায়ার সার্ভিসের নথি নয় এবং কোনো অনুমোদন নয়।\n\nফলাফল: ${statusBn}\nপ্রকল্প: ${project.name} (${bn(project.floors.length)} তলা, ${bn(project.floors.length * project.storyHeightM, 1)} মিটার)\n${zoningLineBn}\n\nপর্যবেক্ষণ (${bn(beforeAudit.failCount)}টি ত্রুটি, ${bn(beforeAudit.warnCount)}টি সতর্কতা; ${bn(verifiedCount)}টি বিএনবিসি ২০১২ খণ্ড ৩-এ যাচাই করা সীমার ওপর, ${bn(screeningCount)}টি স্ক্রিনিং সীমার ওপর):\n${topFindingsBn || 'নেই।'}\n\nযা যাচাই করা হয়নি (কারণ ইংরেজিতে):\n${skippedBn.join('\n') || '- কিছুই বাদ যায়নি।'}\n\nপ্রস্তাবিত পরিবর্তন জ্যামিতির একটি অনুলিপিতে প্রয়োগ করার পর: ${bn(afterAudit.failCount)}টি ত্রুটি, ${bn(afterAudit.warnCount)}টি সতর্কতা।\n\nওপরের প্রতিটি সংখ্যা নকশা থেকে কোড দিয়ে মাপা। যেকোনো সিদ্ধান্তের আগে একজন যোগ্য পর্যালোচককে পর্যবেক্ষণ ও স্ক্রিনিং সীমা নিশ্চিত করতে হবে।`,
     citedClauses,
     source: 'template',
   };

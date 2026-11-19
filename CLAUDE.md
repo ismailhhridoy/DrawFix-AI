@@ -163,7 +163,7 @@ src/engine/localIntelligence.ts  Local (non-LLM) room classification, question b
 from the engine's own output, so they catch regressions but do not prove the numbers are right
 (circular). Only `tests/handchecked.test.ts` is checked against arithmetic done by hand.
 
-## Bangla readiness plan (written 2026-11-19, not started)
+## Bangla readiness plan (written 2026-11-19, in progress)
 
 Goal: a Bangla-speaking reviewer can use the whole flow in Bangla, upload plans with Bangla labels,
 and take away a Bangla report, without any number changing between languages.
@@ -186,7 +186,11 @@ and take away a Bangla report, without any number changing between languages.
 - `server.ts:76-99` Bangla synonym regexes use `/g` with `.test()` (stateful; misses on repeat calls).
 
 ### Steps (in order; each ends with tests + md update + push)
-1. **Show what already exists (biggest demo win, smallest change).** Language switch EN / বাংলা /
+1. **DONE 2026-11-19.** `src/i18n/` (LangProvider, `useLang()`, `<Bi>`, `LanguageSwitch` in the header,
+   choice stored in localStorage `drawfix.lang`, sets `<html lang>`). Report, Compare, question box and
+   review note show Bangla. Fix summaries carry `summaryBn`; the fixed review note and offline answers
+   now have Bangla text; reference notes have `titleBn`/`textBn`/`keywordsBn`. Tests: `tests/bangla.test.ts`.
+   Original plan: **Show what already exists (biggest demo win, smallest change).** Language switch EN / বাংলা /
    both in the header, stored per viewer. Report shows `bn` + `actionBn`; Compare shows the Bangla
    narration; question box shows `answerBn`; review note shows `memoBodyBn`. Fixed (non-AI) Bangla
    templates cover the no-key case.
@@ -265,6 +269,7 @@ and take away a Bangla report, without any number changing between languages.
 
 ## Update log (add a line every time work is done; newest first)
 
+- 2026-11-19: Bangla step 1: language switch (EN / বাংলা / both) and Bangla shown in Report, Fixes, question box, review note.
 - 2026-11-19: Fixed `CLAUDE.md`: env file is `.env` (dotenv ignores `.env.local`); restored the circular-test caveat.
 - 2026-11-19: Bangla readiness audit and plan added (section "Bangla readiness plan"). No code changed.
 - 2026-11-19: Fixed rate limiter behind proxy; audited and fixed permit checklist and correction-letter
