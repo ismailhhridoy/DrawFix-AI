@@ -159,6 +159,59 @@ src/engine/localIntelligence.ts  Local (non-LLM) room classification, question b
 23 rules in `rules.ts`: 9 verified, 12 screening, 2 drawing checks. Type-check, build and
 62 tests pass (checked 2026-11-19).
 
+## Bangla readiness plan (written 2026-11-19, not started)
+
+Goal: a Bangla-speaking reviewer can use the whole flow in Bangla, upload plans with Bangla labels,
+and take away a Bangla report, without any number changing between languages.
+
+### What is true today (checked in code, 2026-11-19)
+- Bangla is **generated but never shown**. `aiFallback.ts` has Bangla templates and the server asks
+  Gemini for `bn` / `actionBn` / `answerBn` / `headlineBn` / `memoBodyBn`, but components only render
+  the English fields (`StepReport.tsx:648-652`, `StepExport.tsx:194`). No language toggle exists.
+- All UI copy is hard-coded English; `<html lang="en">`; no i18n layer. Noto Sans Bengali is already
+  loaded (`index.css`), and `bn()` converts digits.
+- PDF: `StepExport.tsx:112-119` strips every non-Latin character. jsPDF has no Bangla font and, even
+  with one, does not shape Bangla conjuncts/vowel signs, so embedding a TTF alone will render broken
+  text (verify with a test page before committing to an approach).
+- DXF input: UTF-8 Bangla labels work (`শয়নকক্ষ` -> bedroom). AutoCAD-style `\U+09B6...` escapes are
+  **not decoded**: the label stays as `\U+09B6\U+09DF\U+09A8` and the room was classed **cabin**.
+  Legacy Bijoy/SutonnyMJ text (ASCII bytes drawn with a Bangla font) is not handled either; how common
+  it is in real submissions is unconfirmed until we see real DXFs.
+- Question box without Gemini: an English question scores 67.5; the Bangla question
+  "বের হওয়ার পথের সর্বোচ্চ দূরত্ব কত?" scores **0** on every note yet still returns an answer.
+- `server.ts:76-99` Bangla synonym regexes use `/g` with `.test()` (stateful; misses on repeat calls).
+
+### Steps (in order; each ends with tests + md update + push)
+1. **Show what already exists (biggest demo win, smallest change).** Language switch EN / বাংলা /
+   both in the header, stored per viewer. Report shows `bn` + `actionBn`; Compare shows the Bangla
+   narration; question box shows `answerBn`; review note shows `memoBodyBn`. Fixed (non-AI) Bangla
+   templates cover the no-key case.
+2. **Number guard for Bangla AI text.** Before showing any Gemini Bangla, convert Bangla digits to
+   Latin, extract every number, and reject the text (fall back to the fixed template) if a number is
+   not in the finding's own data. Keeps the "AI never changes a measurement" rule true in Bangla.
+3. **UI strings.** Small in-house `t(key)` dictionary (`src/i18n/en.ts`, `bn.ts`), no library.
+   Translate the demo path first: Header, Landing, Review, Report, Compare; then Upload, Permits,
+   3D, Export. Set `<html lang>` on switch; Bangla digits for measurements via `bn()`. Keep clause
+   names (e.g. "BNBC 2012, Part 3, Sec 1.13.8.2") in the original form next to the Bangla.
+4. **Glossary + native review.** One `bn` glossary for code terms (travel distance, exit, stair,
+   setback, FAR...) used by templates, UI and the Gemini prompt so wording is consistent. A native
+   Bangla speaker with building-code context must review templates and glossary; do not ship
+   machine-only Bangla as "official".
+5. **Bangla report.** Recommended: a print-friendly HTML report and `window.print()` (the browser
+   shapes Bangla correctly; user saves as PDF). Alternatives to test: html2canvas image of the
+   Bangla section inside the jsPDF file (not selectable), or a jsPDF Bangla font after a shaping test.
+6. **Bangla in drawings.** Decode `\U+XXXX` escapes in TEXT/MTEXT (and strip MTEXT formatting codes);
+   widen the Bangla room dictionary (রান্নাঘর, টয়লেট/শৌচাগার, বাথরুম, ডাইনিং, ড্রয়িং, লিফট...); add a
+   Bijoy/SutonnyMJ-to-Unicode converter **only after** a real DXF shows that encoding.
+7. **Bangla questions offline.** Bangla keyword map for `queryLocalCorpus` (reuse the server synonym
+   list, without `/g`), and return "no matching note" instead of an answer when the best score is 0.
+8. **Tests:** `\U+` decoding, Bijoy sample (if added), number guard rejects a changed number,
+   language switch renders Bangla fields, offline Bangla question finds Sec 1.13.8.2.
+
+### Needed from the team
+- The competition's exact wording on Bangla (UI? output? input? voice?), to set what "ready" means.
+- A native Bangla reviewer for step 4, and one real DXF with Bangla labels for step 6.
+
 ## Not done yet (next steps, in order)
 
 1. **Screenshot-check** 3D escape and Export screens after the changes (Landing, Review,
@@ -208,6 +261,7 @@ src/engine/localIntelligence.ts  Local (non-LLM) room classification, question b
 
 ## Update log (add a line every time work is done; newest first)
 
+- 2026-11-19: Bangla readiness audit and plan added (section "Bangla readiness plan"). No code changed.
 - 2026-11-19: Fixed rate limiter behind proxy; audited and fixed permit checklist and correction-letter
   classifier (trust labels, false "pass", substring mis-routing); lazy-loaded heavy steps (main chunk
   488 kB); added 22 tests (62 total).
