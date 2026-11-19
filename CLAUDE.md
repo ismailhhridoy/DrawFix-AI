@@ -339,6 +339,7 @@ and take away a Bangla report, without any number changing between languages.
 
 ## Update log (add a line every time work is done; newest first)
 
+- 2026-11-19: Landing rewritten in plain language (architect first, review officers second). Showcase panels now use real engine output on the demo building (were hardcoded 23.4/15.7 m with a wrong clause). FAQ no longer claims air-gapped use (Gemini sends data). Hero headline unchanged; "Validated" still in it and flagged: 12 of 23 rules are screening.
 - 2026-11-19: Removed overclaiming copy: invented "~N min manual check saved" stat (formula had no source), "100% Local" (false with Gemini on), "Pre-Check Certificate", "Objections Found — Revisions Required" (sounded official). "floor(s)" labels reworded. 110 tests pass.
 - 2026-11-19: Ismail asked for a finished-product look: removed the on-screen Bangla machine-draft notice
   (BanglaNotice.tsx) and "beta"/"prototype"/"DRAFT" labels in the UI and print header. The Bangla is STILL
