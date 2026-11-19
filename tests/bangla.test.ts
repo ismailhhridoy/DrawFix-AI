@@ -229,7 +229,7 @@ describe('step 5: printable Bangla report', () => {
 
   it('renders English only in English mode, with no Bangla script', () => {
     const html = render('en');
-    expect(html).toContain('DrawFix Ai: escape-route and plan check report');
+    expect(html).toContain('DrawFix AI: escape-route and plan check report');
     expect(/[ঀ-৿]/.test(html)).toBe(false);
   });
 

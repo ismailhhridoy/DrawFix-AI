@@ -4,7 +4,6 @@ import {
   Building2,
   ChevronDown,
   FileCheck2,
-  FileWarning,
   ShieldAlert,
   ShieldCheck,
   Upload,
@@ -195,25 +194,41 @@ export function LandingPage({
               </h1>
 
               <p className="max-w-2xl mx-auto text-lg sm:text-xl text-slate-200/90 leading-relaxed">
-                {t('landing.hero.lead')}
+                {primaryBenchmark
+                  ? t('landing.hero.lead', {
+                      before: num(primaryBenchmark.before.worstEscapeSec.toFixed(0)),
+                      after: num(primaryBenchmark.after.worstEscapeSec.toFixed(0)),
+                    })
+                  : t('landing.hero.lead', { before: '55', after: '37' })}
               </p>
 
               <div className="pt-2 flex flex-wrap items-center justify-center gap-4">
+                {primaryBenchmark ? (
+                  <button
+                    type="button"
+                    onClick={() => onOpenSample(primaryBenchmark.sample, 'report')}
+                    className="inline-flex items-center gap-2 px-6 py-3.5 text-base font-semibold text-[#0A1324] bg-white hover:bg-blue-50 rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white whitespace-nowrap shrink-0 shadow-sm"
+                  >
+                    <FileCheck2 className="w-4 h-4 text-[#2563EB]" />
+                    {t('landing.hero.upload')}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onGoToUpload}
+                    className="inline-flex items-center gap-2 px-6 py-3.5 text-base font-semibold text-[#0A1324] bg-white hover:bg-blue-50 rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white whitespace-nowrap shrink-0 shadow-sm"
+                  >
+                    <Upload className="w-4 h-4 text-[#2563EB]" />
+                    {t('landing.hero.upload')}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={onGoToUpload}
-                  className="inline-flex items-center gap-2 px-6 py-3.5 text-base font-semibold text-[#0A1324] bg-white hover:bg-blue-50 rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white whitespace-nowrap shrink-0 shadow-sm"
-                >
-                  <Upload className="w-4 h-4 text-[#2563EB]" />
-                  {t('landing.hero.upload')}
-                </button>
-                <button
-                  type="button"
-                  onClick={onGoToPermits}
                   className="inline-flex items-center gap-2 px-5 py-3.5 text-base font-semibold text-white bg-white/10 border border-white/20 hover:bg-white/15 rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 backdrop-blur-xs"
                 >
-                  <FileWarning className="w-4 h-4 text-[#60A5FA]" />
-                  {t('landing.hero.tag3')}
+                  <Upload className="w-4 h-4 text-white/70" />
+                  {t('nav.upload')}
                 </button>
               </div>
             </div>
@@ -363,7 +378,9 @@ export function LandingPage({
             <div className="p-5 sm:p-6">
               <div className="text-sm text-[#12111A]/60">{t('landing.stat4.label')}</div>
               <div className="mt-1 font-display text-3xl font-bold tabular-nums text-[#12111A]">
-                R12–R2018
+                {primaryBenchmark
+                  ? `${primaryBenchmark.before.worstEscapeSec.toFixed(0)} → ${primaryBenchmark.after.worstEscapeSec.toFixed(0)} s`
+                  : '55 → 37 s'}
               </div>
               <div className="mt-1 text-sm text-[#12111A]/60">
                 {t('landing.stat4.note')}
@@ -373,7 +390,142 @@ export function LandingPage({
         </div>
       </section>
 
-      {/* 2. Step-by-Step Process Section: How Teams Use DrawFix Ai */}
+      {/* 1b. Showcase: Three things to try */}
+      <section className="bg-white py-16 sm:py-20 lg:py-24 px-4 sm:px-8 border-t border-[#12111A]/[0.06]">
+        <div className="max-w-[1180px] mx-auto space-y-10">
+          <div className="max-w-2xl space-y-2">
+            <div className="text-sm font-mono font-semibold text-[#2563EB]">
+              {t('landing.show.kicker')}
+            </div>
+            <h2 className="font-display text-[clamp(2.1rem,3.8vw,3.25rem)] font-bold tracking-[-0.03em] leading-[1.08] text-[#12111A]">
+              {t('landing.show.title1')}{' '}
+              <span className="text-[#2563EB]">{t('landing.show.title2')}</span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            {/* Panel 1: Failure replay */}
+            <div className="bg-[#0A1324] text-white rounded-3xl p-7 sm:p-8 flex flex-col space-y-5">
+              <div>
+                <div className="text-xs font-mono font-semibold text-[#60A5FA] mb-3">
+                  {t('landing.show.replay.kicker')}
+                </div>
+                <h3 className="font-display text-xl font-bold tracking-tight text-white">
+                  {t('landing.show.replay.title')}
+                </h3>
+              </div>
+
+              <div className="flex-1 space-y-3">
+                <div className="flex items-start gap-3 p-3 bg-red-500/15 rounded-xl border border-red-500/25">
+                  <span className="mt-0.5 text-red-400 shrink-0 text-lg leading-none">✕</span>
+                  <div>
+                    <div className="text-sm font-semibold text-red-300">Exit padlocked — no route</div>
+                    <div className="text-xs text-white/60 mt-0.5">Bailey Road 2024 scenario · 1 of 3 failures</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-red-500/15 rounded-xl border border-red-500/25">
+                  <span className="mt-0.5 text-red-400 shrink-0 text-lg leading-none">✕</span>
+                  <div>
+                    <div className="text-sm font-semibold text-red-300">1 staircase — BNBC requires 2</div>
+                    <div className="text-xs text-white/60 mt-0.5">3-storey · occupant load exceeded</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-amber-500/15 rounded-xl border border-amber-500/25">
+                  <span className="mt-0.5 text-amber-400 shrink-0 text-lg leading-none">!</span>
+                  <div>
+                    <div className="text-sm font-semibold text-amber-300">Travel distance 23.4 m — limit 22.5 m</div>
+                    <div className="text-xs text-white/60 mt-0.5">BNBC 2012 Part 3, Sec 1.13.8.2</div>
+                  </div>
+                </div>
+              </div>
+
+              {primaryBenchmark && (
+                <button
+                  type="button"
+                  onClick={() => onOpenSample(primaryBenchmark.sample, 'report')}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-[#0A1324] bg-white hover:bg-blue-50 rounded-lg transition-colors cursor-pointer whitespace-nowrap self-start"
+                >
+                  Open demo in report view
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Panel 2: AI trace */}
+            <div className="bg-[#F4F5F7] rounded-3xl p-7 sm:p-8 flex flex-col space-y-5">
+              <div>
+                <div className="text-xs font-mono font-semibold text-[#2563EB] mb-3">
+                  {t('landing.show.trace.kicker')}
+                </div>
+                <h3 className="font-display text-xl font-bold tracking-tight text-[#12111A]">
+                  {t('landing.show.trace.title')}
+                </h3>
+              </div>
+
+              <div className="flex-1 space-y-2">
+                <div className="p-3 bg-white rounded-xl border border-[#12111A]/[0.07] space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-[#2563EB] text-white text-[10px] font-bold flex items-center justify-center shrink-0">1</span>
+                    <span className="text-xs font-semibold text-[#2563EB]">Layout search proposes</span>
+                  </div>
+                  <p className="text-sm text-[#12111A]/80 pl-7">Add exit door, north wall, midpoint, 1.2 m wide</p>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-[#12111A]/[0.07] space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0">2</span>
+                    <span className="text-xs font-semibold text-emerald-700">Code re-checks</span>
+                  </div>
+                  <p className="text-sm text-[#12111A]/80 pl-7">Travel drops 23.4 m → 15.7 m. Finding cleared. No new failure.</p>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-[#12111A]/[0.07] space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-[#12111A] text-white text-[10px] font-bold flex items-center justify-center shrink-0">3</span>
+                    <span className="text-xs font-semibold text-[#12111A]">You decide</span>
+                  </div>
+                  <p className="text-sm text-[#12111A]/80 pl-7">Approve or skip each proposed change before anything is applied.</p>
+                </div>
+              </div>
+
+              <p className="text-xs text-[#12111A]/50 leading-relaxed">
+                Every measurement comes from the rule engine. The layout search never states a number of its own.
+              </p>
+            </div>
+
+            {/* Panel 3: Bilingual report */}
+            <div className="bg-white border border-[#12111A]/[0.08] rounded-3xl p-7 sm:p-8 flex flex-col space-y-5">
+              <div>
+                <div className="text-xs font-mono font-semibold text-[#2563EB] mb-3">
+                  {t('landing.show.bi.kicker')}
+                </div>
+                <h3 className="font-display text-xl font-bold tracking-tight text-[#12111A]">
+                  {t('landing.show.bi.title')}
+                </h3>
+              </div>
+
+              <div className="flex-1 space-y-3">
+                <div className="p-4 bg-[#F4F5F7] rounded-xl border border-[#12111A]/[0.06]">
+                  <div className="text-[11px] font-mono text-[#12111A]/45 mb-2 uppercase tracking-wider">English</div>
+                  <div className="font-semibold text-[#12111A] text-sm">Travel distance exceeds limit</div>
+                  <div className="text-sm text-[#12111A]/70 mt-1">Measured: 23.4 m · Limit: 22.5 m</div>
+                  <div className="text-xs text-[#12111A]/50 mt-1">BNBC 2012, Part 3, Sec 1.13.8.2</div>
+                </div>
+                <div className="p-4 bg-[#F4F5F7] rounded-xl border border-[#12111A]/[0.06]" style={{ fontFamily: "'Noto Sans Bengali', sans-serif" }}>
+                  <div className="text-[11px] font-mono text-[#12111A]/45 mb-2 uppercase tracking-wider">বাংলা</div>
+                  <div className="font-semibold text-[#12111A] text-sm">ভ্রমণ দূরত্ব সীমা ছাড়িয়েছে</div>
+                  <div className="text-sm text-[#12111A]/70 mt-1">মাপা: ২৩.৪ মিটার · সীমা: ২২.৫ মিটার</div>
+                  <div className="text-xs text-[#12111A]/50 mt-1">বিএনবিসি ২০১২, খণ্ড ৩, অনুচ্ছেদ ১.১৩.৮.২</div>
+                </div>
+              </div>
+
+              <p className="text-xs text-[#12111A]/50 leading-relaxed">
+                Every number is the same in both languages—the rule engine measures once.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 2. Step-by-Step Process Section: How Teams Use DrawFix AI */}
       <section
         id="process"
         className="scroll-mt-20 bg-[#F4F5F7] py-16 sm:py-20 lg:py-24 px-4 sm:px-8 border-t border-[#12111A]/[0.06]"
@@ -713,7 +865,7 @@ export function LandingPage({
               <DrawFixLogo size={56} />
               <div className="space-y-1">
                 <div className="font-display font-bold text-xl tracking-tight text-white">
-                  DrawFix Ai
+                  DrawFix AI
                 </div>
                 <p className="text-sm text-slate-400 max-w-sm">
                   {t('landing.footer.tagline')}
@@ -758,7 +910,7 @@ export function LandingPage({
           className="max-w-[1280px] mx-auto px-4 sm:px-8 pt-4 overflow-hidden select-none"
         >
           <div className="font-display font-bold text-[clamp(4.25rem,17.5vw,15rem)] leading-[0.8] tracking-[-0.045em] text-center whitespace-nowrap bg-gradient-to-b from-white/[0.17] via-white/[0.09] to-transparent bg-clip-text text-transparent translate-y-[8%]">
-            DrawFix Ai
+            DrawFix AI
           </div>
         </div>
       </footer>

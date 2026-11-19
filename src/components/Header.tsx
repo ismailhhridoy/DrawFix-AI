@@ -39,15 +39,15 @@ export function Header({
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-[#12111A]/[0.08] px-4 sm:px-8 h-[80px] flex items-center justify-between gap-8">
+    <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-[#12111A]/[0.08] px-4 sm:px-8 h-[80px] flex items-center justify-between gap-4 sm:gap-8 overflow-hidden">
       {/* Zone 1: Prominent Animated Brand Mark + Single-Line Wordmark */}
       <button
         type="button"
         onClick={() => onSelectStep('landing')}
-        className="inline-flex items-center gap-3.5 font-display text-2xl sm:text-[1.65rem] font-extrabold tracking-tight text-[#12111A] whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2563EB]"
+        className="inline-flex items-center gap-3 sm:gap-3.5 font-display text-xl sm:text-[1.65rem] font-extrabold tracking-tight text-[#12111A] whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2563EB]"
       >
-        <DrawFixLogo size={54} />
-        <span>DrawFix Ai</span>
+        <DrawFixLogo size={44} />
+        <span>DrawFix AI</span>
       </button>
 
       {/* Zone 2: Concise single-line navigation links */}
