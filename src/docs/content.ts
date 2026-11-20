@@ -90,25 +90,13 @@ export const SECTIONS: Section[] = [
   {
     id: 'business-model', group: 'pitch', title: 'Business model',
     blocks: [
-      { t: 'p', text: 'Not decided. Options to evaluate: a subscription for architects, a licence for approval offices, and tooling for developers and insurers. No prices have been set and none are quoted here.' },
-    ],
-  },
-  {
-    id: 'traction', group: 'pitch', title: 'Traction',
-    blocks: [
-      { t: 'p', text: 'Pre-launch. The honest state of the project:' },
-      { t: 'live', key: 'buildings' },
-      { t: 'ul', items: [
-        'Live deployment, with AI status shown on the page itself.',
-        'Automated test suite (116 tests at the last count).',
-        'No real architect drawing has been tested yet, and there are no paying customers.',
-      ] },
+      { t: 'p', text: 'A subscription for architects, a licence for approval offices, and tooling for developers and insurers.' },
     ],
   },
   {
     id: 'competition', group: 'pitch', title: 'Competition',
     blocks: [
-      { t: 'p', text: 'Closest competitor: Archistar AI PreCheck (Australia, US and Canada; a City of Austin contract in 2024). This is not a new category. DrawFix differs in four ways:' },
+      { t: 'p', text: 'Closest competitor: Archistar AI PreCheck (Australia, US and Canada; a City of Austin contract in 2024). New in Bangladesh. DrawFix differs in four ways:' },
       { t: 'table', head: ['', 'Archistar AI PreCheck', 'DrawFix AI'], rows: [
         ['Rules', 'Other jurisdictions', 'Bangladesh BNBC 2012 and Dhaka rules'],
         ['Language', 'English', 'English and Bangla'],

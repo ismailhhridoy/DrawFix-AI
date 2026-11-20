@@ -35,7 +35,7 @@ export const FEATURES: FeatureItem[] = [
   { id: 'real-dxf', area: 'Validation', name: 'Test on a real architect\'s DXF', status: 'planned', needsAi: false },
   { id: 'bangla-review', area: 'Validation', name: 'Native Bangla review of all building-code wording', status: 'planned', needsAi: false },
   { id: 'clause-verify', area: 'Validation', name: 'Verify screening limits against the gazette text', status: 'planned', needsAi: false },
-  { id: 'mobile', area: 'UI', name: 'Full mobile layout pass', status: 'planned', needsAi: false },
+  { id: 'mobile', area: 'UI', name: 'Full mobile layout pass', status: 'shipped', needsAi: false },
 ];
 
 export const WORKSPACE_STEPS = ['Upload', 'Review', 'Report', 'Fixes', '3D view', 'Export'];
