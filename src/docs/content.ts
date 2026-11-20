@@ -90,7 +90,7 @@ export const SECTIONS: Section[] = [
   {
     id: 'competition', group: 'pitch', title: 'Competition',
     blocks: [
-      { t: 'p', text: 'Closest competitor: Archistar AI PreCheck (Australia, US and Canada; a City of Austin contract in 2024). This is not a new category. DrawFix differs in four ways:' },
+      { t: 'p', text: 'Closest competitor: Archistar AI PreCheck (Australia, US and Canada; a City of Austin contract in 2024). New in Bangladesh. DrawFix differs in four ways:' },
       { t: 'table', head: ['', 'Archistar AI PreCheck', 'DrawFix AI'], rows: [
         ['Rules', 'Other jurisdictions', 'Bangladesh BNBC 2012 and Dhaka rules'],
         ['Language', 'English', 'English and Bangla'],
