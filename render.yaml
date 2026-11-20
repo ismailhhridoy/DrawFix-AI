@@ -11,3 +11,7 @@ services:
         value: 22
       - key: GEMINI_API_KEY
         sync: false # set in the Render dashboard; app works without it (template fallbacks)
+      - key: DOCS_ADMIN_TOKEN
+        sync: false # /docs admin: needed to change visibility; if unset, admin changes are disabled
+      - key: DOCS_VIEW_KEY
+        sync: false # /docs restricted mode: the key reviewers enter; if unset, restricted mode stays closed

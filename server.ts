@@ -10,6 +10,9 @@ import {
 import { glossaryPromptLines } from './src/i18n/glossary.ts';
 import { banglaNoteScore, expandBanglaQuery } from './src/engine/banglaText.ts';
 import { registerDesignRoutes } from './aiDesignRoutes.ts';
+import { resolveDocsAccess, safeEqual, validateDocsConfig } from './src/docs/access.ts';
+import { buildDocsPayload } from './src/docs/payload.ts';
+import { readDocsConfig, writeDocsConfig } from './src/docs/configStore.ts';
 
 /** Appended to every prompt that writes Bangla, so terms match the app's own Bangla. */
 const BN_STYLE = ` In Bangla, use these terms exactly (English = Bangla): ${glossaryPromptLines()}. Write numbers with Bangla or Latin digits but never change a number. Keep clause numbers such as "Sec 1.13.8.2" in their original Latin form.`;
@@ -286,6 +289,48 @@ app.use('/api', (req, res, next) => {
 });
 
 registerDesignRoutes(app, { getGeminiClient, generateJson });
+
+// /docs: access is decided here, on the server, before any content is sent.
+const commitShort = () => (process.env.RENDER_GIT_COMMIT || '').slice(0, 7) || null;
+const docsKeyOf = (req: express.Request): string | undefined => {
+  const header = req.get('x-docs-key');
+  if (header) return header;
+  return typeof req.query.key === 'string' ? req.query.key : undefined;
+};
+app.get('/api/docs/access', (req, res) => {
+  const access = resolveDocsAccess(readDocsConfig(), new Date(), docsKeyOf(req), process.env.DOCS_VIEW_KEY);
+  res.set('Cache-Control', 'no-store').json(access);
+});
+app.get('/api/docs/payload', (req, res) => {
+  const access = resolveDocsAccess(readDocsConfig(), new Date(), docsKeyOf(req), process.env.DOCS_VIEW_KEY);
+  if (access.state !== 'open') {
+    res.status(403).set('Cache-Control', 'no-store').json(access);
+    return;
+  }
+  res.set('Cache-Control', 'private, max-age=60');
+  res.json(buildDocsPayload({ commit: commitShort(), aiConfigured: Boolean(getGeminiClient()) }));
+});
+// Admin: change visibility. Needs DOCS_ADMIN_TOKEN in the server environment; disabled when it is unset.
+app.put('/api/docs/config', (req, res) => {
+  const token = process.env.DOCS_ADMIN_TOKEN;
+  if (!token) {
+    res.status(503).json({ error: 'Docs admin is disabled: DOCS_ADMIN_TOKEN is not set on the server.' });
+    return;
+  }
+  const auth = req.get('authorization') || '';
+  const given = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  if (!given || !safeEqual(given, token)) {
+    res.status(401).json({ error: 'Unauthorized.' });
+    return;
+  }
+  const checked = validateDocsConfig(req.body, new Date().toISOString());
+  if (!checked.ok) {
+    res.status(400).json({ error: checked.error });
+    return;
+  }
+  writeDocsConfig(checked.value);
+  res.json(checked.value);
+});
 
 // Tells the interface whether the language model is available, so it never claims AI that is not running.
 app.get('/api/health', (_req, res) => {

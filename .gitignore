@@ -4,5 +4,7 @@ dist/
 coverage/
 .DS_Store
 *.log
+# runtime settings written by the /docs admin endpoint (keep local; never commit)
+data/
 .env*
 !.env.example

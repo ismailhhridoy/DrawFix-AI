@@ -88,6 +88,31 @@ npm test                 # 116 tests (engine, hand-checked plan, permits, server
 `GEMINI_API_KEY` (optional). Health check path: `/api/health`. Free instances sleep after about
 15 minutes idle (about a minute to wake), so open the URL before a demo.
 
+## /docs (pitch, technical documentation and live status)
+
+Open `/docs` on the site. The page is built from `src/docs/`:
+
+- `content.ts` holds every section as plain data. Edit text there; the Markdown download is generated from it.
+- `features.ts` holds the feature matrix status. Counts and "works without AI" are computed on the server.
+- `team.ts` holds team members. Photos go in `public/team/`; a missing photo shows initials.
+- `diagrams.ts` holds the architecture and data-flow diagrams as data.
+
+Access is off by default. The admin changes it with the server environment variables `DOCS_ADMIN_TOKEN`
+and `DOCS_VIEW_KEY`:
+
+```bash
+curl -X PUT https://YOUR-SITE/api/docs/config \
+  -H "Authorization: Bearer $DOCS_ADMIN_TOKEN" -H "Content-Type: application/json" \
+  -d '{"mode":"scheduled","from":"2026-11-20T00:00:00+06:00","to":"2026-11-21T23:59:00+06:00"}'
+```
+
+Modes: `off`, `public`, `scheduled` (between `from` and `to`), `restricted` (needs the view key, passed as
+`?key=` or the `X-Docs-Key` header). Previous settings are kept in `data/docs-history.json`. On Render's free
+tier the disk is not permanent, so a change made through the API can be lost on a restart. Re-apply it after a
+restart, and check `/api/docs/access` before a demo. `data/` is git-ignored, so the setting is not committed.
+
+Not built yet: an in-page WYSIWYG editor, drag-to-reorder, and versioned content. Edits are made in the files above.
+
 ## Known limits
 
 - Synthetic demo plans only; no real Bangladeshi architect DXF has been tested yet.
