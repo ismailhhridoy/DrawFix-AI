@@ -303,9 +303,8 @@ function LiveBlock({ k, data }: { k: 'rules' | 'buildings' | 'ai' | 'steps'; dat
   }
   if (k === 'ai') {
     return (
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-1">
         <Stat label="AI status" value={l.aiConfigured ? 'On' : 'Off'} sub={l.aiConfigured ? 'Gemini key is configured on the server' : 'Fixed wording and hand-written fixes are used'} />
-        <Stat label="Works without AI" value={`${l.features.filter((f) => !f.needsAi).length} of ${l.features.length}`} sub="features that do not need the model" />
       </div>
     );
   }
