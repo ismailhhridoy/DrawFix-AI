@@ -5,8 +5,14 @@ const at = (iso: string) => new Date(iso);
 const sched = { mode: 'scheduled' as const, from: '2026-11-20T00:00:00.000Z', to: '2026-11-21T00:00:00.000Z', updatedAt: null };
 
 describe('resolveDocsAccess', () => {
-  it('is closed by default', () => {
-    expect(resolveDocsAccess(DEFAULT_DOCS_CONFIG, at('2026-11-20T12:00:00Z'), undefined, 'k')).toEqual({
+  it('is public by default', () => {
+    expect(DEFAULT_DOCS_CONFIG.mode).toBe('public');
+    expect(resolveDocsAccess(DEFAULT_DOCS_CONFIG, at('2026-11-20T12:00:00Z'), undefined, 'k')).toEqual({ state: 'open' });
+  });
+
+  it('stays closed when an admin sets off', () => {
+    const cfg = { ...DEFAULT_DOCS_CONFIG, mode: 'off' as const };
+    expect(resolveDocsAccess(cfg, at('2026-11-20T12:00:00Z'), undefined, undefined)).toEqual({
       state: 'closed',
       reason: 'off',
       opensAt: null,

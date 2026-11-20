@@ -254,7 +254,7 @@ export const SECTIONS: Section[] = [
       { t: 'ul', items: [
         'Drawings are parsed in the browser. The server keeps no uploaded files.',
         'Rate limit: 40 requests per minute per IP on AI endpoints.',
-        '/docs access: off by default; public, scheduled or key-protected. Key checks run in constant time. Restricted mode fails closed when no key is set.',
+        '/docs access: public by default; an admin can switch it off, schedule it, or key-protect it. Key checks run in constant time. Restricted mode fails closed when no key is set.',
         'Admin token: required to change /docs settings. Stored only in the server environment.',
         'No Content-Security-Policy header is set yet.',
       ] },

@@ -97,7 +97,7 @@ Open `/docs` on the site. The page is built from `src/docs/`:
 - `team.ts` holds team members. Photos go in `public/team/`; a missing photo shows initials.
 - `diagrams.ts` holds the architecture and data-flow diagrams as data.
 
-Access is off by default. The admin changes it with the server environment variables `DOCS_ADMIN_TOKEN`
+Access is public by default. The admin can change it with the server environment variables `DOCS_ADMIN_TOKEN`
 and `DOCS_VIEW_KEY`:
 
 ```bash

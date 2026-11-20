@@ -20,7 +20,8 @@ export type DocsAccess =
   | { state: 'locked' }
   | { state: 'closed'; reason: 'off' | 'unscheduled' | 'not-yet' | 'ended'; opensAt: string | null };
 
-export const DEFAULT_DOCS_CONFIG: DocsConfig = { mode: 'off', from: null, to: null, updatedAt: null };
+// Public by default. An admin can still close it or schedule it with DOCS_ADMIN_TOKEN.
+export const DEFAULT_DOCS_CONFIG: DocsConfig = { mode: 'public', from: null, to: null, updatedAt: null };
 
 const MODES: DocsMode[] = ['off', 'public', 'scheduled', 'restricted'];
 
