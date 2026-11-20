@@ -77,7 +77,7 @@ npm install
 cp .env.example .env     # optional: add GEMINI_API_KEY (https://aistudio.google.com/apikey)
 npm run dev              # http://localhost:3000
 npm run lint             # type-check
-npm test                 # 94 tests (engine, hand-checked plan, permits, server, Bangla)
+npm test                 # 116 tests (engine, hand-checked plan, permits, server, Bangla, AI verifier, versions)
 ```
 
 `GET /api/health` shows whether Gemini is configured and which model is in use.

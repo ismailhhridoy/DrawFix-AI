@@ -72,7 +72,7 @@ npm install
 cp .env.example .env         # optional: add GEMINI_API_KEY (server reads .env only)
 npm run dev                  # http://localhost:3000
 npx tsc --noEmit             # type-check
-npm test                     # vitest: 94 tests in tests/ (engine, hand-checked plan, permits, server, Bangla)
+npm test                     # vitest: 116 tests in tests/ (engine, hand-checked plan, permits, server, Bangla)
 npx vite build               # production build
 ```
 
@@ -350,6 +350,7 @@ and take away a Bangla report, without any number changing between languages.
 
 ## Update log (add a line every time work is done; newest first)
 
+- 2026-11-20: Submission recheck: README and this file said 94 tests; corrected to 116 (tsc and all 116 tests pass on main 9519215).
 - 2026-11-20: Dashboard usability pass at Ismail's request (all 7 items approved). Step bar shows ticks for opened steps and "Step N of 6"; header button is "Next: <step>" ("Check another plan" on Export); Permit desk moved out of the numbered steps (unnumbered link after a divider) and opens on the checklist tab. Report: plain summary card + "See how to fix them" first, version tracking/triage/capacity tiles moved under "More details" at the bottom; plain labels ("Ask about a rule", "Why it fails and what to do"). Fixes: KPIs and change list first, AI panel below and neutral (purple removed, blue buttons only), empty trace/approval columns hidden. Review: 3-point check line, confidence badge instead of long "Why" text (reason on hover), plot data moved down, sticky "Run the checks" bar. Upload/Permit/Export copy rewritten; each export button has a one-line note; role toggle explained. Mobile step bar now uses translated labels; header button hidden on phones (step bar covers it). Every new string has a Bangla entry (machine draft, still needs native review). 116 tests pass.
 - 2026-11-20: Added a favicon from the DrawFix logo mark (static, no animation): `public/favicon.svg`, `favicon-32.png`, `apple-touch-icon.png` (180 px), linked in `index.html`.
 - 2026-11-20: Removed the landing hero sentence "On the demo building below, fixing the locked exit and missing stair cuts the slowest escape from 55 s to 37 s" (EN and BN) at Ismail's request. The stat tile "Slowest escape, demo building" stays. 116 tests pass.
