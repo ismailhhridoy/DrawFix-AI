@@ -88,18 +88,6 @@ export const SECTIONS: Section[] = [
     ],
   },
   {
-    id: 'traction', group: 'pitch', title: 'Traction',
-    blocks: [
-      { t: 'p', text: 'Pre-launch. The honest state of the project:' },
-      { t: 'live', key: 'buildings' },
-      { t: 'ul', items: [
-        'Live deployment, with AI status shown on the page itself.',
-        'Automated test suite (116 tests at the last count).',
-        'No real architect drawing has been tested yet, and there are no paying customers.',
-      ] },
-    ],
-  },
-  {
     id: 'competition', group: 'pitch', title: 'Competition',
     blocks: [
       { t: 'p', text: 'Closest competitor: Archistar AI PreCheck (Australia, US and Canada; a City of Austin contract in 2024). This is not a new category. DrawFix differs in four ways:' },
