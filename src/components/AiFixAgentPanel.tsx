@@ -126,15 +126,16 @@ export function AiFixAgentPanel({ project, baseAudit, approved, onApprove, onCle
   };
 
   const nChecked = staged.filter((s) => checked[s.tryId]).length;
+  const hasActivity = running || steps.length > 0 || staged.length > 0;
 
   return (
-    <section className="bg-white border border-violet-200 rounded-xl shadow-xs overflow-hidden">
-      <div className="px-5 py-4 border-b border-violet-100 bg-violet-50/60 flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <section className="bg-white border border-slate-200/90 rounded-xl shadow-xs overflow-hidden">
+      <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <Bot className="w-4 h-4 text-violet-700" aria-hidden="true" />
+            <Bot className="w-4 h-4 text-slate-700" aria-hidden="true" />
             <h2 className="font-display text-base font-bold text-slate-900">{t('agent.title')}</h2>
-            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border border-violet-200 bg-white text-violet-800">{t('agent.rule')}</span>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border border-slate-200 bg-white text-slate-700">{t('agent.rule')}</span>
           </div>
           <p className="text-xs text-slate-600 max-w-3xl">{t('agent.lead')}</p>
         </div>
@@ -148,7 +149,7 @@ export function AiFixAgentPanel({ project, baseAudit, approved, onApprove, onCle
             type="button"
             disabled={running}
             onClick={() => void startAgent()}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-violet-700 hover:bg-violet-800 disabled:opacity-60 rounded-lg cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 disabled:opacity-60 rounded-lg cursor-pointer"
           >
             {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
             {running ? t('agent.running', { n: steps.length + 1 }) : t('agent.run')}
@@ -169,9 +170,10 @@ export function AiFixAgentPanel({ project, baseAudit, approved, onApprove, onCle
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 lg:divide-x divide-violet-100">
+      <div className={`grid grid-cols-1 ${hasActivity ? 'lg:grid-cols-2' : ''} gap-0 lg:divide-x divide-slate-200`}>
         {/* Trace */}
         <div className="p-5 space-y-3 min-w-0">
+          {hasActivity && (
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-semibold text-slate-900">{t('agent.trace')}</h3>
             {run && (
@@ -180,7 +182,7 @@ export function AiFixAgentPanel({ project, baseAudit, approved, onApprove, onCle
               </span>
             )}
           </div>
-          {steps.length === 0 && !running && <p className="text-xs text-slate-500">—</p>}
+          )}
           <ol className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
             {steps.map((s) => {
               const sum = stepSummary(s);
@@ -194,7 +196,7 @@ export function AiFixAgentPanel({ project, baseAudit, approved, onApprove, onCle
                   </div>
                   {s.thought && (
                     <div className="text-slate-600">
-                      <span className="text-violet-700 font-semibold">{t('agent.note')}:</span> {s.thought}
+                      <span className="text-slate-700 font-semibold">{t('agent.note')}:</span> {s.thought}
                     </div>
                   )}
                   <div className="text-slate-800">
@@ -207,7 +209,7 @@ export function AiFixAgentPanel({ project, baseAudit, approved, onApprove, onCle
           {run && <p className="text-[11px] text-slate-500">{t('agent.stopped')}: {run.stoppedBecause}</p>}
 
           {/* Feature 1 on its own: options for one finding */}
-          <div className="pt-3 border-t border-slate-200 space-y-2">
+          <div className={`space-y-2 ${hasActivity ? 'pt-3 border-t border-slate-200' : ''}`}>
             <h3 className="text-xs font-semibold text-slate-900">{t('agent.options')}</h3>
             <div className="flex flex-col sm:flex-row gap-2">
               <select value={pick} onChange={(e) => { setPick(e.target.value); setOptions(null); }} className="flex-1 min-w-0 text-xs border border-slate-300 rounded-lg px-2 py-1.5 bg-white">
@@ -218,7 +220,7 @@ export function AiFixAgentPanel({ project, baseAudit, approved, onApprove, onCle
                   </option>
                 ))}
               </select>
-              <button type="button" disabled={!pick || asking || !ai.aiConfigured} onClick={() => void askOptions()} className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-violet-300 text-violet-800 bg-white hover:bg-violet-50 disabled:opacity-50 cursor-pointer">
+              <button type="button" disabled={!pick || asking || !ai.aiConfigured} onClick={() => void askOptions()} className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-blue-300 text-blue-800 bg-white hover:bg-blue-50 disabled:opacity-50 cursor-pointer">
                 {t('agent.ask')}
               </button>
             </div>
@@ -255,7 +257,8 @@ export function AiFixAgentPanel({ project, baseAudit, approved, onApprove, onCle
           </div>
         </div>
 
-        {/* Approval gate */}
+        {/* Approval gate: shown once there is something to approve or a search has run */}
+        {hasActivity && (
         <div className="p-5 space-y-3 min-w-0">
           <h3 className="text-xs font-semibold text-slate-900">{t('agent.staged')}</h3>
           {staged.length === 0 && <p className="text-xs text-slate-500">{t('agent.noneStaged')}</p>}
@@ -284,6 +287,7 @@ export function AiFixAgentPanel({ project, baseAudit, approved, onApprove, onCle
             <CheckCircle2 className="w-3.5 h-3.5" /> {t('agent.approve', { n: nChecked })}
           </button>
         </div>
+        )}
       </div>
     </section>
   );

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { Header } from './components/Header';
+import { Header, WORKSPACE_STEPS } from './components/Header';
 import { LangScope, useLang } from './i18n';
 import { LandingPage } from './components/LandingPage';
 import { StepUpload } from './components/StepUpload';
@@ -67,8 +67,12 @@ function inferFloorSortRank(fileName: string, fallbackIndex: number): {
 }
 
 export default function App() {
-  const { t } = useLang();
+  const { t, num } = useLang();
   const [activeStep, setActiveStep] = useState<AppStep>('landing');
+  const [visitedSteps, setVisitedSteps] = useState<AppStep[]>([]);
+  useEffect(() => {
+    setVisitedSteps((prev) => (prev.includes(activeStep) ? prev : [...prev, activeStep]));
+  }, [activeStep]);
   const [reviewerRole, setReviewerRole] = useState<ReviewerRole>('architect');
   const [project, setProject] = useState<BuildingProject | null>(null);
   const [selectedFloorIndex, setSelectedFloorIndex] = useState<number>(0);
@@ -203,6 +207,7 @@ export default function App() {
       setAiNarration(null);
       setAiApproved(null);
       setAiLabelSource('heuristic');
+      setVisitedSteps(nextStep === 'landing' ? [] : ['upload']);
       setActiveStep(nextStep);
       void runAiLabels(nextProject);
       if (nextStep === 'report') {
@@ -568,6 +573,26 @@ export default function App() {
     }
   };
 
+  /** Open a step, starting the AI wording it needs (same as clicking it in the step bar). */
+  const goToStep = (step: AppStep) => {
+    setActiveStep(step);
+    if (step === 'report' && baseAudit && Object.keys(explanations).length === 0) {
+      void runAiExplanations(baseAudit);
+    }
+    if (step === 'compare' && project && baseAudit && remediation && !aiNarration) {
+      void runAiNarration(project, baseAudit, remediation.fixedAudit, remediation.deltas);
+    }
+  };
+
+  // The header button always offers the next step of the flow.
+  const flowIndex = WORKSPACE_STEPS.findIndex((s) => s.id === activeStep);
+  const nextStep: AppStep | null =
+    activeStep === 'permits'
+      ? 'report'
+      : flowIndex >= 0 && flowIndex < WORKSPACE_STEPS.length - 1
+        ? WORKSPACE_STEPS[flowIndex + 1].id
+        : null;
+
   const handleHeaderPrimary = () => {
     if (activeStep === 'landing') {
       setActiveStep('upload');
@@ -576,11 +601,17 @@ export default function App() {
     if (!project) {
       const s = SAMPLE_BUILDINGS[0];
       handleLoadSampleBuilding(s);
-    } else if (activeStep === 'export') {
-      setActiveStep('simulate');
-    } else {
-      setActiveStep('export');
+      return;
     }
+    if (activeStep === 'review') {
+      handleConfirmAndAudit();
+      return;
+    }
+    if (activeStep === 'report') {
+      handleProceedToCompare();
+      return;
+    }
+    goToStep(nextStep ?? 'upload');
   };
 
   const shareUrl = useMemo(() => {
@@ -594,14 +625,17 @@ export default function App() {
     return `${base}?plan=${planParam}&step=simulate&mode=${simMode}${floorQuery}${roomQuery}`;
   }, [project, simMode, simRoomId, simFloorFocus]);
 
+  const nextLabel = nextStep
+    ? t(WORKSPACE_STEPS.find((s) => s.id === nextStep)?.label ?? 'nav.report')
+    : null;
   const primaryLabel =
     activeStep === 'landing'
       ? t('app.primary.start')
       : !project
         ? t('app.primary.loadSample')
-        : activeStep === 'export'
-          ? t('app.primary.open3d')
-          : t('app.primary.export');
+        : nextLabel
+          ? t('app.primary.next', { step: nextLabel })
+          : t('app.primary.newPlan');
 
   const safeFloorIdx = project
     ? Math.max(0, Math.min(selectedFloorIndex, project.floors.length - 1))
@@ -613,20 +647,8 @@ export default function App() {
       <Header
         activeStep={activeStep}
         hasPlan={Boolean(project)}
-        onSelectStep={(step) => {
-          setActiveStep(step);
-          if (step === 'report' && baseAudit && Object.keys(explanations).length === 0) {
-            void runAiExplanations(baseAudit);
-          }
-          if (step === 'compare' && project && baseAudit && remediation && !aiNarration) {
-            void runAiNarration(
-              project,
-              baseAudit,
-              remediation.fixedAudit,
-              remediation.deltas
-            );
-          }
-        }}
+        visitedSteps={visitedSteps}
+        onSelectStep={goToStep}
         onPrimaryAction={handleHeaderPrimary}
         primaryActionLabel={primaryLabel}
       />
@@ -634,21 +656,11 @@ export default function App() {
       {/* Mobile compact step bar (workspace only) */}
       {project && activeStep !== 'landing' && (
         <div className="md:hidden bg-white border-b border-slate-200 px-4 py-2 flex items-center gap-4 overflow-x-auto text-xs">
-          {(
-            [
-              ['upload', '01 Upload'],
-              ['review', '02 Review'],
-              ['report', '03 Report'],
-              ['compare', '04 Fixes'],
-              ['simulate', '05 3D'],
-              ['permits', '06 Permits'],
-              ['export', '07 Export'],
-            ] as const
-          ).map(([id, label]) => (
+          {[...WORKSPACE_STEPS.map((st, i) => [st.id, `${num(i + 1)} ${t(st.label)}`] as const), ['permits' as AppStep, t('nav.permits')] as const].map(([id, label]) => (
             <button
               key={id}
               type="button"
-              onClick={() => setActiveStep(id)}
+              onClick={() => goToStep(id)}
               className={`whitespace-nowrap shrink-0 cursor-pointer ${
                 activeStep === id
                   ? 'text-blue-700 font-semibold underline underline-offset-4'

@@ -6,24 +6,27 @@ import type { MsgKey } from '../i18n/en';
 interface HeaderProps {
   activeStep: AppStep;
   hasPlan: boolean;
+  /** Steps the person has already opened, shown with a tick. */
+  visitedSteps?: AppStep[];
   onSelectStep: (step: AppStep) => void;
   onPrimaryAction: () => void;
   primaryActionLabel: string;
 }
 
-const WORKSPACE_STEPS: { id: AppStep; label: MsgKey; alwaysEnabled?: boolean }[] = [
+/** The numbered review flow, in order. Permit desk is a separate tool, not a step. */
+export const WORKSPACE_STEPS: { id: AppStep; label: MsgKey; alwaysEnabled?: boolean }[] = [
   { id: 'upload', label: 'nav.upload', alwaysEnabled: true },
   { id: 'review', label: 'nav.review' },
   { id: 'report', label: 'nav.report' },
   { id: 'compare', label: 'nav.fixes' },
   { id: 'simulate', label: 'nav.3d' },
-  { id: 'permits', label: 'nav.permits', alwaysEnabled: true },
   { id: 'export', label: 'nav.export' },
 ];
 
 export function Header({
   activeStep,
   hasPlan,
+  visitedSteps = [],
   onSelectStep,
   onPrimaryAction,
   primaryActionLabel,
@@ -112,11 +115,13 @@ export function Header({
           {WORKSPACE_STEPS.map((step, index) => {
             const disabled = !hasPlan && !step.alwaysEnabled;
             const active = activeStep === step.id;
+            const done = !active && hasPlan && visitedSteps.includes(step.id);
             return (
               <button
                 key={step.id}
                 type="button"
                 disabled={disabled}
+                aria-current={active ? 'step' : undefined}
                 onClick={() => onSelectStep(step.id)}
                 className={`h-[80px] inline-flex items-center gap-1.5 border-b-2 transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2563EB] ${
                   active
@@ -126,13 +131,39 @@ export function Header({
                       : 'border-transparent text-[#12111A]/60 hover:text-[#12111A] hover:border-slate-300'
                 }`}
               >
-                <span className="font-mono text-[11px] text-slate-400 tabular-nums">
-                  {num(`0${index + 1}`)}
-                </span>
+                {done ? (
+                  <span
+                    aria-label={t('nav.done')}
+                    className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-600 text-white text-[10px] leading-none"
+                  >
+                    ✓
+                  </span>
+                ) : (
+                  <span
+                    className={`inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] leading-none tabular-nums ${
+                      active ? 'bg-[#12111A] text-white' : 'bg-slate-200 text-slate-500'
+                    }`}
+                  >
+                    {num(index + 1)}
+                  </span>
+                )}
                 <span>{t(step.label)}</span>
               </button>
             );
           })}
+          <span aria-hidden="true" className="h-6 w-px bg-slate-200 shrink-0" />
+          <button
+            type="button"
+            aria-current={activeStep === 'permits' ? 'page' : undefined}
+            onClick={() => onSelectStep('permits')}
+            className={`h-[80px] inline-flex items-center border-b-2 transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#2563EB] ${
+              activeStep === 'permits'
+                ? 'border-[#2563EB] text-[#12111A] font-semibold'
+                : 'border-transparent text-[#12111A]/60 hover:text-[#12111A] hover:border-slate-300'
+            }`}
+          >
+            {t('nav.permits')}
+          </button>
         </nav>
       )}
 
@@ -142,7 +173,7 @@ export function Header({
         <button
           type="button"
           onClick={onPrimaryAction}
-          className="px-5 py-2.5 text-sm font-semibold text-white bg-[#12111A] hover:bg-[#2563EB] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563EB]"
+          className={`${isLanding ? "" : "hidden sm:inline-flex "}px-5 py-2.5 text-sm font-semibold text-white bg-[#12111A] hover:bg-[#2563EB] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563EB]`}
         >
           {primaryActionLabel}
         </button>

@@ -88,9 +88,7 @@ export function StepCompare({
         </button>
       </div>
 
-      {agentPanel}
-
-      <p className={`text-xs font-semibold ${afterSource === 'ai' ? 'text-violet-800' : 'text-slate-600'}`}>
+      <p className={`text-xs font-semibold ${afterSource === 'ai' ? 'text-slate-900' : 'text-slate-600'}`}>
         {afterSource === 'ai' ? t('agent.compareSource.ai') : t('agent.compareSource.rules')}
       </p>
 
@@ -125,6 +123,59 @@ export function StepCompare({
           <div className="mt-1 font-mono text-lg font-semibold text-slate-900 tabular-nums">
             {num(deltas.length)}
           </div>
+        </div>
+      </div>
+
+      {/* AI Fix Narration + Deterministic Change Ledger */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-3">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+            <div className="inline-flex items-center gap-2 text-xs font-semibold text-slate-900">
+              <FileText className="w-3.5 h-3.5 text-blue-700" />
+              {t('compare.summary')}
+            </div>
+            <span className="text-[11px] font-mono text-slate-500">
+              {narratingAi ? t('common.updating') : t('compare.delta')}
+            </span>
+          </div>
+
+          <Bi
+            as="div"
+            className="font-display text-base font-semibold text-slate-900"
+            en={narration.headlineEn}
+            bn={narration.headlineBn}
+          />
+          <Bi
+            className="text-sm text-slate-700 leading-relaxed"
+            en={narration.summaryEn}
+            bn={narration.summaryBn}
+          />
+        </div>
+
+        <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-3">
+          <div className="text-xs font-semibold text-slate-900 border-b border-slate-200 pb-2.5">
+            {t('compare.copyTitle')}
+          </div>
+          {deltas.length === 0 && (
+            <p className="text-sm text-slate-600">
+              {t('compare.noFix')}
+            </p>
+          )}
+          <ul className="divide-y divide-slate-200/80 text-sm max-h-[340px] overflow-y-auto">
+            {deltas.map((delta) => (
+              <li key={delta.id} className="py-2.5 flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <Bi as="div" className="text-slate-900 font-medium" en={delta.summary} bn={delta.summaryBn} />
+                  {delta.deltaBeforeM !== undefined && delta.deltaAfterM !== undefined && (
+                    <div className="text-xs font-mono text-slate-500 tabular-nums">
+                      {num(delta.deltaBeforeM, 2)} m → {num(delta.deltaAfterM, 2)} m
+                    </div>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 
@@ -190,58 +241,7 @@ export function StepCompare({
         />
       </div>
 
-      {/* AI Fix Narration + Deterministic Change Ledger */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
-            <div className="inline-flex items-center gap-2 text-xs font-semibold text-slate-900">
-              <FileText className="w-3.5 h-3.5 text-blue-700" />
-              {t('compare.summary')}
-            </div>
-            <span className="text-[11px] font-mono text-slate-500">
-              {narratingAi ? t('common.updating') : t('compare.delta')}
-            </span>
-          </div>
-
-          <Bi
-            as="div"
-            className="font-display text-base font-semibold text-slate-900"
-            en={narration.headlineEn}
-            bn={narration.headlineBn}
-          />
-          <Bi
-            className="text-sm text-slate-700 leading-relaxed"
-            en={narration.summaryEn}
-            bn={narration.summaryBn}
-          />
-        </div>
-
-        <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-3">
-          <div className="text-xs font-semibold text-slate-900 border-b border-slate-200 pb-2.5">
-            {t('compare.copyTitle')}
-          </div>
-          {deltas.length === 0 && (
-            <p className="text-sm text-slate-600">
-              {t('compare.noFix')}
-            </p>
-          )}
-          <ul className="divide-y divide-slate-200/80 text-sm max-h-[340px] overflow-y-auto">
-            {deltas.map((delta) => (
-              <li key={delta.id} className="py-2.5 flex items-start gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
-                  <Bi as="div" className="text-slate-900 font-medium" en={delta.summary} bn={delta.summaryBn} />
-                  {delta.deltaBeforeM !== undefined && delta.deltaAfterM !== undefined && (
-                    <div className="text-xs font-mono text-slate-500 tabular-nums">
-                      {num(delta.deltaBeforeM, 2)} m → {num(delta.deltaAfterM, 2)} m
-                    </div>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
+      {agentPanel}
     </main>
   );
 }

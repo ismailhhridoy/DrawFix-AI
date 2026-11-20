@@ -29,6 +29,19 @@ Sources and open questions: [`RESEARCH.md`](RESEARCH.md).
 - Gemini never outputs a measurement or a clause. With no Gemini key the app still works: fixed
   wording, and the agent runs the hand-written fixes through the same re-check.
 
+### How the screens are laid out (2026-11-20)
+
+- Six numbered steps: Upload, Review, Report, Fixes, 3D view, Export. Opened steps get a tick, and
+  the black header button always offers the next step ("Next: Report"). Permit desk is a separate
+  tool after the steps, not step 6.
+- Report opens with a plain summary (must be fixed / worth a second look / passed / slowest escape)
+  and one "See how to fix them" button; building totals, capacity estimates and version tracking are
+  under "More details" below the findings.
+- Fixes shows the before/after numbers and the list of changes first; the AI search panel is below,
+  and its trace and approval list only appear once a search has run.
+- Review starts with three things to check and keeps a "Run the checks" bar at the bottom of the
+  screen; plot data is lower down and optional.
+
 ### AI features and how they are measured
 
 - **Fixes step → AI design agent**: live trace of the agent's tool calls, "options for one finding",

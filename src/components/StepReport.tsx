@@ -177,19 +177,6 @@ export function StepReport({
               ? t('report.title.gov')
               : t('report.title.arch')}
           </h1>
-          <div className="text-xs text-slate-600 flex flex-wrap items-center gap-3 pt-0.5 tabular-nums">
-            <span className="font-semibold text-red-700">{t('report.nFail', { n: audit.failCount })}</span>
-            <span aria-hidden="true">·</span>
-            <span className="font-semibold text-amber-700">{t('report.nWarn', { n: audit.warnCount })}</span>
-            <span aria-hidden="true">·</span>
-            <span className="font-semibold text-emerald-700">{t('report.nPass', { n: audit.passedCount })}</span>
-            <span aria-hidden="true">·</span>
-            <span className="font-mono text-slate-700">
-              {t('report.slowest')}{' '}
-              {audit.worstEscapeSec > 0 ? t('common.seconds', { n: num(audit.worstEscapeSec, 1) }) : t('review.notMeasured')}
-              {audit.trappedRoomCount > 0 ? ` · ${t('report.trapped', { n: audit.trappedRoomCount })}` : ''}
-            </span>
-          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
@@ -228,169 +215,52 @@ export function StepReport({
             {explainingAi ? t('common.updating') : t('report.refresh')}
           </button>
 
+        </div>
+      </div>
+
+      {/* Plain answer first: what failed, what to look at, what to do next */}
+      <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-baseline gap-x-8 gap-y-2 tabular-nums">
+            <div>
+              <span className="font-display text-3xl font-bold text-red-700">{num(audit.failCount)}</span>{' '}
+              <span className="text-sm text-slate-700">{t('report.sum.fail')}</span>
+            </div>
+            <div>
+              <span className="font-display text-3xl font-bold text-amber-700">{num(audit.warnCount)}</span>{' '}
+              <span className="text-sm text-slate-700">{t('report.sum.warn')}</span>
+            </div>
+            <div>
+              <span className="font-display text-3xl font-bold text-emerald-700">{num(audit.passedCount)}</span>{' '}
+              <span className="text-sm text-slate-700">{t('report.sum.pass')}</span>
+            </div>
+            <div>
+              <span className="font-display text-3xl font-bold text-slate-900">
+                {audit.worstEscapeSec > 0 ? t('common.seconds', { n: num(audit.worstEscapeSec, 1) }) : '—'}
+              </span>{' '}
+              <span className="text-sm text-slate-700">{t('report.sum.escape')}</span>
+              {audit.trappedRoomCount > 0 && (
+                <span className="ml-2 text-sm font-semibold text-red-700">
+                  {t('report.trapped', { n: audit.trappedRoomCount })}
+                </span>
+              )}
+            </div>
+          </div>
+          <p className="text-sm text-slate-600 max-w-3xl">
+            {audit.failCount + audit.warnCount > 0 ? t('report.sum.help') : t('report.sum.helpClean')}
+          </p>
+        </div>
+        {audit.failCount + audit.warnCount > 0 && (
           <button
             type="button"
             onClick={onProceedToCompare}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg cursor-pointer whitespace-nowrap shadow-xs"
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg cursor-pointer whitespace-nowrap shadow-xs shrink-0"
           >
             {t('report.seeFixes')}
-            <ArrowRight className="w-3.5 h-3.5" />
+            <ArrowRight className="w-4 h-4" />
           </button>
-        </div>
+        )}
       </div>
-
-      <VersionCompare
-        projectName={project.name}
-        audit={audit}
-        saved={savedVersion}
-        onSave={onSaveVersion}
-        onClear={onClearVersion}
-      />
-
-      {/* Fast Scrutiny / Architect Validation Triage Strip */}
-      <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs p-4 sm:p-5 space-y-3">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="flex items-start gap-3">
-            {reviewerRole === 'government' ? (
-              <ShieldAlert className="w-5 h-5 text-blue-700 shrink-0 mt-0.5" />
-            ) : (
-              <Building2 className="w-5 h-5 text-blue-700 shrink-0 mt-0.5" />
-            )}
-            <div className="space-y-0.5">
-              <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-                <span
-                  className={`font-bold ${
-                    triage.disposition === 'RETURN_FOR_CORRECTIONS'
-                      ? 'text-red-700'
-                      : triage.disposition === 'CONDITIONAL_REVIEW'
-                        ? 'text-amber-700'
-                        : 'text-emerald-700'
-                  }`}
-                >
-                  {t(`triage.${triage.disposition}` as MsgKey)}
-                </span>
-                <span className="text-slate-400">·</span>
-                <span className="text-slate-600 tabular-nums">
-                  {t('report.triageLine', { c: triage.checksEvaluated, r: triage.totalRoomsAudited })}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600 pt-1">
-                <span>
-                  {t('report.height')} <strong className="font-mono text-slate-900">{num(triage.totalHeightM)} m</strong>{' '}
-                  {triage.isHighRise ? t('report.highRise') : t('report.standard')}
-                </span>
-                <span className="text-slate-300">|</span>
-                <span>
-                  {t('report.dimOverrides')}{' '}
-                  <strong
-                    className={`font-mono ${
-                      triage.dimensionTamperAlerts > 0 ? 'text-red-700' : 'text-emerald-700'
-                    }`}
-                  >
-                    {triage.dimensionTamperAlerts > 0
-                      ? t('report.nMismatchFlagged', { n: triage.dimensionTamperAlerts })
-                      : t('report.zeroMismatch')}
-                  </strong>
-                </span>
-                <span className="text-slate-300">|</span>
-                <span>
-                  {t('report.zoningFlags')}{' '}
-                  <strong className="font-mono text-slate-900">{num(triage.zoningFlagCount)}</strong>
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleDownloadWorksheet}
-            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-300 hover:bg-slate-100 rounded-lg cursor-pointer whitespace-nowrap shrink-0"
-          >
-            <FileDown className="w-3.5 h-3.5 text-slate-600" />
-            {reviewerRole === 'government'
-              ? t('report.export.gov')
-              : t('report.export.arch')}
-          </button>
-        </div>
-      </div>
-
-      {/* Zoning & Egress Capacity Scorecard */}
-      {m && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-y lg:divide-y-0 sm:divide-x divide-slate-200/90 bg-white border border-slate-200/90 rounded-xl shadow-xs overflow-hidden">
-          <div className="px-4 py-3.5">
-            <div className="text-[11px] font-mono text-slate-500">{t('report.far')}</div>
-            {m.plotAreaSqM > 0 ? (
-              <div
-                className={`mt-0.5 font-mono text-base font-bold tabular-nums ${
-                  m.achievedFar > m.maxAllowedFar ? 'text-amber-700' : 'text-slate-900'
-                }`}
-              >
-                {num(m.achievedFar, 2)}{' '}
-                <span className="text-xs font-normal text-slate-500">
-                  / {num(m.maxAllowedFar, 2)}
-                </span>
-              </div>
-            ) : (
-              <div className="mt-0.5 text-xs text-slate-500">{t('report.plotMissing')}</div>
-            )}
-          </div>
-          <div className="px-4 py-3.5">
-            <div className="text-[11px] font-mono text-slate-500">{t('report.mgc')}</div>
-            {m.plotAreaSqM > 0 ? (
-              <div
-                className={`mt-0.5 font-mono text-base font-bold tabular-nums ${
-                  m.mgcPercent > m.maxAllowedMgcPercent ? 'text-amber-700' : 'text-slate-900'
-                }`}
-              >
-                {num(m.mgcPercent, 1)}%{' '}
-                <span className="text-xs font-normal text-slate-500">
-                  / {num(m.maxAllowedMgcPercent)}%
-                </span>
-              </div>
-            ) : (
-              <div className="mt-0.5 text-xs text-slate-500">{t('report.plotMissing')}</div>
-            )}
-          </div>
-          <div className="px-4 py-3.5">
-            <div className="text-[11px] font-mono text-slate-500">{t('report.peak')}</div>
-            <div className="mt-0.5 font-mono text-base font-bold text-slate-900 tabular-nums">
-              {num(m.peakFloorLoad)}{' '}
-              <span className="text-xs font-normal text-slate-500">
-                {t('report.personsTotal', { n: m.totalOccupantLoad })}
-              </span>
-            </div>
-          </div>
-          <div className="px-4 py-3.5">
-            <div className="text-[11px] font-mono text-slate-500">{t('report.exitCap')}</div>
-            <div
-              className={`mt-0.5 font-mono text-base font-bold tabular-nums ${
-                m.groundExitCapacityPersons < m.peakFloorLoad
-                  ? 'text-amber-700'
-                  : 'text-slate-900'
-              }`}
-            >
-              {num(m.groundExitCapacityPersons)}{' '}
-              <span className="text-xs font-normal text-slate-500">{t('report.persons')}</span>
-            </div>
-          </div>
-          <div className="px-4 py-3.5">
-            <div className="text-[11px] font-mono text-slate-500">{t('report.stairCap')}</div>
-            <div className="mt-0.5 font-mono text-base font-bold text-slate-900 tabular-nums">
-              {num(m.stairCapacityPersons)}{' '}
-              <span className="text-xs font-normal text-slate-500">{t('report.persons')}</span>
-            </div>
-          </div>
-          <div className="px-4 py-3.5">
-            <div className="text-[11px] font-mono text-slate-500">{t('report.travelRef')}</div>
-            <div className="mt-0.5 font-mono text-base font-bold text-slate-900 tabular-nums">
-              {num(m.travelLimitM, 1)} m{' '}
-              <span className="text-xs font-normal text-slate-500">
-                {m.sprinklered ? t('report.sprinklersDeclared') : t('report.cabins16')}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Per-Floor Summary Strip for Multi-Floor Buildings */}
       {isMultiFloor && audit.floorSummaries && (
@@ -819,6 +689,166 @@ export function StepReport({
           </div>
         </div>
       </div>
+      {/* Secondary details, below the findings */}
+      <section className="space-y-4 pt-2" aria-labelledby="report-more">
+        <div>
+          <h2 id="report-more" className="font-display text-lg font-bold text-slate-900">{t('report.more.title')}</h2>
+          <p className="text-sm text-slate-600">{t('report.more.lead')}</p>
+        </div>
+        <VersionCompare
+          projectName={project.name}
+          audit={audit}
+          saved={savedVersion}
+          onSave={onSaveVersion}
+          onClear={onClearVersion}
+        />
+
+        {/* Fast Scrutiny / Architect Validation Triage Strip */}
+        <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs p-4 sm:p-5 space-y-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              {reviewerRole === 'government' ? (
+                <ShieldAlert className="w-5 h-5 text-blue-700 shrink-0 mt-0.5" />
+              ) : (
+                <Building2 className="w-5 h-5 text-blue-700 shrink-0 mt-0.5" />
+              )}
+              <div className="space-y-0.5">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+                  <span
+                    className={`font-bold ${
+                      triage.disposition === 'RETURN_FOR_CORRECTIONS'
+                        ? 'text-red-700'
+                        : triage.disposition === 'CONDITIONAL_REVIEW'
+                          ? 'text-amber-700'
+                          : 'text-emerald-700'
+                    }`}
+                  >
+                    {t(`triage.${triage.disposition}` as MsgKey)}
+                  </span>
+                  <span className="text-slate-400">·</span>
+                  <span className="text-slate-600 tabular-nums">
+                    {t('report.triageLine', { c: triage.checksEvaluated, r: triage.totalRoomsAudited })}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600 pt-1">
+                  <span>
+                    {t('report.height')} <strong className="font-mono text-slate-900">{num(triage.totalHeightM)} m</strong>{' '}
+                    {triage.isHighRise ? t('report.highRise') : t('report.standard')}
+                  </span>
+                  <span className="text-slate-300">|</span>
+                  <span>
+                    {t('report.dimOverrides')}{' '}
+                    <strong
+                      className={`font-mono ${
+                        triage.dimensionTamperAlerts > 0 ? 'text-red-700' : 'text-emerald-700'
+                      }`}
+                    >
+                      {triage.dimensionTamperAlerts > 0
+                        ? t('report.nMismatchFlagged', { n: triage.dimensionTamperAlerts })
+                        : t('report.zeroMismatch')}
+                    </strong>
+                  </span>
+                  <span className="text-slate-300">|</span>
+                  <span>
+                    {t('report.zoningFlags')}{' '}
+                    <strong className="font-mono text-slate-900">{num(triage.zoningFlagCount)}</strong>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleDownloadWorksheet}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-300 hover:bg-slate-100 rounded-lg cursor-pointer whitespace-nowrap shrink-0"
+            >
+              <FileDown className="w-3.5 h-3.5 text-slate-600" />
+              {reviewerRole === 'government'
+                ? t('report.export.gov')
+                : t('report.export.arch')}
+            </button>
+          </div>
+        </div>
+
+        {/* Zoning & Egress Capacity Scorecard */}
+        {m && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-y lg:divide-y-0 sm:divide-x divide-slate-200/90 bg-white border border-slate-200/90 rounded-xl shadow-xs overflow-hidden">
+            <div className="px-4 py-3.5">
+              <div className="text-[11px] font-mono text-slate-500">{t('report.far')}</div>
+              {m.plotAreaSqM > 0 ? (
+                <div
+                  className={`mt-0.5 font-mono text-base font-bold tabular-nums ${
+                    m.achievedFar > m.maxAllowedFar ? 'text-amber-700' : 'text-slate-900'
+                  }`}
+                >
+                  {num(m.achievedFar, 2)}{' '}
+                  <span className="text-xs font-normal text-slate-500">
+                    / {num(m.maxAllowedFar, 2)}
+                  </span>
+                </div>
+              ) : (
+                <div className="mt-0.5 text-xs text-slate-500">{t('report.plotMissing')}</div>
+              )}
+            </div>
+            <div className="px-4 py-3.5">
+              <div className="text-[11px] font-mono text-slate-500">{t('report.mgc')}</div>
+              {m.plotAreaSqM > 0 ? (
+                <div
+                  className={`mt-0.5 font-mono text-base font-bold tabular-nums ${
+                    m.mgcPercent > m.maxAllowedMgcPercent ? 'text-amber-700' : 'text-slate-900'
+                  }`}
+                >
+                  {num(m.mgcPercent, 1)}%{' '}
+                  <span className="text-xs font-normal text-slate-500">
+                    / {num(m.maxAllowedMgcPercent)}%
+                  </span>
+                </div>
+              ) : (
+                <div className="mt-0.5 text-xs text-slate-500">{t('report.plotMissing')}</div>
+              )}
+            </div>
+            <div className="px-4 py-3.5">
+              <div className="text-[11px] font-mono text-slate-500">{t('report.peak')}</div>
+              <div className="mt-0.5 font-mono text-base font-bold text-slate-900 tabular-nums">
+                {num(m.peakFloorLoad)}{' '}
+                <span className="text-xs font-normal text-slate-500">
+                  {t('report.personsTotal', { n: m.totalOccupantLoad })}
+                </span>
+              </div>
+            </div>
+            <div className="px-4 py-3.5">
+              <div className="text-[11px] font-mono text-slate-500">{t('report.exitCap')}</div>
+              <div
+                className={`mt-0.5 font-mono text-base font-bold tabular-nums ${
+                  m.groundExitCapacityPersons < m.peakFloorLoad
+                    ? 'text-amber-700'
+                    : 'text-slate-900'
+                }`}
+              >
+                {num(m.groundExitCapacityPersons)}{' '}
+                <span className="text-xs font-normal text-slate-500">{t('report.persons')}</span>
+              </div>
+            </div>
+            <div className="px-4 py-3.5">
+              <div className="text-[11px] font-mono text-slate-500">{t('report.stairCap')}</div>
+              <div className="mt-0.5 font-mono text-base font-bold text-slate-900 tabular-nums">
+                {num(m.stairCapacityPersons)}{' '}
+                <span className="text-xs font-normal text-slate-500">{t('report.persons')}</span>
+              </div>
+            </div>
+            <div className="px-4 py-3.5">
+              <div className="text-[11px] font-mono text-slate-500">{t('report.travelRef')}</div>
+              <div className="mt-0.5 font-mono text-base font-bold text-slate-900 tabular-nums">
+                {num(m.travelLimitM, 1)} m{' '}
+                <span className="text-xs font-normal text-slate-500">
+                  {m.sprinklered ? t('report.sprinklersDeclared') : t('report.cabins16')}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </section>
     </main>
   );
 }

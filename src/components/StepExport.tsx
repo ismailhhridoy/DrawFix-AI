@@ -265,7 +265,8 @@ export function StepExport({
           </p>
         </div>
 
-        <div className="inline-flex items-center gap-1 p-1 bg-slate-200/70 rounded-lg text-xs shrink-0 self-start sm:self-auto">
+        <div className="flex flex-col items-start sm:items-end gap-1.5 shrink-0 self-start sm:self-auto">
+        <div className="inline-flex items-center gap-1 p-1 bg-slate-200/70 rounded-lg text-xs">
           <button
             type="button"
             onClick={() => onChangeReviewerRole('architect')}
@@ -288,6 +289,8 @@ export function StepExport({
           >
             {t('export.role.gov')}
           </button>
+        </div>
+        <p className="text-[11px] text-slate-500 max-w-[16rem] sm:text-right">{t('export.role.note')}</p>
         </div>
       </div>
 
@@ -313,33 +316,48 @@ export function StepExport({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              type="button"
-              onClick={handleDownloadPdf}
-              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors cursor-pointer shadow-xs whitespace-nowrap"
-            >
-              <FileDown className="w-4 h-4" />
-              {t('export.pdf.download')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setPrintAt(new Date())}
-              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-blue-800 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
-            >
-              <FileText className="w-4 h-4" />
-              {t('print.button')}
-            </button>
-            <button
-              type="button"
-              onClick={handleDownloadWorksheet}
-              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold text-slate-900 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
-            >
-              <FileText className="w-3.5 h-3.5 text-slate-600" />
-              {reviewerRole === 'government' ? t('export.sheet.gov') : t('export.sheet.arch')}
-            </button>
+          <div className="space-y-3">
+            {(
+              [
+                {
+                  key: 'pdf',
+                  onClick: handleDownloadPdf,
+                  label: t('export.pdf.download'),
+                  note: t('export.pdf.note'),
+                  cls: 'text-white bg-blue-700 hover:bg-blue-800 shadow-xs',
+                  icon: <FileDown className="w-4 h-4" />,
+                },
+                {
+                  key: 'print',
+                  onClick: () => setPrintAt(new Date()),
+                  label: t('print.button'),
+                  note: t('print.hint'),
+                  cls: 'text-blue-800 bg-blue-50 border border-blue-200 hover:bg-blue-100',
+                  icon: <FileText className="w-4 h-4" />,
+                },
+                {
+                  key: 'txt',
+                  onClick: handleDownloadWorksheet,
+                  label: reviewerRole === 'government' ? t('export.sheet.gov') : t('export.sheet.arch'),
+                  note: reviewerRole === 'government' ? t('export.sheet.govNote') : t('export.sheet.archNote'),
+                  cls: 'text-slate-900 bg-white border border-slate-300 hover:bg-slate-50',
+                  icon: <FileText className="w-4 h-4 text-slate-600" />,
+                },
+              ] as const
+            ).map((row) => (
+              <div key={row.key} className="grid grid-cols-1 sm:grid-cols-[minmax(0,15rem)_1fr] gap-2 sm:gap-4 items-center">
+                <button
+                  type="button"
+                  onClick={row.onClick}
+                  className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${row.cls}`}
+                >
+                  {row.icon}
+                  {row.label}
+                </button>
+                <p className="text-xs text-slate-600 leading-snug">{row.note}</p>
+              </div>
+            ))}
           </div>
-          <p className="text-[11px] text-slate-500 leading-relaxed">{t('print.hint')}</p>
           {printAt &&
             createPortal(
               <div className="print-report">

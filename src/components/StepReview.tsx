@@ -132,6 +132,16 @@ export function StepReview({
           <p className="text-sm text-slate-600 max-w-2xl">
             {t('review.lead')}
           </p>
+          <ol className="flex flex-wrap gap-x-5 gap-y-1 pt-1 text-sm text-slate-800">
+            {(['review.check1', 'review.check2', 'review.check3'] as const).map((k, i) => (
+              <li key={k} className="inline-flex items-center gap-1.5">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-900 text-white text-[11px] font-semibold">
+                  {num(i + 1)}
+                </span>
+                {t(k)}
+              </li>
+            ))}
+          </ol>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
@@ -198,64 +208,6 @@ export function StepReview({
               {totalStaleDims > 0 ? t('review.nMismatch', { n: totalStaleDims }) : ''}
             </span>
           </div>
-        </div>
-      </div>
-
-      {/* Plot data: not in a floor plan, so the reviewer supplies it */}
-      <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold text-slate-900">
-              {t('review.site.title')} <span className="text-slate-500 font-normal">({t('review.site.optional')})</span>
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {siteDeclared
-                ? t('review.site.used')
-                : t('review.site.empty')}
-            </p>
-          </div>
-          <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 cursor-pointer select-none hover:bg-slate-100/80 transition-colors">
-            <input
-              type="checkbox"
-              checked={site.sprinklered}
-              onChange={(e) => onUpdateSiteContext({ sprinklered: e.target.checked })}
-              className="accent-blue-700 cursor-pointer"
-            />
-            <span>
-              {t('review.site.sprinklers')}
-              <span className="font-normal text-slate-500">
-                {' '}
-                {t('review.site.screenRef', { d: site.sprinklered ? 22.5 : 16 })}
-              </span>
-            </span>
-          </label>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
-          {(
-            [
-              [t('review.site.plotArea'), 'plotAreaSqM', 10],
-              [t('review.site.road'), 'abuttingRoadWidthM', 0.5],
-              [t('review.site.front'), 'frontSetbackM', 0.25],
-              [t('review.site.rear'), 'rearSetbackM', 0.25],
-              [t('review.site.side'), 'sideSetbackM', 0.25],
-            ] as const
-          ).map(([label, key, step]) => (
-            <label key={key} className="block">
-              <span className="text-slate-600 font-medium">{label}</span>
-              <input
-                type="number"
-                min="0"
-                step={step}
-                placeholder={t('review.notEntered')}
-                value={numOrEmpty(site[key])}
-                onChange={(e) =>
-                  onUpdateSiteContext({ [key]: Math.max(0, Number(e.target.value) || 0) })
-                }
-                className="mt-1 w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-mono text-slate-900 tabular-nums placeholder:text-slate-400 placeholder:font-sans focus-visible:outline-2 focus-visible:outline-blue-700"
-              />
-            </label>
-          ))}
         </div>
       </div>
 
@@ -412,17 +364,22 @@ export function StepReview({
                         ))}
                       </select>
                     </td>
-                    <td className="py-3 px-4 text-xs text-slate-600">
+                    <td className="py-3 px-4 text-xs text-slate-600 whitespace-nowrap" title={room.mappingReason}>
                       <span
-                        className={`font-mono font-semibold ${
-                          room.confidence >= 0.85 ? 'text-emerald-700' : 'text-amber-700'
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full border font-semibold ${
+                          room.mappingSource === 'manual'
+                            ? 'border-slate-300 bg-slate-50 text-slate-700'
+                            : room.confidence >= 0.85
+                              ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                              : 'border-amber-200 bg-amber-50 text-amber-800'
                         }`}
                       >
                         {room.mappingSource === 'manual'
                           ? t('review.you')
-                          : `${num(Math.round(room.confidence * 100))}%`}
-                      </span>{' '}
-                      {room.mappingReason}
+                          : room.confidence >= 0.85
+                            ? t('review.conf.high', { n: Math.round(room.confidence * 100) })
+                            : t('review.conf.low', { n: Math.round(room.confidence * 100) })}
+                      </span>
                     </td>
                   </tr>
                 );
@@ -521,6 +478,64 @@ export function StepReview({
         )}
       </div>
 
+      {/* Plot data: not in a floor plan, so the reviewer supplies it */}
+      <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold text-slate-900">
+              {t('review.site.title')} <span className="text-slate-500 font-normal">({t('review.site.optional')})</span>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {siteDeclared
+                ? t('review.site.used')
+                : t('review.site.empty')}
+            </p>
+          </div>
+          <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 cursor-pointer select-none hover:bg-slate-100/80 transition-colors">
+            <input
+              type="checkbox"
+              checked={site.sprinklered}
+              onChange={(e) => onUpdateSiteContext({ sprinklered: e.target.checked })}
+              className="accent-blue-700 cursor-pointer"
+            />
+            <span>
+              {t('review.site.sprinklers')}
+              <span className="font-normal text-slate-500">
+                {' '}
+                {t('review.site.screenRef', { d: site.sprinklered ? 22.5 : 16 })}
+              </span>
+            </span>
+          </label>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
+          {(
+            [
+              [t('review.site.plotArea'), 'plotAreaSqM', 10],
+              [t('review.site.road'), 'abuttingRoadWidthM', 0.5],
+              [t('review.site.front'), 'frontSetbackM', 0.25],
+              [t('review.site.rear'), 'rearSetbackM', 0.25],
+              [t('review.site.side'), 'sideSetbackM', 0.25],
+            ] as const
+          ).map(([label, key, step]) => (
+            <label key={key} className="block">
+              <span className="text-slate-600 font-medium">{label}</span>
+              <input
+                type="number"
+                min="0"
+                step={step}
+                placeholder={t('review.notEntered')}
+                value={numOrEmpty(site[key])}
+                onChange={(e) =>
+                  onUpdateSiteContext({ [key]: Math.max(0, Number(e.target.value) || 0) })
+                }
+                className="mt-1 w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-mono text-slate-900 tabular-nums placeholder:text-slate-400 placeholder:font-sans focus-visible:outline-2 focus-visible:outline-blue-700"
+              />
+            </label>
+          ))}
+        </div>
+      </div>
+
       {/* Layers & Parse Audit Notes */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-2.5">
@@ -583,6 +598,20 @@ export function StepReview({
                   : t('review.hdHr.missing')}
             </li>
           </ul>
+        </div>
+      </div>
+      {/* Always-visible next action */}
+      <div className="sticky bottom-4 z-20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/95 backdrop-blur border border-slate-200 rounded-xl shadow-lg px-5 py-3">
+          <p className="text-sm text-slate-700">{t('review.stickyNote')}</p>
+          <button
+            type="button"
+            onClick={onConfirmAndAudit}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-blue-700 hover:bg-blue-800 rounded-lg transition-colors whitespace-nowrap cursor-pointer shadow-xs"
+          >
+            {t('review.confirm')}
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </main>

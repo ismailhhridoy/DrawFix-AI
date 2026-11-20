@@ -68,7 +68,7 @@ export function StepPermits({
   onGoToExport,
 }: StepPermitsProps) {
   const { t } = useLang();
-  const [tab, setTab] = useState<'corrections' | 'checklist'>('corrections');
+  const [tab, setTab] = useState<'corrections' | 'checklist'>('checklist');
 
   // Flow 1: Corrections Letter Interpreter state
   const [authorityName, setAuthorityName] = useState('Building Approval & Plan Scrutiny Cell');
@@ -364,9 +364,7 @@ export function StepPermits({
                   {t('permits.ready')}
                 </h3>
                 <p className="text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
-                  Paste or load a municipal scrutiny letter on the left, then click{' '}
-                  <strong>Analyze objections &amp; draft response</strong> to generate an itemized
-                  code breakdown and resubmission cover letter.
+                  {t('permits.readyLead')}
                 </p>
               </div>
             ) : (
