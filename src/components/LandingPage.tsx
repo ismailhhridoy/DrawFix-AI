@@ -224,7 +224,7 @@ export function LandingPage({
                 {primaryBenchmark ? (
                   <button
                     type="button"
-                    onClick={() => onOpenSample(primaryBenchmark.sample, 'report')}
+                    onClick={() => onOpenSample(primaryBenchmark.sample, 'review')}
                     className="inline-flex items-center gap-2 px-6 py-3.5 text-base font-semibold text-[#0A1324] bg-white hover:bg-blue-50 rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white whitespace-nowrap shrink-0 shadow-sm"
                   >
                     <FileCheck2 className="w-4 h-4 text-[#2563EB]" />
