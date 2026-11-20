@@ -18,7 +18,7 @@ export interface DocsPayload {
     features: (Omit<(typeof FEATURES)[number], 'status'> & { status: FeatureStatus; available: boolean })[];
     featureCounts: Record<FeatureStatus, number>;
   };
-  team: { teamName: string; members: { name: string; role: string; email: string | null; photo: string | null }[] };
+  team: { teamName: string; members: { name: string; roles: string[]; email: string | null; photo: string | null }[] };
   groups: typeof GROUPS;
   sections: typeof SECTIONS;
   diagrams: { architecture: typeof ARCHITECTURE; dataflow: typeof DATA_FLOW };
@@ -45,7 +45,7 @@ export function buildDocsPayload(opts: { commit: string | null; aiConfigured: bo
     },
     team: {
       teamName: TEAM_NAME,
-      members: TEAM.filter((m) => m.published).map(({ name, role, email, photo }) => ({ name, role, email, photo })),
+      members: TEAM.filter((m) => m.published).map(({ name, roles, email, photo }) => ({ name, roles, email, photo })),
     },
     groups: GROUPS,
     sections: SECTIONS,

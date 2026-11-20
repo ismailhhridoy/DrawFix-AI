@@ -31,7 +31,7 @@ function blockToMd(b: Block, p: DocsPayload): string {
         p.live.features.map((f) => [f.area, f.name, f.status, f.needsAi ? 'yes' : 'no']),
       );
     case 'team':
-      return p.team.members.map((m) => `- **${m.name}**, ${m.role}${m.email ? ` (${m.email})` : ''}`).join('\n') || '_No members published._';
+      return p.team.members.map((m) => `- **${m.name}**, ${m.roles.join(' · ')}${m.email ? ` (${m.email})` : ''}`).join('\n') || '_No members published._';
     case 'diagram': {
       const d = b.key === 'architecture' ? p.diagrams.architecture : p.diagrams.dataflow;
       const names = new Map(d.nodes.map((n) => [n.id, n.label]));

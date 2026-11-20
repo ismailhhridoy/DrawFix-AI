@@ -370,7 +370,7 @@ function TeamGrid({ data }: { data: DocsPayload }) {
               )}
             </div>
             <div className="mt-4 font-semibold">{m.name}</div>
-            <div className="mt-1 text-sm text-[#475569]">{m.role}</div>
+            <div className="mt-1 text-sm text-[#475569]">{m.roles.join(' · ')}</div>
             {m.email && <a href={`mailto:${m.email}`} className="mt-2 break-all text-sm text-[#2563EB] underline underline-offset-2">{m.email}</a>}
           </div>
         ))}
