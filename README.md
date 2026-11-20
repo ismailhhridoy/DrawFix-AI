@@ -97,30 +97,6 @@ Open `/docs` on the site. The page is built from `src/docs/`:
 - `team.ts` holds team members. Photos go in `public/team/`; a missing photo shows initials.
 - `diagrams.ts` holds the architecture and data-flow diagrams as data.
 
-Access is public by default. The admin can change it with the server environment variables `DOCS_ADMIN_TOKEN`
-and `DOCS_VIEW_KEY`:
-
-```bash
-curl -X PUT https://YOUR-SITE/api/docs/config \
-  -H "Authorization: Bearer $DOCS_ADMIN_TOKEN" -H "Content-Type: application/json" \
-  -d '{"mode":"scheduled","from":"2026-11-20T00:00:00+06:00","to":"2026-11-21T23:59:00+06:00"}'
-```
-
-Modes: `off`, `public`, `scheduled` (between `from` and `to`), `restricted` (needs the view key, passed as
-`?key=` or the `X-Docs-Key` header). Previous settings are kept in `data/docs-history.json`. On Render's free
-tier the disk is not permanent, so a change made through the API can be lost on a restart. Re-apply it after a
-restart, and check `/api/docs/access` before a demo. `data/` is git-ignored, so the setting is not committed.
-
 Not built yet: an in-page WYSIWYG editor, drag-to-reorder, and versioned content. Edits are made in the files above.
-
-## Known limits
-
-- Synthetic demo plans only; no real Bangladeshi architect DXF has been tested yet.
-- Permit checklist items marked "Procedural" are typical filing requirements, not verified; confirm with the authority.
-- Padlocked doors and changes of use happen after approval and are outside a drawing check.
-- Part 4 exit capacity, exit count, FAR, coverage and setback rules are screening values.
-- The jsPDF download prints "[Bangla label]" for Bangla; use the printable report for Bangla.
-- Some text stays English in Bangla mode (parser notes, "not checked" reasons, names from the DXF,
-  permit checklist items). Bijoy/SutonnyMJ-encoded DXF text is not converted.
 
 See `CLAUDE.md` for the full handoff, status and next steps.
