@@ -109,7 +109,7 @@ export const SECTIONS: Section[] = [
     id: 'advantage', group: 'pitch', title: 'Unique advantage',
     blocks: [
       { t: 'ul', items: [
-        'Fixed rule engine: every distance, width, area and pass/fail is calculated in code. Gemini never outputs a measurement or a clause number.',
+        'Fixed rule engine: every distance, width, area and pass/fail is calculated in code. Our AI never outputs a measurement or a clause number.',
         'Trust levels on every finding, and a "Not checked" list. Honest about limits.',
         'Works without AI: the app still runs with fixed wording and hand-written fixes.',
         'Number guard: an AI sentence with a number that is not in the data is rejected.',
@@ -153,7 +153,7 @@ export const SECTIONS: Section[] = [
     id: 'roadmap', group: 'product', title: 'Roadmap',
     blocks: [
       { t: 'table', head: ['Horizon', 'Work'], rows: [
-        ['Short (before the 20 Nov 2026 deadline)', 'YouTube link in the submission; confirm the Gemini key on the live site; final launch film'],
+        ['Short (before the 20 Nov 2026 deadline)', 'YouTube link in the submission; confirm the AI key on the live site; final launch film'],
         ['Mid', 'Native Bangla review; verify BNBC Part 4 Ch. 3 clauses against the gazette and move them from screening to verified; test on real architect DXF files; full mobile pass'],
         ['Long', 'Clearer rule source per finding; occupancy classes beyond RMG and residential; an admin editor for this page'],
       ] },
@@ -168,7 +168,7 @@ export const SECTIONS: Section[] = [
         ['Frontend', 'React 19, Vite, Tailwind CSS 4, three.js (3D), motion, lucide-react, jsPDF'],
         ['Backend', 'Express 4 served by tsx; Vite in development'],
         ['Database', 'None. The app stores nothing on the server. /docs settings are a JSON file'],
-        ['AI', 'Google Gemini, through @google/genai (models set by environment variables)'],
+        ['AI', 'DrawFix AI language and vision layer, called from the server (models set by environment variables)'],
         ['Parsing', 'dxf-parser plus own geometry code'],
         ['Testing', 'Vitest'],
         ['Infrastructure', 'Render web service (free tier); health check at /api/health'],
@@ -180,7 +180,7 @@ export const SECTIONS: Section[] = [
     blocks: [
       { t: 'table', head: ['Method', 'Path', 'Purpose', 'Auth'], rows: [
         ['GET', '/api/health', 'AI status, commit, feature list', 'None'],
-        ['POST', '/api/ai/propose-layout-fixes', 'Gemini layout proposals, re-checked', 'None; rate limited'],
+        ['POST', '/api/ai/propose-layout-fixes', 'AI layout proposals, re-checked', 'None; rate limited'],
         ['POST', '/api/ai/agent-step', 'Fix agent step', 'None; rate limited'],
         ['POST', '/api/ai/read-plan-image', 'Trace a plan image into walls, doors, rooms, stairs', 'None; rate limited'],
         ['POST', '/api/ai/explain-violations', 'Plain-language finding text (English and Bangla)', 'None; rate limited'],
@@ -200,7 +200,7 @@ export const SECTIONS: Section[] = [
         'Sources: the uploaded DXF or plan image, the reviewer\'s entries, and the reference notes in the code.',
         'Parsing: in the browser. Units come from the file header ($INSUNITS); bad files get a clear error.',
         'Storage: none on the server. Reports are generated in the browser and downloaded by the user.',
-        'Privacy: when AI is on, the relevant drawing data is sent to Gemini. Without a key, nothing is sent. The upload screen does not say this yet.',
+        'Privacy: when AI is on, the relevant drawing data is sent to the AI service. Without a key, nothing is sent. The upload screen does not say this yet.',
       ] },
     ],
   },
