@@ -88,6 +88,12 @@ export const SECTIONS: Section[] = [
     ],
   },
   {
+    id: 'business-model', group: 'pitch', title: 'Business model',
+    blocks: [
+      { t: 'p', text: 'A subscription for architects, a licence for approval offices, and tooling for developers and insurers.' },
+    ],
+  },
+  {
     id: 'competition', group: 'pitch', title: 'Competition',
     blocks: [
       { t: 'p', text: 'Closest competitor: Archistar AI PreCheck (Australia, US and Canada; a City of Austin contract in 2024). New in Bangladesh. DrawFix differs in four ways:' },
