@@ -64,7 +64,7 @@ export async function requestPlanReadingBase64(dataBase64: string, mimeType: str
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok || body?.source !== 'gemini' || !body.reading) {
-    throw new Error(body?.error || (body?.source === 'none' ? 'Reading plan images needs Gemini, which is off on this server.' : 'The AI model could not read this plan.'));
+    throw new Error(body?.error || (body?.source === 'none' ? 'Reading plan images needs the AI, which is off on this server.' : 'The AI model could not read this plan.'));
   }
   return body.reading;
 }

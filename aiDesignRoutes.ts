@@ -189,7 +189,7 @@ export function registerDesignRoutes(app: Express, deps: DesignRouteDeps) {
       res.json({ source: 'gemini', candidates });
     } catch (err) {
       console.error('Layout proposal error:', err);
-      res.json({ source: 'error', candidates: [], error: 'Gemini did not return proposals.' });
+      res.json({ source: 'error', candidates: [], error: 'The AI did not return proposals.' });
     }
   });
 
@@ -216,7 +216,7 @@ export function registerDesignRoutes(app: Express, deps: DesignRouteDeps) {
       res.json({ source: 'gemini', step: parseJson(text) });
     } catch (err) {
       console.error('Agent step error:', err);
-      res.json({ source: 'error', error: 'Gemini did not return a step.' });
+      res.json({ source: 'error', error: 'The AI did not return a step.' });
     }
   });
 
@@ -256,7 +256,7 @@ export function registerDesignRoutes(app: Express, deps: DesignRouteDeps) {
       res.json({ source: 'gemini', reading: parseJson(text) });
     } catch (err) {
       console.error('Plan image reading error:', err);
-      res.json({ source: 'error', error: 'Gemini could not read the image.' });
+      res.json({ source: 'error', error: 'The AI could not read the image.' });
     }
   });
 }

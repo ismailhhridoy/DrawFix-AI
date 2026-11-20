@@ -86,7 +86,7 @@ export const bnStrings: Record<MsgKey, string> = {
   'landing.stat2.note': "মাপ ও রুটিং স্থানীয়ভাবে চলে—কোনো সার্ভার আপলোড নেই",
   'landing.stat3.label': "আপনার DXF ফাইল",
   'landing.stat3.value': "কখনও বদলানো হয় না",
-  'landing.stat3.note': "ব্রাউজারেই পড়া হয়। Gemini চালু থাকলে কক্ষের নাম ও ফলাফল সেখানে পাঠানো হয়",
+  'landing.stat3.note': "ব্রাউজারেই পড়া হয়। এআই চালু থাকলে কক্ষের নাম ও ফলাফল সেখানে পাঠানো হয়",
   'landing.stat4.label': "ডেমো বহির্গমন সময় হ্রাস",
   'landing.stat4.note': "৩-তলা RMG ভবন · তালাবদ্ধ বের হওয়ার পথ পাওয়ার পর",
   'landing.process.kicker': "DrawFix AI কীভাবে ব্যবহার করবেন",

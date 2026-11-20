@@ -715,7 +715,7 @@ export async function requestInferredConventions(
       const c = data.conventions;
       return {
         source: 'gemini',
-        rationale: c.rationale || 'Classified CAD layers with Gemini.',
+        rationale: c.rationale || 'Classified CAD layers with AI.',
         conventions: {
           ...base,
           wallLayers: c.wallLayers?.length ? c.wallLayers : local.wallLayers,
