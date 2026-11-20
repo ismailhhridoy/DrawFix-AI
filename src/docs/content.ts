@@ -88,12 +88,6 @@ export const SECTIONS: Section[] = [
     ],
   },
   {
-    id: 'business-model', group: 'pitch', title: 'Business model',
-    blocks: [
-      { t: 'p', text: 'Not decided. Options to evaluate: a subscription for architects, a licence for approval offices, and tooling for developers and insurers. No prices have been set and none are quoted here.' },
-    ],
-  },
-  {
     id: 'traction', group: 'pitch', title: 'Traction',
     blocks: [
       { t: 'p', text: 'Pre-launch. The honest state of the project:' },

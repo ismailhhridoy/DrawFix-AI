@@ -190,9 +190,6 @@ function Docs({ data, query, setQuery, copied, onCopy }: {
           <section>
             <h1 className="text-3xl font-bold tracking-tight">DrawFix AI</h1>
             <p className="mt-2 text-lg text-[#475569]">Faster government scrutiny. Validated before filing.</p>
-            <p className="mt-2 text-xs text-[#64748B]">
-              Live status generated {fmtDate(data.generatedAt)}{data.live.commit ? ` · build ${data.live.commit}` : ''}
-            </p>
           </section>
 
           {matches && (
