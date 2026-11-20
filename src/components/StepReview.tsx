@@ -119,7 +119,7 @@ export function StepReview({
   };
 
   return (
-    <main className="max-w-[1280px] mx-auto px-6 py-8 space-y-6">
+    <main className="w-full max-w-[1280px] mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/90 pb-5">
         <div className="space-y-1.5">
           <p className="text-xs font-mono text-slate-500">
@@ -283,7 +283,7 @@ export function StepReview({
         </ul>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start [&>*]:min-w-0">
         <div className="xl:col-span-5 xl:sticky xl:top-20 space-y-2">
           <Blueprint2D
             plan={activeFloor}
@@ -537,7 +537,7 @@ export function StepReview({
       </div>
 
       {/* Layers & Parse Audit Notes */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 [&>*]:min-w-0">
         <div className="bg-white border border-slate-200/90 rounded-xl shadow-xs p-5 space-y-2.5">
           <div className="flex items-center justify-between gap-2">
             <div className="text-xs font-semibold text-slate-900">
@@ -602,8 +602,8 @@ export function StepReview({
       </div>
       {/* Always-visible next action */}
       <div className="sticky bottom-4 z-20">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/95 backdrop-blur border border-slate-200 rounded-xl shadow-lg px-5 py-3">
-          <p className="text-sm text-slate-700">{t('review.stickyNote')}</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/95 backdrop-blur border border-slate-200 rounded-xl shadow-lg px-3 py-2.5 sm:px-5 sm:py-3">
+          <p className="hidden sm:block text-sm text-slate-700">{t('review.stickyNote')}</p>
           <button
             type="button"
             onClick={onConfirmAndAudit}

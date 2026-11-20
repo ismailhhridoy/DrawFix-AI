@@ -251,7 +251,7 @@ export function StepExport({
   };
 
   return (
-    <main className="max-w-[1080px] mx-auto px-6 py-10 space-y-8">
+    <main className="w-full max-w-[1080px] mx-auto px-4 sm:px-6 py-10 space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200/90 pb-5">
         <div className="space-y-1.5">
           <p className="text-xs font-mono text-slate-500">

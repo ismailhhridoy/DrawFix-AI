@@ -64,7 +64,7 @@ export function StepCompare({
     : t('compare.blocked');
 
   return (
-    <main className="max-w-[1380px] mx-auto px-6 py-6 space-y-6">
+    <main className="w-full max-w-[1380px] mx-auto px-4 sm:px-6 py-6 space-y-6">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/90 pb-4">
         <div className="space-y-1">
           <p className="text-xs font-mono text-slate-500">

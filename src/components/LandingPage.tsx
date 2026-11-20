@@ -211,8 +211,8 @@ export function LandingPage({
                 <span>{t('landing.hero.tag3')}</span>
               </div>
 
-              <h1 className="font-display text-[clamp(2.65rem,5vw,4.5rem)] font-bold tracking-[-0.035em] leading-[1.05] text-white text-balance">
-                {t('landing.hero.title1')}
+              <h1 className="font-display text-[clamp(2.1rem,8.5vw,4.5rem)] sm:text-[clamp(2.65rem,5vw,4.5rem)] font-bold tracking-[-0.035em] leading-[1.05] text-white text-balance break-words">
+                {t('landing.hero.title1')}{' '}
                 <span className="text-[#60A5FA]">{t('landing.hero.title2')}</span>
               </h1>
 

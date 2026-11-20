@@ -302,7 +302,7 @@ and take away a Bangla report, without any number changing between languages.
 4. Dhaka Imarat Nirman Bidhimala 2008 FAR/MGC/setback tables (currently simplified ladder).
 5. ~~Bangla font in PDF~~ Replaced by the printable HTML report (Bangla step 5). The jsPDF file stays
    English only and is labelled so.
-6. Mobile layout pass (desktop checked at 1440 px only).
+6. Mobile layout pass (desktop checked at 1440 px only). Done 2026-11-20 for 360-414 px, see update log.
 7. ~~Commit and push~~ Done: work is on `main` and pushed (auto-push is the standing rule).
 8. ~~Rate limiter bug~~ Fixed 2026-11-19. `server.ts` now sets `trust proxy` (turn off with
    `TRUST_PROXY=0`) and prunes the `hits` map. `tests/server.test.ts` spawns the server and checks 45
@@ -350,6 +350,7 @@ and take away a Bangla report, without any number changing between languages.
 
 ## Update log (add a line every time work is done; newest first)
 
+- 2026-11-20: Mobile pass (360, 375, 414 px; EN, BN, both). Fixed: Review page was 612 px wide on phones (step pages are flex items with `mx-auto`, so they sized to the room table; now `w-full`, grid children `min-w-0`, tables scroll inside their card); landing hero title had no space between "scrutiny." and "Validated" (one unbreakable word, cut off on phones; also smaller on phones); Upload: loaded-plan row stacks, sample "Download" button no longer clipped, header rows wrap, tighter padding; Report: trust badge stacks above the clause text on phones; 3D view starts with controls folded on phones, and its control labels are now translated (new `v3d.*` keys in en/bn); Review sticky bar is compact on phones. Step pages use 16 px side padding on phones. No page scrolls sideways at 360 px on any screen. Desktop layout unchanged apart from the hero space. 131 tests pass.
 - 2026-11-20: `/docs` is now public by default (Ismail's choice, "keep public"). The earlier line below said "off by default"; that was the first version and is corrected. Admin can still set off, scheduled or restricted with `DOCS_ADMIN_TOKEN`. Tests updated; the default test now checks public and off-stays-closed.
 - 2026-11-20: Added the `/docs` module (`src/docs/`): pitch sections, technical documentation (stack, API, data, AI, performance, security, analytics, changelog), feature matrix with live counts from the rule registry and AI status, architecture and data-flow diagrams, team section with fallback initials, search, Markdown download, print-to-PDF, copy link. Access: off by default; `/api/docs/access`, `/api/docs/payload` (403 unless open) and admin `PUT /api/docs/config` (bearer `DOCS_ADMIN_TOKEN`) with history. Restricted mode uses `DOCS_VIEW_KEY` and fails closed. Not built: in-page WYSIWYG editor, drag reorder, versioned content, analytics. Team photos and emails are not published until supplied. 130 tests pass.
 - 2026-11-20: Removed the AI vendor name from user-facing text (landing FAQ and file-privacy note EN/BN, image-reading and agent error messages, layout rationale) per Ismail's rule for public content; now "our AI" / "the AI". Code comments, env vars, server logs and `/api/health` keep the model id. 116 tests pass.

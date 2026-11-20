@@ -147,7 +147,7 @@ export function StepUpload({
   };
 
   return (
-    <main className="max-w-[1280px] mx-auto px-6 py-8 space-y-8">
+    <main className="w-full max-w-[1280px] mx-auto px-4 sm:px-6 py-8 space-y-8">
       {/* Clean Step Header */}
       <section className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-slate-200/90 pb-6">
         <div className="space-y-1.5 max-w-2xl">
@@ -169,9 +169,9 @@ export function StepUpload({
       {/* Main Action Grid: Multi-Floor Upload Dropzone + Sample Buildings */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
         {/* Upload Dropzone */}
-        <div className="lg:col-span-5 flex flex-col justify-between bg-white border border-slate-200/90 rounded-xl shadow-xs p-6 space-y-5">
+        <div className="lg:col-span-5 min-w-0 flex flex-col justify-between bg-white border border-slate-200/90 rounded-xl shadow-xs p-4 sm:p-6 space-y-5">
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
               <h2 className="font-display text-lg font-semibold text-slate-900">
                 {t('upload.boxTitle')}
               </h2>
@@ -259,7 +259,7 @@ export function StepUpload({
             </div>
 
             {activeProject && (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5 flex items-center justify-between gap-3">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="text-xs font-semibold text-slate-900 truncate">
                     {t('upload.active', { p: activeProject.name })}
@@ -374,9 +374,9 @@ export function StepUpload({
         </div>
 
         {/* Standard CAD Templates */}
-        <div className="lg:col-span-7 flex flex-col justify-between bg-white border border-slate-200/90 rounded-xl shadow-xs p-6 space-y-5">
+        <div className="lg:col-span-7 min-w-0 flex flex-col justify-between bg-white border border-slate-200/90 rounded-xl shadow-xs p-4 sm:p-6 space-y-5">
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
               <h2 className="font-display text-lg font-semibold text-slate-900">
                 {t('upload.templates')}
               </h2>
@@ -391,7 +391,7 @@ export function StepUpload({
                 return (
                   <div
                     key={sample.id}
-                    className={`p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 transition-colors ${
+                    className={`p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 transition-colors ${
                       isMulti ? 'bg-blue-50/25' : 'bg-white'
                     }`}
                   >
@@ -412,7 +412,7 @@ export function StepUpload({
                       </p>
                     </div>
 
-                    <div className="flex sm:flex-col items-stretch sm:items-end gap-2 shrink-0">
+                    <div className="flex flex-wrap sm:flex-nowrap sm:flex-col items-stretch sm:items-end gap-2 shrink-0">
                       <button
                         type="button"
                         onClick={() => onLoadSampleBuilding(sample)}

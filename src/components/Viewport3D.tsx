@@ -292,7 +292,10 @@ export function Viewport3D({
 }: Viewport3DProps) {
   const { t, num } = useLang();
   const [mode, setMode] = useState<'before' | 'after'>(initialMode);
-  const [dockOpen, setDockOpen] = useState(true);
+  // Phones: start with the controls folded so the 3D view is visible.
+  const [dockOpen, setDockOpen] = useState(
+    () => typeof window === 'undefined' || window.innerWidth >= 640
+  );
   const [playing, setPlaying] = useState(true);
   const [speedMult, setSpeedMult] = useState<1 | 2>(1);
   const [cameraPreset, setCameraPreset] = useState<'iso' | 'top' | 'follow'>('iso');
@@ -1270,11 +1273,11 @@ export function Viewport3D({
         >
           {dockOpen ? (
             <>
-              <ChevronDown className="w-3.5 h-3.5" /> Hide Controls
+              <ChevronDown className="w-3.5 h-3.5" /> {t('v3d.hideControls')}
             </>
           ) : (
             <>
-              <ChevronUp className="w-3.5 h-3.5" /> Show Controls
+              <ChevronUp className="w-3.5 h-3.5" /> {t('v3d.showControls')}
             </>
           )}
         </button>
@@ -1392,7 +1395,7 @@ export function Viewport3D({
               <div className="pt-2 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
                 <div className="flex flex-wrap items-center gap-1 font-mono">
                   <span className="text-slate-500 mr-1.5 inline-flex items-center gap-1 font-sans">
-                    <Layers className="w-3.5 h-3.5" /> Floor Cutaway:
+                    <Layers className="w-3.5 h-3.5" /> {t('v3d.cutaway')}
                   </span>
                   <button
                     type="button"
@@ -1403,7 +1406,7 @@ export function Viewport3D({
                         : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
                     }`}
                   >
-                    All {activeProject.floors.length} Floors
+                    {t('v3d.allFloors', { n: activeProject.floors.length })}
                   </button>
                   {activeProject.floors.map((fl, idx) => {
                     const lbl = fl.floorLabel || (idx === 0 ? 'GF' : `L${idx + 1}`);
@@ -1433,7 +1436,7 @@ export function Viewport3D({
                       : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  {exploded ? 'Exploded Stack (5.6m)' : 'Explode Floors'}
+                  {exploded ? t('v3d.exploded') : t('v3d.explode')}
                 </button>
               </div>
             )}
