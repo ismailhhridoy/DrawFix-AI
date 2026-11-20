@@ -45,7 +45,7 @@ export const en = {
   'landing.hero.tag3': "Bangladesh building rules",
   'landing.hero.title1': "Faster government scrutiny.",
   'landing.hero.title2': "Validated before filing.",
-  'landing.hero.lead': "DrawFix AI reads AutoCAD DXF floor plans and checks them against Bangladesh building rules—zoning, habitability, stair geometry, dimension accuracy, and fire egress. On the demo building below, fixing the locked exit and missing stair cuts the slowest escape from {before} s to {after} s. Built for review officers who need a first-pass audit and architects checking plans before submission.",
+  'landing.hero.lead': "DrawFix AI reads AutoCAD DXF floor plans and checks them against Bangladesh building rules—zoning, habitability, stair geometry, dimension accuracy, and fire egress. Built for review officers who need a first-pass audit and architects checking plans before submission.",
   'landing.hero.upload': "Test Demo CAD Drawing",
   'landing.hero.permits': "Permit & Corrections Desk",
   'landing.inspector': "Live CAD Inspector",

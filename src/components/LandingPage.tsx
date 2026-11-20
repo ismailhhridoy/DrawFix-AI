@@ -217,12 +217,7 @@ export function LandingPage({
               </h1>
 
               <p className="max-w-2xl mx-auto text-lg sm:text-xl text-slate-200/90 leading-relaxed">
-                {primaryBenchmark
-                  ? t('landing.hero.lead', {
-                      before: num(primaryBenchmark.before.worstEscapeSec.toFixed(0)),
-                      after: num(primaryBenchmark.after.worstEscapeSec.toFixed(0)),
-                    })
-                  : t('landing.hero.lead', { before: '55', after: '37' })}
+                {t('landing.hero.lead')}
               </p>
 
               <div className="pt-2 flex flex-wrap items-center justify-center gap-4">
