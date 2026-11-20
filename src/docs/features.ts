@@ -31,7 +31,7 @@ export const FEATURES: FeatureItem[] = [
   { id: 'bangla-ui', area: 'Language', name: 'English, Bangla and bilingual interface', status: 'shipped', needsAi: false },
   { id: 'review-note', area: 'AI', name: 'Draft review note (labelled not an approval)', status: 'shipped', needsAi: true },
   { id: 'question-box', area: 'AI', name: 'Question box over reference notes', status: 'shipped', needsAi: true },
-  { id: 'docs-page', area: 'Docs', name: '/docs: pitch, technical docs and live status', status: 'in-progress', needsAi: false },
+  { id: 'docs-page', area: 'Docs', name: '/docs: pitch, technical docs and live status', status: 'shipped', needsAi: false },
   { id: 'real-dxf', area: 'Validation', name: 'Test on a real architect\'s DXF', status: 'planned', needsAi: false },
   { id: 'bangla-review', area: 'Validation', name: 'Native Bangla review of all building-code wording', status: 'planned', needsAi: false },
   { id: 'clause-verify', area: 'Validation', name: 'Verify screening limits against the gazette text', status: 'planned', needsAi: false },
